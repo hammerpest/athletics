@@ -1,6 +1,6 @@
 # CCAS Athletics Carnival app
 
-Web app to run the Central Coast Adventist School (CCAS) athletics carnival. Date and venue: still to confirm (questions 1 and 2).
+Web app to run the Central Coast Adventist School (CCAS) athletics carnival, about 19 June 2027 (exact day to confirm), at Mingara Athletics Track (8 lanes). The program, points and awards are in PROJECT-STATE 2.1, from Jordan's 2026 sheets in `docs/`.
 
 Owner: Jordan, PDHPE Head of Department at CCAS.
 
@@ -97,11 +97,12 @@ All three must pass, in order. A failure goes back to the build, never to Jordan
 - **No secrets in the repo.** Supabase keys go in a config file that Jordan fills in.
 - Check newsletter and media consent before naming students publicly.
 
-## Devices (to confirm, question 6)
+## Devices (first guess; jobs are decision 8)
 
 | Job | Device and size |
 |---|---|
-| Marshal, field event judges | iPad, landscape 1180 x 820 or portrait 820 x 1180 |
+| Track Marshal | iPad, landscape 1180 x 820 or portrait 820 x 1180 |
+| Field event stations (2 teachers each) | iPad or iPhone (to confirm) |
 | Recorder, Results, Carnival Organiser | MacBook, 1512 x 982 |
 | Track place judges, timekeepers, Announcer | iPhone, 390 x 844 |
 
