@@ -660,21 +660,27 @@ def organiser(dark):
 <sc-if value="{{is.students}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Students</h2><p class="muted" style="margin:0">Made-up test students only. Date of birth is used on this computer to work out the age group, and is never stored.</p>
 <div class="row"><span class="chip final">620 students loaded</span><button type="button" class="btn">Load a student list</button></div>
 <table><thead><tr><th>Age group</th><th class="num">Girls</th><th class="num">Boys</th><th>Relay band</th></tr></thead><tbody><sc-for list="{{agegrid}}" as="a" hint-placeholder-count="6"><tr><td><b>{{a.g}}</b></td><td class="num">{{a.f}}</td><td class="num">{{a.m}}</td><td>{{a.b}}</td></tr></sc-for></tbody></table></div></sc-if>
-<sc-if value="{{is.program}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Program</h2><p class="muted" style="margin:0">The 2026 timetable. In each block one sex runs, oldest first, while the other does field events. Race numbers on the day follow whatever the marshal sends.</p>
+<sc-if value="{{is.program}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Program</h2>
+<h3>Events on your program</h3><p class="muted" style="margin:0">Turn events on or off to match your school's program, or add your own. Turned off, an event is hidden on every job.</p>
+<table><thead><tr><th>Event</th><th>Type</th><th>Groups</th><th class="num">Events</th><th>On</th><th></th></tr></thead><tbody><sc-for list="{{evs}}" as="e" hint-placeholder-count="11"><tr><td><b>{{e.l}}</b></td><td>{{e.t}}</td><td>{{e.g}}</td><td class="num">{{e.n}}</td><td><button type="button" class="switch" role="switch" aria-checked="{{e.on}}" aria-label="{{e.l}} on the program" onClick="{{e.tog}}"></button></td><td><sc-if value="{{e.own}}" hint-placeholder-val="{{false}}"><button type="button" class="btn small danger" onClick="{{e.del}}">Remove</button></sc-if></td></tr></sc-for></tbody></table>
+<sc-if value="{{notAdding}}" hint-placeholder-val="{{true}}"><button type="button" class="btn" style="align-self:flex-start" onClick="{{startAdd}}">Add an event</button></sc-if>
+<sc-if value="{{adding}}" hint-placeholder-val="{{false}}"><div class="row"><label class="label" style="display:flex;flex-direction:column;gap:4px">Event name<input aria-label="Event name" placeholder="For example, triple jump" value="{{newName}}" onChange="{{typeName}}"></label><button type="button" class="choice" aria-pressed="{{newField}}" onClick="{{setField}}">Field</button><button type="button" class="choice" aria-pressed="{{newTrack}}" onClick="{{setTrack}}">Track</button><button type="button" class="btn primary" onClick="{{addEv}}">Add</button><button type="button" class="btn" onClick="{{cancelAdd}}">Cancel</button></div></sc-if>
+<b>{{total}} events: {{nTrack}} track, {{nField}} field</b>
+<h3>Timetable</h3><p class="muted" style="margin:0">The 2026 timetable. In each block one sex runs, oldest first, while the other does field events. Race numbers on the day follow whatever the marshal sends.</p>
 <table><thead><tr><th>Start</th><th>Track</th><th>Groups</th><th>Field events</th></tr></thead><tbody><sc-for list="{{prog}}" as="p" hint-placeholder-count="10"><tr><td class="nmcell"><b>{{p.a}}</b></td><td><b>{{p.b}}</b></td><td>{{p.c}}</td><td style="font-size:.9rem">{{p.d}}</td></tr></sc-for></tbody></table>
-<b>104 events: 50 track, 6 relays, 48 field</b></div></sc-if>
+</div></sc-if>
 <sc-if value="{{is.field}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Field event rules</h2><div class="todo">All of this waits for Jordan's rules. <span class="qchip">QUESTION 8</span></div>
 <table><thead><tr><th>Event</th><th>Attempts</th><th>Best mark</th><th>Start and steps</th><th>Ties</th></tr></thead><tbody>
 <tr><td><b>Long jump</b></td><td class="todoh">[ATTEMPTS]</td><td>Longest</td><td class="muted">Not needed</td><td class="todoh">[TIES]</td></tr>
 <tr><td><b>Shot put</b></td><td class="todoh">[ATTEMPTS]</td><td>Longest</td><td class="muted">Not needed</td><td class="todoh">[TIES]</td></tr>
 <tr><td><b>Discus</b></td><td class="todoh">[ATTEMPTS]</td><td>Longest</td><td class="muted">Not needed</td><td class="todoh">[TIES]</td></tr>
+<sc-if value="{{jav}}" hint-placeholder-val="{{false}}"><tr><td><b>Javelin</b></td><td class="todoh">[ATTEMPTS]</td><td>Longest</td><td class="muted">Not needed</td><td class="todoh">[TIES]</td></tr></sc-if>
 <tr><td><b>High jump</b></td><td class="todoh">[TRIES AT A HEIGHT]</td><td>Highest cleared</td><td class="todoh">[START, STEPS]</td><td class="todoh">[TIES]</td></tr></tbody></table>
-<h3>Locations for each sport</h3><p class="muted" style="margin:0">Tick 1 or 2 locations. With 1 location, groups on at the same time share it.</p>
+<h3>Locations for each sport</h3><p class="muted" style="margin:0">Tick 1 or 2 locations for each field event that is on your program. With 1 location, groups on at the same time share it.</p>
 <table style="max-width:640px"><thead><tr><th>Sport</th><th>1 location</th><th>2 locations</th></tr></thead><tbody><sc-for list="{{locs}}" as="l" hint-placeholder-count="5"><tr><td><b>{{l.l}}</b></td>
 <td><label style="display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer"><input type="checkbox" style="width:24px;height:24px" aria-label="{{l.l}}, 1 location" checked="{{l.one}}" onChange="{{l.tap1}}">1</label></td>
 <td><label style="display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer"><input type="checkbox" style="width:24px;height:24px" aria-label="{{l.l}}, 2 locations" checked="{{l.two}}" onChange="{{l.tap2}}">2</label></td></tr></sc-for></tbody></table>
-<h3>Stations</h3><div class="row"><sc-for list="{{stations}}" as="s" hint-placeholder-count="7"><span class="chip">{{s}}</span></sc-for></div>
-<sc-if value="{{jav}}" hint-placeholder-val="{{false}}"><div class="todo">Javelin is not on the program yet. <span class="qchip">QUESTION 29</span></div></sc-if></div></sc-if>
+<h3>Stations</h3><div class="row"><sc-for list="{{stations}}" as="s" hint-placeholder-count="7"><span class="chip">{{s}}</span></sc-for></div></div></sc-if>
 <sc-if value="{{is.points}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Points</h2><table style="max-width:520px"><thead><tr><th>Place</th><th class="num">Age events</th><th class="num">Relays</th></tr></thead><tbody><tr><td>1st</td><td class="num">10</td><td class="num">20</td></tr><tr><td>2nd</td><td class="num">8</td><td class="num">16</td></tr><tr><td>3rd</td><td class="num">6</td><td class="num">12</td></tr><tr><td>4th and below</td><td class="num">4</td><td class="num">8</td></tr></tbody></table>
 <p class="muted" style="margin:0">A no-show or no valid mark gets 0. One relay team per house, so each relay has 3 teams, with no names. Equal times in different heats share the points, as in swimming. In the 800 m and 1500 m, a marshalled runner with no time gets 1 second more than the place before. Age champions count only 1st to 3rd place points, and relays do not count. The 1500 m: <span class="qchip">QUESTION 14</span></p></div></sc-if>
 <sc-if value="{{is.limits}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Odd-time limits</h2><p class="muted" style="margin:0">The Recorder is warned if a typed time is outside these. Values are to set.</p><table style="max-width:520px"><thead><tr><th>Event</th><th>Fastest allowed</th><th>Slowest allowed</th></tr></thead><tbody><sc-for list="{{limits}}" as="l" hint-placeholder-count="5"><tr><td><b>{{l}}</b></td><td class="todoh">[TO SET]</td><td class="todoh">[TO SET]</td></tr></sc-for></tbody></table></div></sc-if>
@@ -690,15 +696,26 @@ def organiser(dark):
     cnt = Counter((s["g"], s["x"]) for s in STU)
     agegrid = [{"g":lab,"f":cnt[(g,"F")],"m":cnt[(g,"M")],"b":b} for g,lab,b in [("13","12 & 13","Junior"),("14","14","Junior"),("15","15","Intermediate"),("16","16","Intermediate"),("17","17","Senior"),("18","18+","Senior")]]
     logic = "const S = " + J(secs) + "; const prog = " + J(prog) + "; const agegrid = " + J(agegrid) + r''';
-    const SP = [['D','Discus'],['LJ','Long Jump'],['J','Javelin'],['SP','Shot Put'],['HJ','High Jump']];
-    const stations = []; SP.forEach((x) => { const n = st.loc[x[0]]; if (n === 1) stations.push(x[1]); if (n === 2) { stations.push(x[1] + ' 1'); stations.push(x[1] + ' 2'); } });
-    const pick = (k, n) => () => { const loc = Object.assign({}, st.loc); loc[k] = loc[k] === n ? 0 : n; set({ loc }); };''' + r'''
+    const fieldOn = st.ev.filter((e) => e.t === 'Field' && e.on);
+    const stations = []; fieldOn.forEach((e) => { const n = st.loc[e.k]; if (n === 1) stations.push(e.l); if (n === 2) { stations.push(e.l + ' 1'); stations.push(e.l + ' 2'); } });
+    const pick = (k, n) => () => { const loc = Object.assign({}, st.loc); loc[k] = loc[k] === n ? 0 : n; set({ loc }); };
+    const on = st.ev.filter((e) => e.on);
+    const sum = (l) => l.reduce((t, e) => t + e.n, 0);
+    const total = sum(on), nField = sum(fieldOn), nTrack = total - nField;
+    const change = (k, f) => st.ev.map((e) => e.k === k ? Object.assign({}, e, f) : e);
     const is = {}; S.forEach((s) => { is[s[0]] = st.s === s[0]; });
-    out = { is, agegrid, stations, jav: st.loc.J > 0, locs: SP.map((x) => ({ l: x[1], one: st.loc[x[0]] === 1, two: st.loc[x[0]] === 2, tap1: pick(x[0], 1), tap2: pick(x[0], 2) })), limits: ['100 m','200 m','400 m','800 m','1500 m','4 x 100 m relay'],
-      prog: prog.map((p) => ({ a: p[0], b: p[1], c: p[2], d: p[3] })),
-      secs: S.map((s) => ({ l: s[1], sub: s[2], c: s[0] === 'field' ? 'amber' : '', on: st.s === s[0], tap: () => set({ s: s[0] }) })) };
+    out = { is, agegrid, stations, total, nTrack, nField, jav: !!fieldOn.find((e) => e.k === 'J'),
+      locs: fieldOn.map((e) => ({ l: e.l, one: st.loc[e.k] === 1, two: st.loc[e.k] === 2, tap1: pick(e.k, 1), tap2: pick(e.k, 2) })),
+      evs: st.ev.map((e) => ({ l: e.l, t: e.t, g: e.g, n: e.n, on: e.on, own: !!e.own, tog: () => set({ ev: change(e.k, { on: !e.on }) }), del: () => set({ ev: st.ev.filter((x) => x.k !== e.k) }) })),
+      adding: st.adding, notAdding: !st.adding, newName: st.nm, newField: st.nt === 'Field', newTrack: st.nt === 'Track',
+      startAdd: () => set({ adding: true, nm: '', nt: 'Field' }), cancelAdd: () => set({ adding: false }), typeName: (e) => set({ nm: e.target.value }),
+      setField: () => set({ nt: 'Field' }), setTrack: () => set({ nt: 'Track' }),
+      addEv: () => { const l = st.nm.trim(); if (!l) return; const k = 'x' + (st.ev.length + 1); set({ ev: st.ev.concat([{ k, l, t: st.nt, g: 'Each age, boys and girls', n: 12, on: true, own: true }]), loc: Object.assign({}, st.loc, { [k]: 1 }), adding: false }); },
+      limits: ['100 m','200 m','400 m','800 m','1500 m','4 x 100 m relay'],
+      prog: prog.map((p) => ({ a: p[0], b: p[1], c: p[2], d: p[3] })).concat(st.ev.filter((e) => e.on && (e.own || e.k === 'J')).map((e) => ({ a: 'Set a time', b: e.l, c: e.g, d: '–' }))),
+      secs: S.map((s) => ({ l: s[1], sub: s[0] === 'program' ? total + ' events' : s[2], c: s[0] === 'field' ? 'amber' : '', on: st.s === s[0], tap: () => set({ s: s[0] }) })) };
 '''
-    return body, logic, "{ s: 'field', loc: { D: 2, LJ: 2, J: 0, SP: 1, HJ: 2 } }"
+    return body, logic, r'''{ s: 'program', adding: false, nm: '', nt: 'Field', loc: { D: 2, LJ: 2, J: 1, SP: 1, HJ: 2 }, ev: [{"k": "100", "l": "100 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "200", "l": "200 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "400", "l": "400 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "800", "l": "800 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "1500", "l": "1500 m", "t": "Track", "g": "Open, boys and girls", "n": 2, "on": true}, {"k": "R", "l": "4 x 100 m relay", "t": "Track", "g": "Junior, Intermediate, Senior", "n": 6, "on": true}, {"k": "HJ", "l": "High Jump", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "LJ", "l": "Long Jump", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "SP", "l": "Shot Put", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "D", "l": "Discus", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "J", "l": "Javelin", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": false}] }'''
 
 # ---------- layout on the canvas ----------
 gap = 80; rowgap = 120
@@ -719,7 +736,7 @@ board("Recorder","A1.11 Recorder, track: slip times, pink swaps, race overall, M
 board("RecorderField","A1.12 Recorder, field: stations, final results, override, MacBook",*MAC,recorder_field,1592,R3,radius=0)
 board("Results","A1.14 Results: event results, HRIS Team List, newsletter draft, MacBook",*MAC,results,3184,R3,radius=0)
 board("Houses","A1.15 Houses: standings, points by age group, age champions, iPad landscape",*IPAD,houses,4776,R3)
-board("Organiser","A1.16 Carnival Organiser: 9 sections, field rules placeholder, 1 or 2 locations for each sport, MacBook",*MAC,organiser,6036,R3,radius=0)
+board("Organiser","A1.16 Carnival Organiser: 9 sections, add or remove events, field rules placeholder, 1 or 2 locations, MacBook",*MAC,organiser,6036,R3,radius=0)
 
 index_boards, order = {}, []
 DARK_DY = 0
