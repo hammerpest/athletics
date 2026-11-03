@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version c. Replaces 4 November version b.
+Date: 4 November 2026, version d. Replaces 4 November version c.
+
+Changes on 4 November 2026 (version d): Jordan answered the rest of question 18: the HRIS team list goes as a file, like swimming (decision 19). New question 20: a sample of the athletics file HRIS takes, to match its layout (later). Ask now: none. Next: the design canvas.
 
 Changes on 4 November 2026 (version c): Jordan answered questions 12, 13 and 15 to 18 (decisions 12 to 18). The carnival is on Friday 18 June 2027; ages as at 31 December 2027. Question 14 (the 1500 m) is for later. Question 18 is partly open: is the HRIS team list wanted as a file (like the swimming HY3) or as a list? Ask now: that. Next: the design canvas.
 
@@ -86,7 +88,7 @@ A competitor may not move up an age in any event.
 - All heats are run as finals: times are taken in every heat, and the fastest time over all heats of an age wins.
 - 100 m, 200 m and 400 m: athletes stay in their own lane, or are disqualified. Starting blocks may be used.
 
-**Next level:** results may be used for HRIS selection. The top 2 in every event, field events included, go on the HRIS team list (decision 18).
+**Next level:** results may be used for HRIS selection. The top 2 in every event, field events included, go on the HRIS team list (decision 18), sent as a file, like swimming (decision 19).
 
 ## 3. Decisions
 
@@ -108,6 +110,7 @@ A competitor may not move up an age in any event.
 16. (4 November 2026, answers question 16) One relay team per house in each relay.
 17. (4 November 2026, answers question 17) Field events: everyone who records a mark gets points (4 for 4th and below); a no-show or no valid mark gets 0. Entry is open (no limit per house).
 18. (4 November 2026, answers question 18 in part) The top 2 in every event, field events included, go on the HRIS team list. Still to confirm: a file or a list (question 18).
+19. (4 November 2026, answers the rest of question 18) The HRIS team list is sent as a file, like swimming (the swimming app writes a Meet Manager HY3 file). The athletics layout is matched to a sample file first (question 20).
 
 ## 4. Rules and constraints
 
@@ -119,22 +122,22 @@ None yet.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: 18.
+Ask now: none.
 
-18. (Partly answered by 18) Does HRIS want the team list as a file (a Meet Manager HY3 file, like swimming) or as a printed or emailed list?
+- (Later) 20. A sample of the athletics file HRIS takes (for example a Hy-Tek Track & Field Meet Manager export), with the student details removed, as was done for swimming. The writer is built to match it.
 - (Later) 14. The 1500 m is Open. Do its points count for houses (4th and below 4)? Do its place points count for the athlete's own age champion?
-- (Closed by 12, 13, 15, 16, 17) Questions 12, 13, 15, 16, 17.
+- (Closed by 12, 13, 15 to 19) Questions 12, 13 and 15 to 18.
 19. (Later) The timing equipment at the track: does the printer give a slip per heat with the lane and time for each lane, like the pool? A photo of one slip from a practice run will tell.
 - (Later) 8. Field event rules for each event: attempts, best mark, high jump starting height and steps, ties. Jordan sets them later.
-- (Later) 9. Next level: the file part is in question 18.
+- (Closed by 19) 9. Next level: a file, like swimming; the layout is question 20.
 - (Later) 10. Records: is there a CCAS athletics records list to load?
 - (Later) 11. Real student names: the same approval path as swimming (principal and ICT, swimming question 1)?
 - (Closed by 1 to 10) Questions 1 to 7.
 
 ## 7. Exact next steps
 
-1. NOW: Jordan answers question 18 (file or list).
-2. Draw the design canvas (A1.1 and on) from the swimming boards:
+1. (Done 4 November 2026) Questions 12 to 18 answered (decisions 12 to 19).
+2. NOW: draw the design canvas (A1.1 and on) from the swimming boards:
    - Home and PIN;
    - Track Marshal;
    - track Place Judge;
