@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version i. Replaces 4 November version h.
+Date: 4 November 2026, version j. Replaces 4 November version i.
+
+Changes on 4 November 2026 (version j): At Jordan's request, A1.16 Carnival Organiser now has a tick box for 1 or 2 locations for each field sport (decision 30). Discus, Long Jump, Javelin, Shot Put and High Jump are listed. New question 29: Javelin is listed but is not on the program. Ask now: 29, and Jordan's OK on the changed A1.16.
 
 Changes on 4 November 2026 (version i): Jordan approved all 17 boards, A1.1 to A1.17, apart from the field placeholders (decision 29). Next: the field rules (question 8), and build Aths Opt 1.0.
 
@@ -123,7 +125,7 @@ First published 4 November 2026, redrawn the same day with decisions 20 to 28: h
 | A1.13 | Announcer: on the track now, read out next, field now, house standings | Phone |
 | A1.14 | Results: event results, HRIS Team List, newsletter draft | MacBook |
 | A1.15 | Houses: standings, points by age group, age champions | iPad landscape |
-| A1.16 | Carnival Organiser: 9 sections, with field event rules added | MacBook |
+| A1.16 | Carnival Organiser: 9 sections, with field event rules added, and 1 or 2 locations for each sport (changed after approval, waiting for Jordan's OK) | MacBook |
 | A1.17 | Track Marshal (c): relay, a house in each lane, no names | iPad landscape |
 
 New looks to approve: bright blue lanes with white lines, as at Mingara, with a chequered finish line, and dashed orange boxes for anything not settled (placeholders; they go when the answer is in). Bronze is #cd7f32 as in CLAUDE.md (the swimming app uses a darker bronze), with dark text on it.
@@ -161,7 +163,8 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 26. (4 November 2026, answers question 26) Equal times in different heats share the points, as in swimming.
 27. (4 November 2026, answers question 27; replaces 21) Shot Put is one location. 7 field stations: High Jump 1 and 2, Long Jump 1 and 2, Discus 1 and 2, Shot Put.
 28. (4 November 2026, answers question 28) The event coordinator is the Carnival Organiser PIN.
-29. (4 November 2026) Jordan approved all 17 boards, A1.1 to A1.17, in light and dark, including the blue lanes and the dashed placeholder style. The field placeholders stay open until the rules are set (question 8). From now on any visual change needs Jordan's OK.
+29. (4 November 2026; A1.16 changed afterwards, see 30) Jordan approved all 17 boards, A1.1 to A1.17, in light and dark, including the blue lanes and the dashed placeholder style. The field placeholders stay open until the rules are set (question 8). From now on any visual change needs Jordan's OK.
+30. (4 November 2026) In Carnival Organiser, Field event rules, the organiser ticks 1 or 2 locations for each field sport. The stations list follows the ticks. Set for 2027: Discus 2, Long Jump 2, Shot Put 1, High Jump 2 (decision 27). With 1 location, groups on at the same time share it.
 
 ## 4. Rules and constraints
 
@@ -173,7 +176,9 @@ None yet.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: none.
+Ask now: 29, and Jordan's OK on the changed A1.16.
+
+- (Ask now) 29. Javelin: you listed it for the location tick boxes, but it is not on the program (decision 2: no javelin). It is on the board, unticked. Is javelin being added? If so, for which ages and in which blocks?
 
 - (Closed by 20 to 24, 26 to 28) Questions 21 to 28.
 - (Later) 20. A sample of the athletics file HRIS takes (for example a Hy-Tek Track & Field Meet Manager export), with the student details removed, as was done for swimming. The writer is built to match it.
