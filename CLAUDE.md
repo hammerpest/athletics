@@ -14,7 +14,7 @@ Owner: Jordan, PDHPE Head of Department at CCAS.
    - the next steps.
 
    It wins over anything else. If something conflicts with it, follow it and tell Jordan.
-2. **The design canvas**, once drawn and approved (boards A1.1 and on).
+2. **The design canvas**, once approved (boards A1.1 and on): https://claude.ai/artifact/VaZiJKE2cce41ykKbkD1tg. Its source is in `design/`.
 3. **`baseline/`**: screenshots of every approved screen, once the first build is approved.
 
 ## Rules for every reply, file and screen

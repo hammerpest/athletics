@@ -1,0 +1,90 @@
+/* Athletics additions (design canvas A1.x). Everything above is the swimming styles.css. */
+body{margin:0}
+a{color:inherit}
+.aths{position:relative;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;width:100%}
+.aths.dark{color-scheme:dark}
+.aths .scroll{flex:1 1 auto;min-height:0;overflow:auto}
+.aths main{padding-block:18px 28px}
+.aths header.top{position:relative;top:0;flex:0 0 auto}
+.aths .pbar{position:absolute}
+.aths .toast{position:absolute}
+.hB{--hc:var(--hB)}.hJ{--hc:var(--hJ)}.hN{--hc:var(--hN)}
+.jobmenu a{display:flex;width:100%;align-items:center;gap:10px;padding:11px 10px;border-radius:8px;min-height:48px;box-sizing:border-box;color:var(--ink);text-decoration:none}
+.jobmenu a:hover{background:var(--sunk)}
+a.btn,a.tile,a.choice{text-decoration:none;box-sizing:border-box}
+.home .tiles a{color:var(--ink)}.home .tiles a.orgtile{color:var(--navy-ink)}
+.keypad button{color:var(--ink)}
+
+/* track: the pool lanes in track colours, finish line where the wall was */
+.pool.track{--water:#f8e6dc;--water2:#f4dccf;--rope:#ffffff;background:var(--water)}
+.aths.dark .pool.track{--water:#3a221c;--water2:#442820;--rope:#8a5a4b}
+.pool.track .lane{border-top-style:solid;border-top-width:2px}
+.pool.track .lane .body::before{display:none}
+.pool.track .lane .wall{border-left:0;position:relative;padding-left:26px}
+.pool.track .lane .wall::before{content:"";position:absolute;left:0;top:0;bottom:0;width:14px;background:repeating-conic-gradient(var(--navy) 0 25%,#ffffff 0 50%) 0 0/14px 14px}
+.aths.dark .pool.track .lane .wall::before{background:repeating-conic-gradient(#ffffff 0 25%,#0b1222 0 50%) 0 0/14px 14px}
+.aths.dark .pool.track .lane .blk{background:#1d3160}
+
+/* a clearly marked placeholder: not settled yet */
+.todo{border:2px dashed var(--flame);background:var(--warn-bg);color:var(--warn);border-radius:10px;padding:8px 12px;font-weight:700}
+.todo b{font-family:var(--font-mono);font-size:.82rem;color:var(--ink)}
+.qchip{display:inline-flex;align-items:center;border:2px dashed var(--flame);background:var(--warn-bg);color:var(--warn);border-radius:999px;padding:1px 9px;font:700 .72rem var(--font-mono);white-space:nowrap}
+th.todoh{outline:2px dashed var(--flame);outline-offset:-3px;color:var(--warn);background:var(--warn-bg)}
+
+/* field event station */
+.markin{font:700 1.05rem var(--font-mono);width:88px;min-height:48px;padding:6px 8px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-variant-numeric:tabular-nums;box-sizing:border-box;text-align:center}
+.markin.foul{border-color:var(--bad);background:var(--bad-bg);color:var(--bad)}
+.markin.pass{background:var(--sunk);color:var(--muted)}
+.bestm{font:800 1.15rem var(--font-mono);font-variant-numeric:tabular-nums}
+.hjc{width:64px;min-height:48px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font:700 .98rem var(--font-mono);cursor:pointer}
+.hjc.clear{background:var(--ok-bg);border-color:var(--ok);color:var(--ok)}
+.hjc.out{background:var(--bad-bg);border-color:var(--bad);color:var(--bad)}
+.hjc.pass{background:var(--sunk);color:var(--muted)}
+.runrow{display:grid;grid-template-columns:96px 84px minmax(0,1fr) auto;align-items:center;gap:12px;padding:8px 14px;border-bottom:1px solid var(--line);min-height:56px;box-sizing:border-box}
+.runrow:last-child{border-bottom:0}
+.runrow.now{background:var(--sunk)}
+.runrow b{font-family:var(--font-display)}
+.bigath{font:800 1.5rem var(--font-display);line-height:1.15}
+.attrow{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.attcell{background:var(--surface);border:2px solid var(--line);border-radius:12px;padding:5px 8px;text-align:center;min-height:62px;box-sizing:border-box}
+.attcell.cur{border-color:var(--navy)}
+.aths.dark .attcell.cur{border-color:var(--sky)}
+.attcell>span{display:block;font-size:.7rem;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.attcell b{font:800 1.3rem var(--font-mono)}
+.attcell.foul b{color:var(--bad)}
+.markshow{background:var(--navy);color:#ffffff;border-radius:14px;text-align:center;font:700 2.2rem var(--font-mono);padding:6px 10px}
+.keypad.fp{grid-template-columns:repeat(3,minmax(0,1fr));width:100%;gap:8px}
+.keypad.fp button{height:62px;border-radius:14px;font-size:1.45rem}
+.keypad.fp button.w{font:800 1rem var(--font-display)}
+
+/* runners with no lanes */
+.namegrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.namebtn{display:flex;align-items:center;gap:8px;min-height:56px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700;padding:6px 10px;text-align:left;cursor:pointer;min-width:0}
+.namebtn span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+.namebtn[aria-pressed="true"]{background:var(--sunk);color:var(--muted)}
+.clock.sm{font-size:2.3rem;padding:8px 10px;border-radius:14px}
+
+/* home with 7 jobs */
+.tiles .tile{min-height:112px;box-sizing:border-box}
+.fieldnow{display:flex;flex-direction:column;gap:6px}
+.fieldnow .fr{display:flex;align-items:center;gap:8px;justify-content:space-between;padding:6px 10px;border-radius:10px;background:var(--sunk);font-size:.9rem;font-weight:600}
+tr.selrow td{background:var(--sunk)}
+tr.clickrow{cursor:pointer}
+.newsbox{white-space:pre-line;line-height:1.55}
+.aths{--bronze:#cd7f32}
+.m3,.spot.p3{color:#2b1600}
+
+/* CSS tables: the swimming table look without table tags */
+.tb{display:table;border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums}
+.thg{display:table-header-group}.tbg{display:table-row-group}.tr{display:table-row}
+.th,.td{display:table-cell;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:middle}
+.th{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);background:var(--sunk);font-weight:700}
+.td.num,.th.num{text-align:right}
+.tr.pinkrow .td{background:var(--pink-bg)}
+.tr.selrow .td{background:var(--sunk)}
+.th.todoh,.td.todoh{outline:2px dashed var(--flame);outline-offset:-3px;color:var(--warn);background:var(--warn-bg);font:700 .78rem var(--font-mono)}
+.th.todoh{font-size:.72rem}
+.td.nmcell{white-space:nowrap}
+a.hlink,a.btn{text-decoration:none}
+.attcell>span{white-space:nowrap;letter-spacing:.02em;font-size:.66rem}
+.pool.track .lane .wall{min-width:44px}

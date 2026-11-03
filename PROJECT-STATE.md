@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version d. Replaces 4 November version c.
+Date: 4 November 2026, version e. Replaces 4 November version d.
+
+Changes on 4 November 2026 (version e): Next step 2 done as a first draft: the design canvas is published for Jordan's review (https://claude.ai/artifact/VaZiJKE2cce41ykKbkD1tg), boards A1.1 to A1.16, light and dark, in section 2.2. Nothing is approved yet and nothing is built. Field boards carry marked placeholders for question 8. Two things in 2.1 corrected from the timetable (6 field groups in a block, not 7; Shot Put has two groups at once in 4 blocks). New questions 21 to 26. Ask now: 21 to 26, and approval of each board.
 
 Changes on 4 November 2026 (version d): Jordan answered the rest of question 18: the HRIS team list goes as a file, like swimming (decision 19). New question 20: a sample of the athletics file HRIS takes, to match its layout (later). Ask now: none. Next: the design canvas.
 
@@ -15,7 +17,7 @@ Owner: Jordan (PDHPE Head of Department, Central Coast Adventist School, Erina N
 ## 0. Where things stand (read first)
 
 - Project is ONLY the athletics carnival app. The swimming app (SWIM 2027- App/ccas-swimming) and cross country are separate projects, used for reference only.
-- Nothing is built or drawn yet. Next: the design canvas (A1.1 and on), then Aths Opt 1.0.
+- Nothing is built. The design canvas (A1.1 to A1.16) is drawn and waits for Jordan's approval, board by board. Then Aths Opt 1.0.
 - How it will be built, and the lessons from the swimming app, are in CLAUDE.md.
 - Made-up data only: the 620 test students ("CCAS XC test students 620.xlsx").
 - No GitHub repo or Supabase project yet.
@@ -67,7 +69,7 @@ A competitor may not move up an age in any event.
   - 1:35 pm: relays (Junior, Intermediate, Senior; girls then boys).
   - 1:55 pm: presentations. 2:15 pm: prayer, and buses back to school.
 - In each block one sex runs a track event, oldest first (18+ down to 12 & 13), while the other sex does field events. The next block swaps them.
-- **Field event stations:** high jump, long jump and discus each have two stations (for example "High Jump 1" and "High Jump 2"), and shot put has one. Each station runs one age group at a time, so up to seven field groups run together.
+- **Field event stations:** high jump, long jump and discus each have two stations (for example "High Jump 1" and "High Jump 2"), and shot put has one. Each block has six field groups. Each station runs one age group at a time, except Shot Put, which has two age groups at once in four blocks (10:40, 11:10, 11:40 and 12:10; question 22).
 
 **Points:**
 
@@ -89,6 +91,33 @@ A competitor may not move up an age in any event.
 - 100 m, 200 m and 400 m: athletes stay in their own lane, or are disqualified. Starting blocks may be used.
 
 **Next level:** results may be used for HRIS selection. The top 2 in every event, field events included, go on the HRIS team list (decision 18), sent as a file, like swimming (decision 19).
+
+### 2.2 The design canvas (first draft, not approved)
+
+Published 4 November 2026: https://claude.ai/artifact/VaZiJKE2cce41ykKbkD1tg (private to Jordan until shared). Page "Boards" is the light theme and page "Dark theme" repeats all 16 boards. Boards can be tried with Play. Made from the swimming styles.css with made-up test students. The source is in design/ (make_boards.py, make_css.py, aths-extra.css, aths.css).
+
+| Board | Screen | Size |
+|---|---|---|
+| A1.1 | Home: PIN, then 6 jobs; organiser PIN adds Carnival Organiser | iPad landscape |
+| A1.2 | Track Marshal (a): pick race, boys or girls, age | iPad landscape |
+| A1.3 | Track Marshal (b): names into lanes | iPad landscape |
+| A1.4 | Track Place Judge: tap the top 4 at the finish line | Phone |
+| A1.5 | Place Judge, no lanes (800 m, 1500 m): a proposal, question 21 | Phone |
+| A1.6 | Time Slips | Phone |
+| A1.7 | Field Station (a): pick the station, its day from the timetable | iPad landscape |
+| A1.8 | Field Station (b): attempts and best mark (placeholders, question 8) | iPad landscape |
+| A1.9 | Field Station (c): high jump heights (placeholders, question 8) | iPad landscape |
+| A1.10 | Field Station (d): one athlete at a time (placeholders, question 8) | Phone |
+| A1.11 | Recorder, track: slip times, pink swaps, race overall | MacBook |
+| A1.12 | Recorder, field: stations and marks to check | MacBook |
+| A1.13 | Announcer: on the track now, read out next, field now, house standings | Phone |
+| A1.14 | Results: event results, HRIS Team List, newsletter draft | MacBook |
+| A1.15 | Houses: standings, points by age group, age champions | iPad landscape |
+| A1.16 | Carnival Organiser: 9 sections, with field event rules added | MacBook |
+
+New looks to approve: lanes in track colours with a chequered finish line, and dashed orange boxes for anything not settled. Bronze is #cd7f32 as in CLAUDE.md (the swimming app uses a darker bronze), with dark text on it.
+
+Assumed in the draft, not decided: race numbers count track heats only, and field groups are named by station and group. A1.12 has the Recorder check field results (question 24). Marks are typed in metres to 2 decimals (question 8). iPad portrait and other sizes are not drawn; they follow the swimming layouts.
 
 ## 3. Decisions
 
@@ -122,8 +151,14 @@ None yet.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: none.
+Ask now: 21 to 26, and approval of each board A1.1 to A1.16.
 
+- (Ask now) 21. The 800 m and 1500 m: runners leave their lanes. How many run at once, and how are times taken? The lane-by-lane slip cannot do this. A1.5 proposes tapping names at the line against a clock.
+- (Ask now) 22. Shot Put: the 2026 timetable has two age groups on it at once in 4 blocks. Do they share one circle, taking turns?
+- (Ask now) 23. Field stations: iPad or iPhone? One Field Station PIN for all 7 stations?
+- (Ask now) 24. Field results: does the Recorder check them first (as drawn in A1.12), or are they final at the station?
+- (Ask now) 25. Relays: does the marshal enter the 4 names in each team, or only the house? HRIS may need names.
+- (Ask now) 26. Equal times in different heats: share the points, as in swimming?
 - (Later) 20. A sample of the athletics file HRIS takes (for example a Hy-Tek Track & Field Meet Manager export), with the student details removed, as was done for swimming. The writer is built to match it.
 - (Later) 14. The 1500 m is Open. Do its points count for houses (4th and below 4)? Do its place points count for the athlete's own age champion?
 - (Closed by 12, 13, 15 to 19) Questions 12, 13 and 15 to 18.
@@ -137,16 +172,8 @@ Ask now: none.
 ## 7. Exact next steps
 
 1. (Done 4 November 2026) Questions 12 to 18 answered (decisions 12 to 19).
-2. NOW: draw the design canvas (A1.1 and on) from the swimming boards:
-   - Home and PIN;
-   - Track Marshal;
-   - track Place Judge;
-   - Time Slips;
-   - field event station (attempts and marks);
-   - Recorder;
-   - Announcer, Results and Houses;
-   - Carnival Organiser.
-   Jordan approves each board.
+2. (Done as a first draft 4 November 2026) The design canvas, A1.1 to A1.16 (section 2.2).
+   NOW: Jordan reviews and approves each board, and answers questions 21 to 26.
 3. Field event rules from Jordan (question 8) before the field event board is final.
 4. Build Aths Opt 1.0 in test mode, with engine tests. Checks 1 to 3.
 5. Jordan makes the GitHub repo and the Supabase project (Sydney) from click-by-click steps. Aths Opt 1.1 goes live on staging with made-up data.
@@ -156,5 +183,6 @@ Ask now: none.
 - CLAUDE.md (project rules, how it is built, lessons from swimming)
 - PROJECT-STATE.md (this file; the latest)
 - docs/2026 general information and points.png, docs/2026 timetable.png (Jordan's 2026 sheets)
+- Design canvas: https://claude.ai/artifact/VaZiJKE2cce41ykKbkD1tg; its source in design/
 - Swimming app for reference: SWIM 2027- App/ccas-swimming (its CLAUDE.md and PROJECT-STATE.md)
 - CCAS XC test students 620.xlsx (test student list)
