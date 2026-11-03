@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version f. Replaces 4 November version e.
+Date: 4 November 2026, version g. Replaces 4 November version f.
+
+Changes on 4 November 2026 (version g): Jordan checked the published canvas in Chrome: it displays right, blue lanes included. Boards are not yet approved one by one. Ask now: 26 to 28, and approval of each board.
 
 Changes on 4 November 2026 (version f): Jordan answered questions 21 to 25 (decisions 20 to 25). Canvas redrawn: bright blue track lanes with white lines; A1.5 is now the multitimer, as in swimming's 100 m; Shot Put 1 and 2; field results final at the station, with override; new A1.17 relay lanes (houses only); relays off the HRIS list. Now 17 boards. New questions 27 and 28. Ask now: 26 to 28, and approval of each board.
 
