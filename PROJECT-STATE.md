@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version k. Replaces 4 November version j.
+Date: 4 November 2026, version l. Replaces 4 November version k.
+
+Changes on 4 November 2026 (version l): Jordan sent the 2027 field event instruction sheets, saved in docs/2027 field event sheets/ (Long Jump, High Jump, Shot Put, Discus, Javelin). They answer most of question 8 (decisions 32 to 35). Field boards redrawn; new boards A1.18 and A1.19 for throws. New questions 30 to 32 for what the sheets do not cover. Ask now: 30 to 32, and Jordan's OK on A1.16 and the redrawn field boards.
 
 Changes on 4 November 2026 (version k): Jordan answered question 29: Javelin is in the software but CCAS does not use it. The organiser can add or remove any track or field event to match a school's program (decision 31). A1.16 redrawn. Ask now: Jordan's OK on the changed A1.16.
 
@@ -29,7 +31,7 @@ Owner: Jordan (PDHPE Head of Department, Central Coast Adventist School, Erina N
 ## 0. Where things stand (read first)
 
 - Project is ONLY the athletics carnival app. The swimming app (SWIM 2027- App/ccas-swimming) and cross country are separate projects, used for reference only.
-- Nothing is built. The design canvas (A1.1 to A1.17) is approved, apart from the field placeholders (decision 29). Next: Aths Opt 1.0.
+- Nothing is built. The design canvas (A1.1 to A1.17) is approved, apart from the field placeholders (decision 29). A1.16 and the field boards have changed since and wait for Jordan's OK, with new boards A1.18 and A1.19. Aths Opt 1.0 is being built.
 - How it will be built, and the lessons from the swimming app, are in CLAUDE.md.
 - Made-up data only: the 620 test students ("CCAS XC test students 620.xlsx").
 - No GitHub repo or Supabase project yet.
@@ -108,7 +110,7 @@ A competitor may not move up an age in any event.
 
 ### 2.2 The design canvas (approved 4 November 2026, apart from the field placeholders)
 
-First published 4 November 2026, redrawn the same day with decisions 20 to 28: https://claude.ai/artifact/VaZiJKE2cce41ykKbkD1tg (private to Jordan until shared). Page "Boards" is the light theme and page "Dark theme" repeats all 17 boards. Boards can be tried with Play. Made from the swimming styles.css with made-up test students. The source is in design/ (make_boards.py, make_css.py, aths-extra.css, aths.css).
+First published 4 November 2026, redrawn the same day with decisions 20 to 28: https://claude.ai/artifact/VaZiJKE2cce41ykKbkD1tg (private to Jordan until shared). Page "Boards" is the light theme and page "Dark theme" repeats all 19 boards. Boards can be tried with Play. Made from the swimming styles.css with made-up test students. The source is in design/ (make_boards.py, make_css.py, aths-extra.css, aths.css).
 
 | Board | Screen | Size |
 |---|---|---|
@@ -119,9 +121,9 @@ First published 4 November 2026, redrawn the same day with decisions 20 to 28: h
 | A1.5 | Multitimer (800 m, 1500 m): one person enters names, START, SPLIT, STOP, tap names in order, send | Phone |
 | A1.6 | Time Slips | Phone |
 | A1.7 | Field Station (a): pick the station, its day from the timetable | iPad landscape |
-| A1.8 | Field Station (b): attempts and best mark (placeholders, question 8) | iPad landscape |
-| A1.9 | Field Station (c): high jump heights (placeholders, question 8) | iPad landscape |
-| A1.10 | Field Station (d): one athlete at a time (placeholders, question 8) | Phone |
+| A1.8 | Field Station (b): long jump, every jump measured | iPad landscape |
+| A1.9 | Field Station (c): high jump, heights worked out from the sheet | iPad landscape |
+| A1.10 | Field Station (d): long jump, one athlete at a time | Phone |
 | A1.11 | Recorder, track: slip times, pink swaps, race overall | MacBook |
 | A1.12 | Recorder, field: stations, final results, override | MacBook |
 | A1.13 | Announcer: on the track now, read out next, field now, house standings | Phone |
@@ -129,10 +131,12 @@ First published 4 November 2026, redrawn the same day with decisions 20 to 28: h
 | A1.15 | Houses: standings, points by age group, age champions | iPad landscape |
 | A1.16 | Carnival Organiser: 9 sections, with field event rules added, add or remove events, and 1 or 2 locations for each sport (changed after approval, waiting for Jordan's OK) | MacBook |
 | A1.17 | Track Marshal (c): relay, a house in each lane, no names | iPad landscape |
+| A1.18 | Field Station (e): throws, fair or foul, best throw measured once (new) | iPad landscape |
+| A1.19 | Field Station (f): throws, one athlete at a time (new) | Phone |
 
 New looks to approve: bright blue lanes with white lines, as at Mingara, with a chequered finish line, and dashed orange boxes for anything not settled (placeholders; they go when the answer is in). Bronze is #cd7f32 as in CLAUDE.md (the swimming app uses a darker bronze), with dark text on it.
 
-Assumed in the draft, not decided: race numbers count track heats only, and field groups are named by station and group. Runners with no time in the 800 m and 1500 m are listed after the timed runners, each 1 second later, in list order. The Time Slips phone opens the multitimer for the 800 m and 1500 m only; the 100 m to 400 m and relays use the Place Judge and slips. Marks are typed in metres to 2 decimals (question 8). iPad portrait and other sizes are not drawn; they follow the swimming layouts.
+Assumed in the draft, not decided: race numbers count track heats only, and field groups are named by station and group. Runners with no time in the 800 m and 1500 m are listed after the timed runners, each 1 second later, in list order. The Time Slips phone opens the multitimer for the 800 m and 1500 m only; the 100 m to 400 m and relays use the Place Judge and slips. Marks are typed in metres to 2 decimals (question 32). iPad portrait and other sizes are not drawn; they follow the swimming layouts.
 
 ## 3. Decisions
 
@@ -169,6 +173,11 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 30. (4 November 2026) In Carnival Organiser, Field event rules, the organiser ticks 1 or 2 locations for each field sport. The stations list follows the ticks. Set for 2027: Discus 2, Long Jump 2, Shot Put 1, High Jump 2 (decision 27). With 1 location, groups on at the same time share it.
 31. (4 November 2026, answers question 29) The program is set by the organiser, so the app is not fixed to CCAS events. Carnival Organiser, Program: any track or field event can be turned on or off, and new ones added or removed. Javelin is built in and off for CCAS, so the CCAS program stays at 104 events (decision 2). A turned-on sport joins the location ticks and the field rules. Assumed: a new event starts as each age, boys and girls (12 events), and the organiser sets its time on the timetable.
 
+32. (4 November 2026, answers most of question 8) Field rules are the 2027 CCAS instruction sheets in docs/2027 field event sheets/, held as organiser settings. Athletes are numbered in the order they arrive, which is their order for the event. The app shows who is up and who is next.
+33. (4 November 2026) Long jump: 3 jumps, every jump measured. If there are too many athletes, 2 jumps each, then the top 4 get a 3rd (the teacher turns this on; the sheet sets no number).
+34. (4 November 2026) Shot put, discus and javelin: 3 throws, marked fair, foul or pass. The marker only moves for a better throw, so only the best throw is measured, once, at the end. Weights by age are shown at the station. In the 12 & 13 group, discus differs by age (12 years 0.75 kg, 13 years 1 kg).
+35. (4 November 2026) High jump: starting height by age and sex from the sheet. 3 tries at each height, out after 3 misses in a row. Raises: girls 5 cm until 3 remain, then 3 cm; boys 10 cm first, then 5 cm until 3 remain, then 3 cm. The app works out the next height. Ties: fewer misses at the tied height, then fewer overall, then they share the place.
+
 ## 4. Rules and constraints
 
 See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
@@ -179,15 +188,17 @@ None yet.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: Jordan's OK on the changed A1.16.
+Ask now: 30 to 32, and Jordan's OK on A1.16 and the redrawn field boards.
 
-
+- (Ask now) 30. Equal best marks in long jump, shot put, discus or javelin: do they share the place and points? The sheets do not say. Throws cannot use a next-best mark, as only the best is measured.
+- (Ask now) 31. High jump: can an athlete pass a height? The sheets do not say. Drawn as allowed.
+- (Ask now) 32. Marks to the nearest centimetre (5.34 m)?
 - (Closed by 20 to 24, 26 to 28, 31) Questions 21 to 29.
 - (Later) 20. A sample of the athletics file HRIS takes (for example a Hy-Tek Track & Field Meet Manager export), with the student details removed, as was done for swimming. The writer is built to match it.
 - (Later) 14. The 1500 m is Open. Do its points count for houses (4th and below 4)? Do its place points count for the athlete's own age champion?
 - (Closed by 12, 13, 15 to 19) Questions 12, 13 and 15 to 18.
 19. (Later) The timing equipment at the track: does the printer give a slip per heat with the lane and time for each lane, like the pool? A photo of one slip from a practice run will tell.
-- (Later) 8. Field event rules for each event: attempts, best mark, high jump starting height and steps, ties. Jordan sets them later.
+- (Closed by 32 to 35, apart from 30 to 32) 8. Field event rules.
 - (Closed by 19) 9. Next level: a file, like swimming; the layout is question 20.
 - (Later) 10. Records: is there a CCAS athletics records list to load?
 - (Later) 11. Real student names: the same approval path as swimming (principal and ICT, swimming question 1)?
@@ -198,7 +209,7 @@ Ask now: Jordan's OK on the changed A1.16.
 1. (Done 4 November 2026) Questions 12 to 18 answered (decisions 12 to 19).
 2. (Done as a first draft 4 November 2026) The design canvas, A1.1 to A1.16 (section 2.2).
    Done: Jordan approved all boards (decision 29).
-3. Field event rules from Jordan (question 8) before the field event board is final.
+3. (Mostly done) Field rules from the sheets (decisions 32 to 35). Questions 30 to 32 before the field boards are final.
 4. Build Aths Opt 1.0 in test mode, with engine tests. Checks 1 to 3.
 5. Jordan makes the GitHub repo and the Supabase project (Sydney) from click-by-click steps. Aths Opt 1.1 goes live on staging with made-up data.
 
@@ -207,6 +218,7 @@ Ask now: Jordan's OK on the changed A1.16.
 - CLAUDE.md (project rules, how it is built, lessons from swimming)
 - PROJECT-STATE.md (this file; the latest)
 - docs/2026 general information and points.png, docs/2026 timetable.png (Jordan's 2026 sheets)
+- docs/2027 field event sheets/ (instruction sheets for each field event)
 - Design canvas: https://claude.ai/artifact/VaZiJKE2cce41ykKbkD1tg; its source in design/
 - Swimming app for reference: SWIM 2027- App/ccas-swimming (its CLAUDE.md and PROJECT-STATE.md)
 - CCAS XC test students 620.xlsx (test student list)
