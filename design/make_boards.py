@@ -110,16 +110,16 @@ IPAD = (1180, 820); MAC = (1512, 982); PHONE = (390, 844)
 # ---------- the timetable, from docs/2026 timetable.png ----------
 AGES = ["18+", "17", "16", "15", "14", "12 & 13"]
 BLOCKS = [
- ("9:15 am",  "Boys",  "100 m", "Girls", ["HJ1","LJ1","LJ2","D1","SP1","D2"]),
- ("9:55 am",  "Girls", "100 m", "Boys",  ["HJ2","LJ1","LJ2","D2","SP1","D1"]),
- ("10:40 am", "Boys",  "800 m", "Girls", ["LJ1","SP1","D2","SP2","HJ1","HJ2"]),
- ("11:10 am", "Girls", "800 m", "Boys",  ["LJ2","D1","SP1","SP2","HJ2","HJ1"]),
- ("11:40 am", "Boys",  "200 m", "Girls", ["SP1","D1","SP2","HJ1","LJ1","LJ2"]),
- ("12:10 pm", "Girls", "200 m", "Boys",  ["SP1","SP2","D2","HJ2","LJ2","LJ1"]),
- ("12:40 pm", "Boys",  "400 m", "Girls", ["D1","HJ1","HJ2","LJ1","D2","SP1"]),
- ("1:10 pm",  "Girls", "400 m", "Boys",  ["D2","HJ1","HJ2","LJ2","D1","SP1"]),
+ ("9:15 am",  "Boys",  "100 m", "Girls", ["HJ1","LJ1","LJ2","D1","SP","D2"]),
+ ("9:55 am",  "Girls", "100 m", "Boys",  ["HJ2","LJ1","LJ2","D2","SP","D1"]),
+ ("10:40 am", "Boys",  "800 m", "Girls", ["LJ1","SP","D2","SP","HJ1","HJ2"]),
+ ("11:10 am", "Girls", "800 m", "Boys",  ["LJ2","D1","SP","SP","HJ2","HJ1"]),
+ ("11:40 am", "Boys",  "200 m", "Girls", ["SP","D1","SP","HJ1","LJ1","LJ2"]),
+ ("12:10 pm", "Girls", "200 m", "Boys",  ["SP","SP","D2","HJ2","LJ2","LJ1"]),
+ ("12:40 pm", "Boys",  "400 m", "Girls", ["D1","HJ1","HJ2","LJ1","D2","SP"]),
+ ("1:10 pm",  "Girls", "400 m", "Boys",  ["D2","HJ1","HJ2","LJ2","D1","SP"]),
 ]
-STN = {"HJ1":"High Jump 1","HJ2":"High Jump 2","LJ1":"Long Jump 1","LJ2":"Long Jump 2","D1":"Discus 1","D2":"Discus 2","SP1":"Shot Put 1","SP2":"Shot Put 2"}
+STN = {"HJ1":"High Jump 1","HJ2":"High Jump 2","LJ1":"Long Jump 1","LJ2":"Long Jump 2","D1":"Discus 1","D2":"Discus 2","SP":"Shot Put"}
 
 # ---------- A1.1 Home ----------
 def home(dark):
@@ -351,6 +351,7 @@ def field_start(dark):
     body = header("FIELD STATION","Field Station",dark) + f'''
 <div class="scroll"><main class="wrap"><div class="stack" style="max-width:1040px;margin:0 auto">
 <div class="mrow" style="padding:0"><span class="label">Your station</span><div class="choices"><sc-for list="{{{{stn}}}}" as="c" hint-placeholder-count="7"><button type="button" class="choice" aria-pressed="{{{{c.on}}}}" onClick="{{{{c.tap}}}}">{{{{c.l}}}}</button></sc-for></div></div>
+<sc-if value="{{{{shared}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg info">In four blocks two age groups are on Shot Put at once. Both can be open here.</div></sc-if>
 <div class="gcard"><div class="ghead"><h3>{{{{title}}}}: your day</h3><span class="meta">{{{{count}}}} groups · tap a group to open it</span></div>
 <sc-for list="{{{{rows}}}}" as="r" hint-placeholder-count="8"><div class="runrow {{{{r.c}}}}"><b>{{{{r.t}}}}</b><span class="chip {{{{r.chip}}}}">{{{{r.st}}}}</span><span style="font-weight:700">{{{{r.g}}}}</span>
 <a class="btn {{{{r.btn}}}} small" href="{{{{r.href}}}}">Open</a></div></sc-for></div>
@@ -360,7 +361,7 @@ def field_start(dark):
     const rows = [];
     blocks.forEach((b, bi) => b.f.forEach((s, i) => { if (s === st.s) rows.push({ bi, t: b.t, g: b.x + ' ' + ages[i] }); }));
     rows.forEach((r, i) => { r.done = r.bi < st.now; r.isNow = r.bi === st.now; });
-    out = { title: stn[st.s], count: rows.length,
+    out = { title: stn[st.s], count: rows.length, shared: st.s === 'SP',
       stn: Object.keys(stn).map((k) => ({ l: stn[k], on: st.s === k, tap: () => set({ s: k }) })),
       rows: rows.map((r) => ({ t: r.t, g: r.g, c: r.isNow ? 'now' : '', st: r.done ? 'Finished' : (r.isNow ? 'Now' : 'Later'), chip: r.done ? 'final' : (r.isNow ? 'prov' : ''), btn: r.isNow ? 'go' : '', href: st.s.startsWith('HJ') ? highF : markF })) };
 '''
@@ -515,7 +516,7 @@ def recorder(dark):
 def recorder_field(dark):
     grp = names("M","17",7,8)
     marks = [["5.34","X","5.41"],["4.98","5.02","X"],["X","X","X"],["5.61","5.58","5.49"],["4.87","Pass","4.92"],["NS","",""],["5.15","X","5.20"]]
-    stn = [("Long Jump 1","Boys 17","Final"),("Long Jump 2","Boys 16","Running"),("High Jump 2","Boys 18+","Running"),("Discus 2","Boys 15","Running"),("Discus 1","Boys 12 & 13","Running"),("Shot Put 1","Boys 14","Running"),("High Jump 1","Girls 18+","Final"),("Long Jump 1","Girls 17","Final")]
+    stn = [("Long Jump 1","Boys 17","Final"),("Long Jump 2","Boys 16","Running"),("High Jump 2","Boys 18+","Running"),("Discus 2","Boys 15","Running"),("Discus 1","Boys 12 & 13","Running"),("Shot Put","Boys 14","Running"),("High Jump 1","Girls 18+","Final"),("Long Jump 1","Girls 17","Final")]
     body = header("RECORDER","Recorder",dark) + f'''
 <div class="scroll"><main class="wrap">
 <div class="tabs"><a class="btn" style="border-radius:999px" href="{lnk("Recorder",dark)}">Track</a><button type="button" aria-pressed="true">Field events</button></div>
@@ -670,11 +671,11 @@ def organiser(dark):
 <tr><td><b>High jump</b></td><td class="todoh">[TRIES AT A HEIGHT]</td><td>Highest cleared</td><td class="todoh">[START, STEPS]</td><td class="todoh">[TIES]</td></tr></tbody></table>
 <h3>Stations</h3><div class="row"><sc-for list="{{stations}}" as="s" hint-placeholder-count="7"><span class="chip">{{s}}</span></sc-for></div></div></sc-if>
 <sc-if value="{{is.points}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Points</h2><table style="max-width:520px"><thead><tr><th>Place</th><th class="num">Age events</th><th class="num">Relays</th></tr></thead><tbody><tr><td>1st</td><td class="num">10</td><td class="num">20</td></tr><tr><td>2nd</td><td class="num">8</td><td class="num">16</td></tr><tr><td>3rd</td><td class="num">6</td><td class="num">12</td></tr><tr><td>4th and below</td><td class="num">4</td><td class="num">8</td></tr></tbody></table>
-<p class="muted" style="margin:0">A no-show or no valid mark gets 0. One relay team per house, so each relay has 3 teams, with no names. In the 800 m and 1500 m, a marshalled runner with no time gets 1 second more than the place before. Age champions count only 1st to 3rd place points, and relays do not count. The 1500 m: <span class="qchip">QUESTION 14</span></p></div></sc-if>
+<p class="muted" style="margin:0">A no-show or no valid mark gets 0. One relay team per house, so each relay has 3 teams, with no names. Equal times in different heats share the points, as in swimming. In the 800 m and 1500 m, a marshalled runner with no time gets 1 second more than the place before. Age champions count only 1st to 3rd place points, and relays do not count. The 1500 m: <span class="qchip">QUESTION 14</span></p></div></sc-if>
 <sc-if value="{{is.limits}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Odd-time limits</h2><p class="muted" style="margin:0">The Recorder is warned if a typed time is outside these. Values are to set.</p><table style="max-width:520px"><thead><tr><th>Event</th><th>Fastest allowed</th><th>Slowest allowed</th></tr></thead><tbody><sc-for list="{{limits}}" as="l" hint-placeholder-count="5"><tr><td><b>{{l}}</b></td><td class="todoh">[TO SET]</td><td class="todoh">[TO SET]</td></tr></sc-for></tbody></table></div></sc-if>
 <sc-if value="{{is.records}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Records</h2><div class="todo">No CCAS athletics records list yet. <span class="qchip">QUESTION 10</span></div><button type="button" class="btn" style="align-self:flex-start">Load a records list</button></div></sc-if>
 <sc-if value="{{is.export}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Export</h2><div class="row"><button type="button" class="btn">Download results CSV</button><button type="button" class="btn">Download HRIS file</button><button type="button" class="btn">Download full backup</button><button type="button" class="btn">Restore a backup</button></div><p class="muted" style="margin:0">No automatic backups. Export after the carnival. The HRIS file layout: <span class="qchip">QUESTION 20</span></p></div></sc-if>
-<sc-if value="{{is.lock}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Lock and new carnival</h2><div class="row"><button type="button" class="btn">Lock results</button><button type="button" class="btn danger">Clear practice data</button><button type="button" class="btn">Start a new carnival</button></div><p class="muted" style="margin:0">Clear practice data is for the staff run-through and asks first. Past years stay look only. The event coordinator can overrule any result at any time.</p></div></sc-if>
+<sc-if value="{{is.lock}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Lock and new carnival</h2><div class="row"><button type="button" class="btn">Lock results</button><button type="button" class="btn danger">Clear practice data</button><button type="button" class="btn">Start a new carnival</button></div><p class="muted" style="margin:0">Clear practice data is for the staff run-through and asks first. Past years stay look only. The event coordinator (organiser PIN) can overrule any result at any time.</p></div></sc-if>
 '''
     body = header("CARNIVAL ORGANISER","Carnival Organiser",dark,sub="CCAS Athletics Carnival 2027 · Organiser PIN only",extra=f'<a class="hlink" href="{lnk("Main",dark)}">Change year</a>') + '''
 <div class="scroll"><main class="wrap"><div class="org">
