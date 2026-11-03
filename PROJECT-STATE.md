@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version h. Replaces 4 November version g.
+Date: 4 November 2026, version i. Replaces 4 November version h.
+
+Changes on 4 November 2026 (version i): Jordan approved all 17 boards, A1.1 to A1.17, apart from the field placeholders (decision 29). Next: the field rules (question 8), and build Aths Opt 1.0.
 
 Changes on 4 November 2026 (version h): Jordan answered questions 26 to 28 (decisions 26 to 28). Shot Put is one location after all, which replaces decision 21: 7 stations, and the canvas is changed back. Equal times share the points. The event coordinator is the organiser PIN. Version f had cut sections 0 to 6 of this file by mistake; they are restored here. Ask now: approval of each board.
 
@@ -23,7 +25,7 @@ Owner: Jordan (PDHPE Head of Department, Central Coast Adventist School, Erina N
 ## 0. Where things stand (read first)
 
 - Project is ONLY the athletics carnival app. The swimming app (SWIM 2027- App/ccas-swimming) and cross country are separate projects, used for reference only.
-- Nothing is built. The design canvas (A1.1 to A1.17) is drawn and waits for Jordan's approval, board by board. Then Aths Opt 1.0.
+- Nothing is built. The design canvas (A1.1 to A1.17) is approved, apart from the field placeholders (decision 29). Next: Aths Opt 1.0.
 - How it will be built, and the lessons from the swimming app, are in CLAUDE.md.
 - Made-up data only: the 620 test students ("CCAS XC test students 620.xlsx").
 - No GitHub repo or Supabase project yet.
@@ -100,7 +102,7 @@ A competitor may not move up an age in any event.
 
 **Next level:** results may be used for HRIS selection. The top 2 in every individual event, field events included, go on the HRIS team list (decisions 18 and 24), sent as a file, like swimming (decision 19). Relays are not on it.
 
-### 2.2 The design canvas (not approved)
+### 2.2 The design canvas (approved 4 November 2026, apart from the field placeholders)
 
 First published 4 November 2026, redrawn the same day with decisions 20 to 28: https://claude.ai/artifact/VaZiJKE2cce41ykKbkD1tg (private to Jordan until shared). Page "Boards" is the light theme and page "Dark theme" repeats all 17 boards. Boards can be tried with Play. Made from the swimming styles.css with made-up test students. The source is in design/ (make_boards.py, make_css.py, aths-extra.css, aths.css).
 
@@ -159,6 +161,7 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 26. (4 November 2026, answers question 26) Equal times in different heats share the points, as in swimming.
 27. (4 November 2026, answers question 27; replaces 21) Shot Put is one location. 7 field stations: High Jump 1 and 2, Long Jump 1 and 2, Discus 1 and 2, Shot Put.
 28. (4 November 2026, answers question 28) The event coordinator is the Carnival Organiser PIN.
+29. (4 November 2026) Jordan approved all 17 boards, A1.1 to A1.17, in light and dark, including the blue lanes and the dashed placeholder style. The field placeholders stay open until the rules are set (question 8). From now on any visual change needs Jordan's OK.
 
 ## 4. Rules and constraints
 
@@ -170,7 +173,7 @@ None yet.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: approval of each board A1.1 to A1.17.
+Ask now: none.
 
 - (Closed by 20 to 24, 26 to 28) Questions 21 to 28.
 - (Later) 20. A sample of the athletics file HRIS takes (for example a Hy-Tek Track & Field Meet Manager export), with the student details removed, as was done for swimming. The writer is built to match it.
@@ -187,7 +190,7 @@ Ask now: approval of each board A1.1 to A1.17.
 
 1. (Done 4 November 2026) Questions 12 to 18 answered (decisions 12 to 19).
 2. (Done as a first draft 4 November 2026) The design canvas, A1.1 to A1.16 (section 2.2).
-   NOW: Jordan reviews and approves each board.
+   Done: Jordan approved all boards (decision 29).
 3. Field event rules from Jordan (question 8) before the field event board is final.
 4. Build Aths Opt 1.0 in test mode, with engine tests. Checks 1 to 3.
 5. Jordan makes the GitHub repo and the Supabase project (Sydney) from click-by-click steps. Aths Opt 1.1 goes live on staging with made-up data.
