@@ -102,9 +102,9 @@ All three must pass, in order. A failure goes back to the build, never to Jordan
 | Job | Device and size |
 |---|---|
 | Track Marshal | iPad, landscape 1180 x 820 or portrait 820 x 1180 |
-| Field event stations (2 teachers each) | iPad or iPhone (to confirm) |
+| Field event stations (2 teachers each) | iPad or iPhone, either one (decision 22) |
 | Recorder, Results, Carnival Organiser | MacBook, 1512 x 982 |
-| Track place judges, timekeepers, Announcer | iPhone, 390 x 844 |
+| Track place judges, Time Slips and multitimer, Announcer | iPhone, 390 x 844 |
 
 Every screen must also work on the other sizes.
 

@@ -287,9 +287,9 @@ a.btn,a.tile,a.choice{text-decoration:none;box-sizing:border-box}
 .home .tiles a{color:var(--ink)}.home .tiles a.orgtile{color:var(--navy-ink)}
 .keypad button{color:var(--ink)}
 
-/* track: the pool lanes in track colours, finish line where the wall was */
-.pool.track{--water:#f8e6dc;--water2:#f4dccf;--rope:#ffffff;background:var(--water)}
-.aths.dark .pool.track{--water:#3a221c;--water2:#442820;--rope:#8a5a4b}
+/* track: bright blue lanes with white lines (Mingara), finish line where the wall was */
+.pool.track{--water:#1f74e8;--water2:#1f74e8;--rope:#ffffff;background:var(--water)}
+.aths.dark .pool.track{--water:#1a5fc4;--water2:#1a5fc4;--rope:#ffffff}
 .pool.track .lane{border-top-style:solid;border-top-width:2px}
 .pool.track .lane .body::before{display:none}
 .pool.track .lane .wall{border-left:0;position:relative;padding-left:26px}
@@ -361,3 +361,8 @@ a.hlink,a.btn{text-decoration:none}
 .attcell>span{white-space:nowrap;letter-spacing:.02em;font-size:.66rem}
 .pool.track .lane .wall{min-width:44px}
 .aths.dark .spot{border-color:var(--sky)}
+.pool.track .lane .empty{background:var(--surface);border-color:#ffffff;color:var(--muted)}
+.pool.track .bytime{color:#ffffff}
+.namebtn.sel{background:var(--navy);border-color:var(--navy);color:#ffffff}
+.aths.dark .namebtn.sel{border-color:var(--sky)}
+.namebtn.sel .hdot{outline:2px solid #ffffff}
