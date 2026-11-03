@@ -1,6 +1,6 @@
 # CCAS Athletics Carnival app
 
-Web app to run the Central Coast Adventist School (CCAS) athletics carnival, about 19 June 2027 (exact day to confirm), at Mingara Athletics Track (8 lanes). The program, points and awards are in PROJECT-STATE 2.1, from Jordan's 2026 sheets in `docs/`.
+Web app to run the Central Coast Adventist School (CCAS) athletics carnival on Friday 18 June 2027, at Mingara Athletics Track (8 lanes). The program, points and awards are in PROJECT-STATE 2.1, from Jordan's 2026 sheets in `docs/`.
 
 Owner: Jordan, PDHPE Head of Department at CCAS.
 

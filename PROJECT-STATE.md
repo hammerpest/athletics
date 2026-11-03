@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version b. Replaces 4 November version a.
+Date: 4 November 2026, version c. Replaces 4 November version b.
+
+Changes on 4 November 2026 (version c): Jordan answered questions 12, 13 and 15 to 18 (decisions 12 to 18). The carnival is on Friday 18 June 2027; ages as at 31 December 2027. Question 14 (the 1500 m) is for later. Question 18 is partly open: is the HRIS team list wanted as a file (like the swimming HY3) or as a list? Ask now: that. Next: the design canvas.
 
 Changes on 4 November 2026 (version b): Jordan answered questions 1 to 7 and sent the 2026 information sheet and timetable (saved in docs/). Decisions 1 to 11. Question 8 (field event rules) waits until Jordan sets the rules for each event. New questions 12 to 18. Ask now: 12 to 18.
 
@@ -11,7 +13,7 @@ Owner: Jordan (PDHPE Head of Department, Central Coast Adventist School, Erina N
 ## 0. Where things stand (read first)
 
 - Project is ONLY the athletics carnival app. The swimming app (SWIM 2027- App/ccas-swimming) and cross country are separate projects, used for reference only.
-- Nothing is built or drawn yet. Next: questions 12 to 18, then the design canvas (A1.1 and on), then Aths Opt 1.0.
+- Nothing is built or drawn yet. Next: the design canvas (A1.1 and on), then Aths Opt 1.0.
 - How it will be built, and the lessons from the swimming app, are in CLAUDE.md.
 - Made-up data only: the 620 test students ("CCAS XC test students 620.xlsx").
 - No GitHub repo or Supabase project yet.
@@ -31,9 +33,9 @@ An easy web app to run the CCAS athletics carnival, in the same way as the swimm
 
 ### 2.1 The carnival (from Jordan's answers and the 2026 sheets)
 
-**Date and venue:** about 19 June 2027 (question 12), Mingara Athletics Track, 8 lanes.
+**Date and venue:** Friday 18 June 2027 (decision 12), Mingara Athletics Track, 8 lanes.
 
-**Age groups** (ages as at 31 December; the 2026 sheet says 31 December 2026, question 13):
+**Age groups** (ages as at 31 December 2027, decision 13):
 
 | Age group | Band (relays) |
 |---|---|
@@ -76,13 +78,15 @@ A competitor may not move up an age in any event.
 
 **Awards:**
 - House championship: the house with the most points.
-- Age champion and runner up, boys and girls in each age group: most points, counting only 1st, 2nd and 3rd place points ("to recognise expertise in athletics, not just participation"). Relays do not count.
+- Field events: everyone who records a mark gets points (4 for 4th and below); a no-show or no valid mark gets 0 (decision 17).
+- Relays: one team per house in each relay (decision 16), so each relay has 3 teams (20, 16, 12).
+- Age champion and runner up, boys and girls in each age group: most points, counting only 1st, 2nd and 3rd place points ("to recognise expertise in athletics, not just participation"). Relays do not count. Joint champions have no runner up (decision 15).
 
 **Track rules:**
 - All heats are run as finals: times are taken in every heat, and the fastest time over all heats of an age wins.
 - 100 m, 200 m and 400 m: athletes stay in their own lane, or are disqualified. Starting blocks may be used.
 
-**Next level:** results may be used for HRIS selection.
+**Next level:** results may be used for HRIS selection. The top 2 in every event, field events included, go on the HRIS team list (decision 18).
 
 ## 3. Decisions
 
@@ -97,6 +101,13 @@ A competitor may not move up an age in any event.
 9. (4 November 2026) Timing: the same equipment as swimming (swimming decision 147): the Swiss Timing Quantum timer and printer, with times taken from a photo of the printed slip.
 10. (4 November 2026) The next level is HRIS, as in swimming. Whether a HY3 file is wanted is part of question 18.
 11. (4 November 2026) Field event rules (attempts, best mark, high jump heights, ties): Jordan sets them for each event later (question 8).
+12. (4 November 2026, answers question 12) The carnival is on Friday 18 June 2027. Replaces the "about 19 June" in decision 1.
+13. (4 November 2026, answers question 13) Ages are as at 31 December 2027.
+14. (4 November 2026) Question 14 (the 1500 m: house points and age champion points) is for later.
+15. (4 November 2026, answers question 15) Joint age champions: no runner up beside them (as in swimming).
+16. (4 November 2026, answers question 16) One relay team per house in each relay.
+17. (4 November 2026, answers question 17) Field events: everyone who records a mark gets points (4 for 4th and below); a no-show or no valid mark gets 0. Entry is open (no limit per house).
+18. (4 November 2026, answers question 18 in part) The top 2 in every event, field events included, go on the HRIS team list. Still to confirm: a file or a list (question 18).
 
 ## 4. Rules and constraints
 
@@ -108,23 +119,11 @@ None yet.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: 12 to 18.
+Ask now: 18.
 
-12. The date: 19 June 2027 is a Saturday. Is the carnival on Friday 18 June 2027, or another day?
-13. Ages for the 2027 carnival: as at 31 December 2027, or 31 December 2026 (the swimming carnival in February 2027 uses 31 December 2026)?
-14. The 1500 m is Open:
-    - Do its points count for houses (4th and below 4)?
-    - Do its place points count for the athlete's own age champion?
-15. Joint age champions: is there still a runner up beside them? (Swimming: no, decision 145 there.)
-16. Relays: how many teams per house in each relay (swimming has an A and a B team)? Does every team that finishes get 8 points?
-17. Field events:
-    - Does everyone who records a mark get the 4th-and-below 4 points?
-    - Does a no-show or no valid mark get 0?
-    - How many athletes per age group per house, or is it open entry?
-18. HRIS:
-    - Do you send the top 2 in every event, as in swimming?
-    - Do you send the field event marks too?
-    - Does HRIS want a file (a Meet Manager HY3 file, or other) or a list?
+18. (Partly answered by 18) Does HRIS want the team list as a file (a Meet Manager HY3 file, like swimming) or as a printed or emailed list?
+- (Later) 14. The 1500 m is Open. Do its points count for houses (4th and below 4)? Do its place points count for the athlete's own age champion?
+- (Closed by 12, 13, 15, 16, 17) Questions 12, 13, 15, 16, 17.
 19. (Later) The timing equipment at the track: does the printer give a slip per heat with the lane and time for each lane, like the pool? A photo of one slip from a practice run will tell.
 - (Later) 8. Field event rules for each event: attempts, best mark, high jump starting height and steps, ties. Jordan sets them later.
 - (Later) 9. Next level: the file part is in question 18.
@@ -134,7 +133,7 @@ Ask now: 12 to 18.
 
 ## 7. Exact next steps
 
-1. NOW: Jordan answers questions 12 to 18.
+1. NOW: Jordan answers question 18 (file or list).
 2. Draw the design canvas (A1.1 and on) from the swimming boards:
    - Home and PIN;
    - Track Marshal;
