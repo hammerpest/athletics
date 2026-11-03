@@ -88,3 +88,4 @@ tr.clickrow{cursor:pointer}
 a.hlink,a.btn{text-decoration:none}
 .attcell>span{white-space:nowrap;letter-spacing:.02em;font-size:.66rem}
 .pool.track .lane .wall{min-width:44px}
+.aths.dark .spot{border-color:var(--sky)}
