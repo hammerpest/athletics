@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 5 November 2026, version u. Replaces 5 November version t.
+Date: 5 November 2026, version v. Replaces 5 November version u.
+
+Changes on 5 November 2026 (version v): Jordan approved A1.1 and A1.5 and said to build them (decision 51). Ask now: none.
 
 Changes on 5 November 2026 (version u): Jordan answered yes to questions 40 to 42 (decisions 48 to 50). A1.1 and A1.5 redrawn, waiting for Jordan's OK before they are built. Ask now: Jordan's OK on A1.1 and A1.5.
 
@@ -243,6 +245,7 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 48. (5 November 2026, answers question 40) Multitimer places: every row has room for the time from the start, so buttons do not move, and the time text is stronger (white on navy).
 49. (5 November 2026, answers question 41) The items in 2.3 that differ from the boards are OK. A1.1 is redrawn to match the app: a job PIN opens its job straight away.
 50. (5 November 2026, answers question 42) After sending, the multitimer phone offers Next heat (1 tap) or New age or event, picked on the phone. Any other race goes through the Track Marshal.
+51. (5 November 2026) Jordan approved the redrawn A1.1 and A1.5, so all 20 boards are approved again.
 
 ## 4. Rules and constraints
 
@@ -257,7 +260,7 @@ See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: Jordan's OK on A1.1 and A1.5.
+Ask now: none.
 
 - (Closed by 48 to 50) Questions 40 to 42.
 - (Closed by 47) 39. 800 m and 1500 m: who enters the names.
