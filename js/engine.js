@@ -152,8 +152,8 @@ function markCm(v){return /^[0-9]+$/.test(String(v==null?"":v))&&+v>0?+v:0}
 /* a tape reading rounds down, never up */
 function fmtMark(cm){if(!cm)return "";return MARK_DP===1?(Math.floor(cm/10)/10).toFixed(1):(cm/100).toFixed(2)}
 function fmtHeight(cm){return cm?(cm/100).toFixed(2):""}
-/* a mark needs 3 digits: 53 is more likely a slip of the finger than 0.53 m */
-function markOk(v){return v===""||v==="x"||v==="-"||String(v).length>=3}
+/* a typed box needs 3 digits or the point: 53 is more likely a slip than 0.53 m, and 0.53 says what it means */
+function markOk(raw){const v=String(raw==null?"":raw).trim().toLowerCase();return !v||/^(x|foul|-|p|pass)$/.test(v)||/^\d{3,}$/.test(v)||/^\d*\.\d+$/.test(v)}
 function fmtCell(v){if(v==null||v==="")return "";if(v==="x")return "X";if(v==="-")return "Pass";const c=markCm(v);return c?fmtMark(c):String(v)}
 function cleanMark(raw){
   const v=String(raw==null?"":raw).trim().toLowerCase();
@@ -438,9 +438,11 @@ function compute(S){
   for(const fg of fgroups){
     const ev=eventOf(cfg,fg.k);const doc=(S.field||{})[fg.id];if(!doc)continue;
     const rule=fieldRule(cfg,ev);const marks=doc.marks||{};
-    const ids=Object.keys(doc.ath||{}).filter(id=>doc.ath[id]).sort((a,b)=>doc.ath[a]-doc.ath[b]||a.localeCompare(b));
+    /* an athlete taken off keeps a negative time, so nobody else's number changes */
+    const everyone=Object.keys(doc.ath||{}).sort((a,b)=>Math.abs(doc.ath[a])-Math.abs(doc.ath[b])||a.localeCompare(b));
+    const ids=everyone.filter(id=>doc.ath[id]>0);
     if(!ids.length&&!doc.final)continue;
-    const rows=ids.map((id,i)=>Object.assign({id,no:i+1,p:who(id),m:marks[id]||{},place:null,pts:0,st:(marks[id]||{}).ns?"NS":"ok"},fieldRow(ev,rule,marks[id])));
+    const rows=ids.map(id=>Object.assign({id,no:everyone.indexOf(id)+1,p:who(id),m:marks[id]||{},place:null,pts:0,st:(marks[id]||{}).ns?"NS":"ok"},fieldRow(ev,rule,marks[id])));
     const G=ensure(fg.key,ev);
     G.arrival=rows.slice();G.plan=ev.style==="height"?hjPlan(cfg,ev,rule,fg.x,fg.g,ids,marks):null;
     G.turn=fieldTurn(ev,rule,rows,!!doc.short,G.plan);

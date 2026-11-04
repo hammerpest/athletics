@@ -34,7 +34,8 @@ async def run(pw,dev,theme):
         for p in pages: await p.evaluate(f"window.__t+={ms}")
     async def shot(p,name):
         await p.wait_for_timeout(150)
-        await p.bringToFront() if False else None
+        # toasts and the scroll position come and go: they are not part of the screen
+        await p.evaluate("window.scrollTo(0,0);document.getElementById('toast').hidden=true"); await p.wait_for_timeout(50)
         await p.screenshot(path=os.path.join(OUT,f"{name}-{dev}-{theme}.png"),full_page=True,animations="disabled")
         # no sideways scroll on any screen
         sw=await p.evaluate("[document.documentElement.scrollWidth,innerWidth]")
@@ -158,9 +159,9 @@ async def run(pw,dev,theme):
     else:
         await F.click('[data-act=fsave]'); await F.wait_for_timeout(100)
         await F.evaluate("A.f.i=3;render()"); await F.wait_for_timeout(100)
-        await F.click('.keypad.fp [data-k="5"]'); await F.click('.keypad.fp [data-k="1"]'); await shot(F,"field-phone-short")
-        await F.click('[data-act=fsave]'); await F.wait_for_timeout(100); assert await F.evaluate("A.f.typed")=="51"   # 2 digits refused, kept
-        await F.click('.keypad.fp [data-k="2"]'); await shot(F,"field-phone-typed")
+        await F.click('.keypad.fp [data-k="5"]'); await shot(F,"field-phone-short")
+        await F.click('[data-act=fsave]'); await F.wait_for_timeout(100); assert await F.evaluate("A.f.typed")=="5"   # 1 digit refused, kept
+        await F.click('.keypad.fp [data-k="1"]'); await F.click('.keypad.fp [data-k="2"]'); await shot(F,"field-phone-typed")
         await F.click('[data-act=fsave]'); await F.wait_for_timeout(150); await shot(F,"field-phone-saved")
         await F.click('[data-act=fundo]'); await F.wait_for_timeout(150); await shot(F,"field-phone-undo")
         await F.click('.attcell[data-act=fcell] >> nth=0'); await F.wait_for_timeout(100); await shot(F,"field-phone-change")

@@ -282,12 +282,18 @@ t("a late athlete does not move the bar; the bar stays where the boxes show",()=
   const s=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b","c","d","late"],m);eq(s.cur,128);eq(s.heights.includes(120),true);
 });
 t("a mark typed with the point is metres; too few digits is refused",()=>{
-  eq(E.cleanMark("5.3"),"530");eq(E.cleanMark("5.34"),"534");eq(E.cleanMark("534"),"534");eq(E.markOk("53"),false);eq(E.markOk("534"),true);eq(E.markOk("x"),true);eq(E.markOk(""),true);
+  eq(E.cleanMark("5.3"),"530");eq(E.cleanMark("5.34"),"534");eq(E.cleanMark("534"),"534");eq(E.markOk("53"),false);eq(E.markOk("534"),true);eq(E.markOk("x"),true);eq(E.markOk(""),true);eq(E.markOk("0.95"),true);eq(E.cleanMark("0.95"),"95");eq(E.markCm("95"),95);eq(E.markOk("5.3m"),false);
 });
 t("equal multitimer splits keep the tap order inside a heat",()=>{
   const S={students:["a","b"].map(i=>st(i,"B","F","16"))};
   run(S,1,"800","F","16",1,{1:"a",2:"b"},{1:{t:15000,st:"ok",src:"multi",o:2},2:{t:15000,st:"ok",src:"multi",o:1}},[],{multi:true});
   const G=compute(S).groups.get(groupKey("800","F","16"));eq(G.rows.map(r=>[r.id,r.place,r.pts]),[["b",1,10],["a",2,8]]);
+});
+
+t("an athlete taken off keeps everyone else's number",()=>{
+  const S={students:["a","b","c"].map(i=>st(i,"B","M","14"))};
+  S.field={[E.fieldId(groupKey("LJ","M","14"))]:{ath:{a:10,b:-20,c:30},marks:{}}};
+  eq(compute(S).groups.get(groupKey("LJ","M","14")).arrival.map(r=>[r.id,r.no]),[["a",1],["c",3]]);
 });
 
 /* ---- houses and champions (decisions 5, 15) ---- */

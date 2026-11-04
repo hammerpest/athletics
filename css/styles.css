@@ -404,3 +404,4 @@ td.todoh input,td.todoh select{font:700 .9rem var(--font-mono);min-height:48px;m
 .pool.ph.judge .lane .wall{min-width:88px}
 @media (max-width:699px){header.top.unstick{position:static}}
 .attcell[data-act]{cursor:pointer}
+.keypad button:disabled{opacity:.45;cursor:not-allowed}

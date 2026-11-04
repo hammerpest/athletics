@@ -222,7 +222,7 @@ function goJob(k){
   if(k==="recorder")A.r.since=Date.now();
   announce();render();window.scrollTo(0,0);
 }
-function signOut(){if(A.past)enterYear("current");clearReadLists();A.yearPicked=null;ssSet("aths_year",null);A.role=null;A.job=null;ssSet("aths_role",null);ssSet("aths_job",null);A.menu=false;A.m.phase="start";A.f.gid=null;A.f.station=null;fSave();A.r.ovr=false;announce();render()}
+function signOut(){if(A.past)enterYear("current");clearReadLists();A.yearPicked=null;ssSet("aths_year",null);A.role=null;A.job=null;ssSet("aths_role",null);ssSet("aths_job",null);A.menu=false;A.m.phase="start";A.f.gid=null;A.f.station=null;A.f.a=null;fSave();A.r.ovr=false;announce();render()}
 
 /* ---------- modal ---------- */
 function modalHtml(){

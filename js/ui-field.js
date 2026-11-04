@@ -2,7 +2,7 @@
    The rules are the 2027 instruction sheets (decisions 32 to 35), held as organiser settings. Athletes are
    numbered as they arrive, which is their order for the event. Results are final at the station; the event
    coordinator can overrule (decision 23). Each box saves on its own, so two teachers can work one group. */
-function fSave(){ssSet("aths_field",JSON.stringify({station:A.f.station,gid:A.f.gid,i:A.f.i,typed:A.f.typed}))}
+function fSave(){ssSet("aths_field",JSON.stringify({station:A.f.station,gid:A.f.gid,i:A.f.i,typed:A.f.typed,a:A.f.a}))}
 function fieldGroupOpen(){return A.R?A.R.fgroups.find(f=>f.id===A.f.gid)||null:null}
 function fieldDocOf(f){return A.field[f.id]||{ath:{},marks:{}}}
 function deepMerge(a,b){const o=Object.assign({},a||{});for(const k in b){if(b[k]&&typeof b[k]==="object"&&!Array.isArray(b[k])&&o[k]&&typeof o[k]==="object")o[k]=deepMerge(o[k],b[k]);else o[k]=b[k]}return o}
@@ -141,16 +141,17 @@ function fieldUndo(){
 }
 /* an athlete added by mistake, or who left before their first turn, comes off the list */
 async function fieldToggle(f,id){
-  if(!(fieldDocOf(f).ath||{})[id])return fieldAdd(f,id);
-  await fieldWrite(f,{ath:{[id]:0}});
+  const at=(fieldDocOf(f).ath||{})[id]||0;
+  if(at<=0)return fieldAdd(f,id);
+  await fieldWrite(f,{ath:{[id]:-at}});
 }
 async function fieldAdd(f,id){
   /* their number is the order they arrive (decision 32), even if two are added in one tick */
-  const at=Math.max(Date.now(),...Object.values(fieldDocOf(f).ath||{}).map(n=>n+1));
+  const at=Math.max(Date.now(),...Object.values(fieldDocOf(f).ath||{}).map(n=>Math.abs(n)+1));
   await fieldWrite(f,{ath:{[id]:at}});
 }
 MODALS.fieldAdd=M=>{
-  const f=fieldGroupOpen();if(!f)return "";const ev=eventOf(A.cfg,f.k);const on=fieldDocOf(f).ath||{};
+  const f=fieldGroupOpen();if(!f)return "";const ev=eventOf(A.cfg,f.k);const on=Object.fromEntries(Object.entries(fieldDocOf(f).ath||{}).filter(e=>e[1]>0));
   const q=(A.f.filter||"").toLowerCase();
   const list=eligible(ev,f.x,f.g).filter(s=>!q||listName(s).toLowerCase().includes(q));
   return `<h2>Add an athlete</h2><p class="muted" style="margin:0">${esc(groupLabel(ev,f.x,f.g))}. Tap each athlete as they arrive: this is their number and their order.</p>
@@ -226,7 +227,7 @@ function fieldPhoneAct(kind,val){
       fSave();render();return;
     }
     if(kind==="save"){
-      if(A.f.typed&&!markOk(A.f.typed)){toast("Type 3 digits: 1124 is 11.24 m.");return}
+      if(A.f.typed&&A.f.typed.length<2){toast("Type the whole mark: 1124 is 11.24 m.");return}
       if(A.f.typed)setBest(f,r.id,A.f.typed);nextUp()}
     return;
   }
@@ -239,8 +240,11 @@ function fieldPhoneAct(kind,val){
   if(kind==="pass"){if(cur>=0){A.f.typed="";A.f.a=null;fSave();setMark(f,r.id,cur,"-")}return}
   if(kind==="save"){
     if(A.f.typed&&cur>=0){
-      if(!markOk(A.f.typed)){toast("Type 3 digits: 534 is 5.34 m.");return}
+      /* the screen shows the mark in metres here, so 2 digits are fine */
+      if(A.f.typed.length<2){toast("Type the whole mark: 534 is 5.34 m.");return}
       const m=A.f.typed;A.f.typed="";A.f.a=null;fSave();setMark(f,r.id,cur,m);return}
+    /* typed digits are never dropped: with no box to take them, they stay on screen until one is picked */
+    if(A.f.typed){toast("No box left. Tap a jump to change it.");return}
     A.f.a=null;nextUp();
   }
 }
