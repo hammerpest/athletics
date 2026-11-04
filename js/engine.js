@@ -1,4 +1,4 @@
-/* ===== Aths Opt 1.0: results engine (no screen code) =====
+/* ===== Aths Opt 1.1: results engine (no screen code) =====
    Every place, point, record, house total and champion is worked out here from the stored records.
    Nothing worked out here is ever stored. The program, the timetable and the field rules are organiser
    data in the config, so the app is not fixed to the CCAS events (decision 31). */
@@ -215,6 +215,10 @@ function finishOrderFromTaps(order){
   return out;
 }
 
+/* 800 m and 1500 m: each place gets its split. Past the last split, each place gets 1 second more than the
+   place before (decision 45). k counts from 0 */
+function mtTimeAt(splits,k){return !splits.length?null:k<splits.length?splits[k]:splits[splits.length-1]+(k-splits.length+1)*100}
+
 /* ---- field events ---- */
 function fieldRule(cfg,ev){const base=ev.style==="height"?RULE_HIGH:ev.style==="throw"?RULE_THROW:RULE_DIST;return Object.assign({},base,(cfg.rules||{})[ev.k]||{})}
 /* the girls / boys value from one sheet cell: "3 / 5 kg" gives "3 kg" and "5 kg" */
@@ -231,16 +235,38 @@ function weightFor(cfg,k,x,g){
   return v.every(a=>a===v[0])?v[0]:rows.map((r,i)=>r.a+" years "+v[i]).join(", ");
 }
 function hjStart(cfg,x,g){const r=sheetRows(cfg,g)[0];return r?Math.round(parseFloat(sheetPair(r.hj)[x])*100)||100:100}
-/* the tap order for a high jump box */
-function heightSeq(rule){const s=[""];for(let f=0;f<rule.tries;f++)s.push("X".repeat(f)+"O");s.push("X".repeat(rule.tries));if(rule.pass)s.push("-");return s}
+/* the tap order for a high jump box, used to fix a box. Each try is a clear, a miss or a pass, so a box can stop at
+   X or XX: a pass can follow a miss (X-), and misses carry on to the next height (decision 41) */
+function heightSeq(rule){
+  const s=["","O"];const n=rule.tries;
+  for(let f=1;f<n;f++)s.push("X".repeat(f),"X".repeat(f)+"O");
+  s.push("X".repeat(n));
+  if(rule.pass)for(let f=0;f<n;f++)s.push("X".repeat(f)+"-");
+  return s;
+}
 function failsIn(v){return (String(v||"").match(/X/g)||[]).length}
+/* a box that takes no more tries at this height: cleared or passed */
+function hjClosed(v){return /[O-]$/.test(String(v||""))}
+/* out after the set number of misses in a row. A pass does not reset the count; only a clear does (decision 41) */
+function hjOutBy(mh,tries,upto){
+  let run=0;
+  for(const h of Object.keys(mh||{}).map(Number).sort((a,b)=>a-b)){
+    if(h>upto)break;
+    for(const c of String(mh[h]||"")){if(c==="X"){if(++run>=tries)return true}else if(c==="O")run=0}
+  }
+  return false;
+}
+/* the height an athlete went out at, for the red box; null while they are in */
+function hjOutAt(mh,tries){
+  for(const h of Object.keys(mh||{}).map(Number).sort((a,b)=>a-b))if(hjOutBy(mh,tries,h))return h;
+  return null;
+}
 /* the bar: the height for each round comes from how many athletes are still in (decision 35).
    Girls 5 cm until 3 remain, then 3 cm. Boys 10 cm first, then 5 cm until 3 remain, then 3 cm.
    Returns the heights so far with some ahead, the current height (null when all are out), and who is left. */
 function hjPlan(cfg,ev,rule,x,g,ids,marks){
   const start=hjStart(cfg,x,g);const cell=(id,h)=>((marks[id]||{}).h||{})[h]||"";
-  const allOut="X".repeat(rule.tries);
-  const isIn=(id,upto)=>!(marks[id]||{}).ns&&!Object.keys((marks[id]||{}).h||{}).some(h=>+h<=upto&&cell(id,h)===allOut);
+  const isIn=(id,upto)=>!(marks[id]||{}).ns&&!hjOutBy((marks[id]||{}).h,rule.tries,upto);
   const steps=rule.raise[x]||rule.raise.F;
   const raiseAt=(n,left)=>left<=rule.lastLeft?rule.lastRaise:steps[Math.min(n,steps.length-1)];
   /* boxes already filled show where the bar really went, so a late athlete or a corrected box never moves it */
@@ -252,7 +278,7 @@ function hjPlan(cfg,ev,rule,x,g,ids,marks){
     if(above!=null){hs.push(above);raises++;continue}
     /* above the start, someone with no boxes yet is a late arrival and does not hold up the round */
     const wait=h===start?still:still.filter(id=>Object.values((marks[id]||{}).h||{}).some(Boolean));
-    const done=wait.length>0&&wait.every(id=>{const v=cell(id,h);return /O$/.test(v)||v==="-"||v===allOut});
+    const done=wait.length>0&&wait.every(id=>hjClosed(cell(id,h))||!isIn(id,h));
     if(!done){cur=still.length||!ids.length?h:null;break}
     const left=still.filter(id=>isIn(id,h)).length;
     if(!left){cur=null;break}
@@ -287,6 +313,9 @@ function fieldRow(ev,rule,m){
   out.tries.sort((x,y)=>y-x);
   return out;
 }
+/* a group opens on Take Names until it is started. A group with marks or a final result has started (decision 44) */
+function fieldHasMark(m){return !!m&&(!!m.ns||!!m.best||[m.a,m.t,m.h].some(b=>Object.values(b||{}).some(Boolean)))}
+function fieldStarted(doc){return !!doc&&(!!doc.started||!!doc.final||Object.values(doc.marks||{}).some(fieldHasMark))}
 /* who is up and who is next, in arrival order (decision 32). rows are in arrival order.
    Short long jump (decision 33): 2 jumps each, then only the top 4 get a 3rd */
 function bestOfTwo(r){const a=r.m.a||{};return Math.max(markCm(a[0]),markCm(a[1]))}
@@ -301,8 +330,10 @@ function thirdJump(rows,rule,short){
 function fieldTurn(ev,rule,rows,short,plan){
   if(!rows.length)return {up:-1,next:-1,third:null};
   if(ev.style==="height"){
-    const wait=rows.map((r,i)=>i).filter(i=>{const r=rows[i];if(plan.cur==null||!plan.isIn(r.id,plan.cur-1))return false;const v=(r.m.h||{})[plan.cur]||"";return !(/O$/.test(v)||v==="-"||/^X+$/.test(v)&&failsIn(v)>=rule.tries)});
-    return {up:wait.length?wait[0]:-1,next:wait.length>1?wait[1]:-1,third:null};
+    /* everyone has their 1st try at a height, in arrival order, then their 2nd, then their 3rd */
+    const box=i=>String((rows[i].m.h||{})[plan.cur]||"");
+    const wait=rows.map((r,i)=>i).filter(i=>plan.cur!=null&&plan.isIn(rows[i].id,plan.cur)&&!hjClosed(box(i))).sort((a,b)=>box(a).length-box(b).length||a-b);
+    return {up:wait.length?wait[0]:-1,next:wait.length>1?wait[1]:-1,third:null,tryNo:wait.length?box(wait[0]).length+1:0};
   }
   const third=ev.style==="distance"?thirdJump(rows,rule,short):null;
   const box=ev.style==="throw"?"t":"a";
@@ -376,9 +407,11 @@ function compute(S){
     const lt=T.lanes||{};
     const ltIn={};for(const l of filled)if(lt[l])ltIn[l]=lt[l];
     const eff=heatEffective(ltIn,multi?[]:(F.order||[]).map(g=>g.filter(l=>lanes[l])).filter(g=>g.length));
-    /* 800 m and 1500 m: a marshalled runner with no time gets 1 second more than the place before,
-       in list order, so they still get points (decision 20) */
+    /* 800 m and 1500 m: the phone sends a time for every place, marked auto past the last split (decision 45).
+       A runner left with no time, say added afterwards, gets 1 second more than the place before, in list
+       order, so they still get points (decision 20) */
     if(multi&&T.src==="multi"){
+      for(const l of filled)if(eff[l]&&lt[l]&&lt[l].auto&&lt[l].src==="multi")eff[l].auto=true;
       let last=Math.max(0,...Object.values(eff).map(e=>e.eff));
       for(const l of filled){const v=lt[l];if(v&&(v.t!=null||noTimeSt(v.st)))continue;last+=100;eff[l]={rec:null,eff:last,pink:false,auto:true}}
     }
@@ -444,8 +477,9 @@ function compute(S){
   for(const fg of fgroups){
     const ev=eventOf(cfg,fg.k);const doc=(S.field||{})[fg.id];if(!doc)continue;
     const rule=fieldRule(cfg,ev);const marks=doc.marks||{};
-    /* an athlete taken off keeps a negative time, so nobody else's number changes */
-    const everyone=Object.keys(doc.ath||{}).sort((a,b)=>Math.abs(doc.ath[a])-Math.abs(doc.ath[b])||a.localeCompare(b));
+    /* an athlete taken off keeps a negative time, so nobody else's number changes. On Take Names, before the
+       group starts, a slip of the finger is cleared to 0 and the numbers close up */
+    const everyone=Object.keys(doc.ath||{}).filter(id=>doc.ath[id]).sort((a,b)=>Math.abs(doc.ath[a])-Math.abs(doc.ath[b])||a.localeCompare(b));
     const ids=everyone.filter(id=>doc.ath[id]>0);
     if(!ids.length&&!doc.final)continue;
     const rows=ids.map(id=>Object.assign({id,no:everyone.indexOf(id)+1,p:who(id),m:marks[id]||{},place:null,pts:0,st:(marks[id]||{}).ns?"NS":"ok"},fieldRow(ev,rule,marks[id])));
@@ -587,6 +621,6 @@ function parseRecordRows(text,cfg){
   return {out,bad};
 }
 if(typeof module!=="undefined")module.exports={AGE_GROUPS,AGES_DOWN,HOUSES,TEAMS,DEFAULT_EVENTS,DEFAULT_TIMETABLE,DEFAULT_CONFIG,RULE_DIST,RULE_THROW,RULE_HIGH,
-  eventOf,programEvents,newEvent,stationsOf,fieldGroups,fieldId,fieldRule,heightSeq,hjPlan,hjStart,weightFor,fieldTurn,thirdJump,sheetPair,groupKey,groupLabel,grpName,teamId,
+  eventOf,programEvents,newEvent,stationsOf,fieldGroups,fieldId,fieldRule,heightSeq,hjClosed,hjOutBy,hjOutAt,hjPlan,hjStart,weightFor,fieldTurn,fieldStarted,thirdJump,mtTimeAt,sheetPair,groupKey,groupLabel,grpName,teamId,
   parseTime,fmtTime,oddTime,markCm,markOk,fmtMark,fmtCell,cleanMark,heatEffective,lateSlip,pointsFor,compute,blockNow,hrisList,resultText,
   parseStudents,parseRecordRows,ageOn,ageGroup};

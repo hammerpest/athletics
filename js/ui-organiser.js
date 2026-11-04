@@ -161,7 +161,7 @@ async function downloadBackup(){
   toast("Making the backup...");
   const photos={};
   for(const id of Object.keys(A.slips)){try{const ph=await A.store.get("photos/"+id);if(ph&&ph.img)photos[id]=ph.img}catch(e){}}
-  const b={app:"CCAS Athletics Carnival",kind:"full backup",version:"Aths Opt 1.0",savedAt:localStamp(),year:curYear(),
+  const b={app:"CCAS Athletics Carnival",kind:"full backup",version:"Aths Opt 1.1",savedAt:localStamp(),year:curYear(),
     config:strip(A.cfg),roster:{F:strip(A.roster.F),M:strip(A.roster.M)},extras:strip(A.extras),heats:strip(A.heats),times:strip(A.times),
     finish:strip(A.finish),slips:strip(A.slips),field:strip(A.field),records:strip(A.records),counter:A.counter,photos};
   await saveFile("CCAS athletics backup "+localStamp().replace(":","")+".json",JSON.stringify(b),"application/json");

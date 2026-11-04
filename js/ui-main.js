@@ -52,6 +52,7 @@ function fieldGroupById(id){return A.R.fgroups.find(f=>f.id===id)||null}
 function wireInputs(){
   const f=document.getElementById("mfilter");if(f)f.oninput=()=>{A.m.filter=f.value;render()};
   const ff=document.getElementById("ffilter");if(ff)ff.oninput=()=>{A.f.filter=ff.value;render()};
+  const tn=document.getElementById("tnfilter");if(tn)tn.oninput=()=>{A.f.q=tn.value;render()};
   const mf=document.getElementById("mtfilter");if(mf)mf.oninput=()=>{A.mt.q=mf.value;mtSave();render()};
   const cam=document.getElementById("camin");if(cam)cam.onchange=e=>{const file=e.target.files[0];e.target.value="";onPhoto(file)};
   document.querySelectorAll("[data-time]").forEach(inp=>{
@@ -102,7 +103,7 @@ function wireInputs(){
   const of=document.getElementById("oFile");if(of)of.onchange=e=>{const file=e.target.files[0];if(!file)return;const fr=new FileReader();fr.onload=()=>{A.o.text=String(fr.result);A.o.preview=parseStudents(A.o.text,A.cfg.ageDate);render()};fr.readAsText(file)};
 }
 /* a device opens where the group is up to */
-function fOpen(id){A.f.gid=id;A.f.typed="";A.f.a=null;A.f.id=null;const f=fieldGroupById(id);const G=f&&A.R.groups.get(f.key);A.f.i=G&&G.turn.up>=0?G.turn.up:0;fSave();render();window.scrollTo(0,0)}
+function fOpen(id){A.f.gid=id;A.f.q="";A.f.typed="";A.f.a=null;A.f.id=null;const f=fieldGroupById(id);const G=f&&A.R.groups.get(f.key);A.f.i=G&&G.turn.up>=0?G.turn.up:0;fSave();render();window.scrollTo(0,0)}
 const ACT={
   key:el=>pressKey(el.dataset.k),
   pinstart:()=>pinStart(),
@@ -187,7 +188,9 @@ const ACT={
   mtclear:()=>{const r=slipRace();A.modal=null;const keep=A.mt.picked;A.mt=mtBlank(r?r.race:null,r?mtSig(r):"");A.mt.picked=keep;A.mt.phase="ready";mtSave();mtWake(false);render()},
   mtsend:()=>mtSend(false),
   mtsendok:()=>mtSend(true),
-  mtnext:()=>{const n=nextRaceAfter(A.s.race);if(n!=null)A.s.race=n;A.s.err=null;render();window.scrollTo(0,0)},
+  mtnext:()=>mtNext(),
+  mtnoheat:()=>{if(A.mt.picked.length){A.modal={t:"mtNoHeat",n:A.mt.picked.length};render();return}mtDraftDrop()},
+  mtnoheatok:()=>{A.modal=null;mtDraftDrop()},
   fstation:el=>{A.f.station=el.dataset.v;fSave();render()},
   fopen:el=>fOpen(el.dataset.v),
   fall:()=>{A.f.gid=null;A.f.typed="";A.f.a=null;A.f.id=null;fSave();render();window.scrollTo(0,0)},
@@ -201,12 +204,16 @@ const ACT={
   hjtap:el=>{const f=fieldGroupById(el.dataset.g);if(f)hjStep(f,el.dataset.id,+el.dataset.h)},
   ttap:el=>{const f=fieldGroupById(el.dataset.g);if(f)throwStep(f,el.dataset.id,+el.dataset.a)},
   fshort:()=>{const f=fieldGroupOpen();if(f)fieldWrite(f,{short:!fieldView(f).short})},
-  hjset:el=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);const r=fieldCur(v);if(r)setHeight(f,r.id,+el.dataset.h,el.dataset.v)},
+  hjtry:el=>{const f=fieldGroupOpen();if(f)hjTry(f,el.dataset.id,+el.dataset.h,el.dataset.v,el.dataset.box)},
+  ftake:el=>{const f=fieldGroupOpen();if(f)fieldTake(f,el.dataset.id)},
+  fstart:()=>fieldStart(),
   fthrow:el=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);const r=fieldCur(v);if(!r)return;const m=r.m.t||{};for(let i=0;i<v.rule.attempts;i++)if(!m[i]){setThrow(f,r.id,i,el.dataset.v);return}},
   fkey:el=>fieldPhoneAct("key",el.dataset.k),
   fpass:()=>fieldPhoneAct("pass"),
   fsave:()=>fieldPhoneAct("save"),
-  fnext:()=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);if(!v.rows.length)return;A.f.i=v.turn.up>=0&&v.turn.up!==A.f.i?v.turn.up:nextAfter(v.rows,A.f.i);A.f.id=null;fSave();render();window.scrollTo(0,0)},
+  fnext:()=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);if(!v.rows.length)return;const t=v.turn;
+    /* high jump: the same athlete the Next line names */
+    A.f.i=t.up<0?nextAfter(v.rows,A.f.i):t.up!==A.f.i?t.up:v.ev.style==="height"?(t.next>=0?t.next:A.f.i):nextAfter(v.rows,A.f.i);A.f.id=null;fSave();render();window.scrollTo(0,0)},
   fundo:()=>fieldUndo(),
   ffinish:()=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);A.modal={t:"fieldFinish",label:groupLabel(v.ev,f.x,f.g),unmeasured:v.rows.filter(r=>r.noMeasure).length};render()},
   ffinishok:()=>fieldFinish(),

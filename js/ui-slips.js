@@ -10,7 +10,7 @@ function slipRace(){
 function slipQueued(){return A.s.queued||0}
 function slipWaiting(race){return !!(A.s.waiting&&A.s.waiting[race])}
 function renderSlips(){
-  const r=slipRace();const waiting=slipQueued();
+  const r=mtDraftRace()||slipRace();const waiting=slipQueued();
   const top=waiting?`<div class="msg warn">No signal. ${plural(waiting,"photo")} waiting to send. It sends by itself when there is signal.</div>`:"";
   if(!r)return `<div class="phone">${top}${waitingCard("Waiting for the marshal","Race 1 appears here once it is sent.")}</div>`;
   if(r.multi)return renderMulti(r,top);
@@ -106,10 +106,12 @@ MODALS.replaceSlip=M=>`<h2>Replace the Race ${M.race} slip?</h2><p style="margin
 MODALS.overall=M=>{const r=A.R.races.get(M.race);const G=r&&A.R.groups.get(r.key);
   return `<h2>Race overall</h2><div class="muted">${esc(r?r.label:"")}</div>${overallTable(G)}<div class="acts"><button type="button" class="btn primary" data-act="closemodal">Close</button></div>`};
 
-/* ---------- Multitimer (800 m and 1500 m, decision 20) ----------
-   One person enters the names, then START on the gun, SPLIT as each runner finishes, STOP, then taps
-   the names in finish order: each tap takes the next split. Runners with no split get 1 second more
-   than the place before (worked out in the engine). */
+/* ---------- Multitimer (800 m and 1500 m, decisions 20 and 45) ----------
+   One person enters the names, then START on the gun, SPLIT as each runner finishes, STOP. The names run down
+   the side with a button next to each, pressed once in finish order. Each place gets its split; past the last
+   split each place gets 1 second more than the place before. Send needs everyone placed.
+   Who enters the names is question 39: if it moves to the Track Marshal, only the names step and the draft
+   next heat below change. */
 function mtBlank(race,sig){return {race,sig:sig||"",phase:"names",t0:0,stopAt:0,splits:[],taps:[],picked:[],q:""}}
 /* a re-run race (gen) or a cleared carnival (runId) starts fresh */
 function mtSig(r){return r.key+"/"+r.heat+(r.gen?"/"+r.gen:"")+(A.cfg.runId?"/"+A.cfg.runId:"")}
@@ -119,6 +121,7 @@ function mtSave(){try{localStorage.setItem(MT_KEY,JSON.stringify({mt:A.mt}))}cat
   A.mt=d&&d.mt||mtBlank(null)})();
 /* a race being timed or placed is never thrown away while it still exists */
 function mtFor(r){const M=A.mt;
+  if(r.draft)return M;
   if((M.phase==="run"||M.phase==="place")&&A.R.races.has(M.race)&&M.race!==r.race)return M;
   if(M.race!==r.race||(M.sig&&M.sig!==mtSig(r))){
     A.mt=mtBlank(r.race,mtSig(r));
@@ -132,20 +135,20 @@ function mtFmt(cs){const m=Math.floor(cs/6000),s=Math.floor((cs%6000)/100),h=cs%
 function mtSplitList(sp){return `<ol class="splits">${sp.map((t,i)=>({i:i+1,t})).slice(-5).reverse().map(x=>`<li><b>${x.i}</b><span>${mtFmt(x.t)}</span></li>`).join("")}</ol>`}
 function mtList(ev,x,g,r){
   /* everyone who can run, less those already in another heat of this group */
-  const H=A.heats.find(h=>h.race===r.race)||{};const used=heatUsed(H);
+  const H=r.draft?{race:-1,k:r.k,x,g}:A.heats.find(h=>h.race===r.race)||{};const used=heatUsed(H);
   return eligible(ev,x,g).filter(s=>!used.has(s.id));
 }
 function renderMulti(r,top){
   const M=mtFor(r);const lk=locked();const n=M.picked.length;
-  const hasNext=nextRaceAfter(r.race)!=null;
-  const head=`<div class="racebar ph" style="margin:0">${badge(r.race,"sm")}<div class="info"><b>${esc(r.label)}</b><span>No lanes · ${plural(n,"runner")}</span></div></div>`;
+  const head=`<div class="racebar ph" style="margin:0">${badge(r.race,"sm")}<div class="info"><b>${esc(r.label)}</b><span>${r.draft?`Heat ${r.heat} · `:""}No lanes · ${plural(n,"runner")}</span></div></div>`;
   let body="",bar="";
   if(M.phase==="names"){
     const q=(M.q||"").toLowerCase();
     const list=mtList(r.ev,r.x,r.g,r).filter(s=>!q||listName(s).toLowerCase().includes(q)||M.picked.includes(s.id));
     body=`<div class="prompt" style="margin:0">Tap each runner on the start line.</div>
       <label class="label" style="display:flex;flex-direction:column;gap:4px">Find a runner<input type="search" id="mtfilter" placeholder="Type part of a name" value="${esc(M.q||"")}" autocomplete="off"></label>
-      <div class="namegrid">${list.map(s=>{const on=M.picked.includes(s.id);return `<button type="button" class="namebtn ${on?"sel":""}" aria-pressed="${on}" data-act="mtname" data-id="${esc(s.id)}">${hdot(s.h)}<span class="t">${esc(s.f+" "+s.s)}</span></button>`}).join("")||`<span class="muted">No names match.</span>`}</div>`;
+      <div class="namegrid">${list.map(s=>{const on=M.picked.includes(s.id);return `<button type="button" class="namebtn ${on?"sel":""}" aria-pressed="${on}" data-act="mtname" data-id="${esc(s.id)}">${hdot(s.h)}<span class="t">${esc(s.f+" "+s.s)}</span></button>`}).join("")||`<span class="muted">No names match.</span>`}</div>
+      ${r.draft?`<div style="text-align:center"><button type="button" class="linkbtn" data-act="mtnoheat">No more heats</button></div>`:""}`;
     bar=`<button type="button" class="btn" data-act="mtadd">Add not on list</button><button type="button" class="btn navy" data-act="mtnames" ${n&&!lk?"":"disabled"}>Names done</button>`;
   }else if(M.phase==="ready"||M.phase==="run"){
     const run=M.phase==="run";
@@ -156,22 +159,19 @@ function renderMulti(r,top){
       ${run?"":`<button type="button" class="linkbtn" data-act="mtrename">Change the names</button>`}`;
     if(run)bar=`<button type="button" class="btn" data-act="mtunsplit" ${M.splits.length?"":"disabled"}>Undo last split</button><button type="button" class="btn navy" data-act="mtfix">Fix splits</button>`;
   }else if(M.phase==="place"){
-    const sp=M.splits;const lim=Math.min(sp.length,n);const allDone=M.taps.length>=lim;
-    const nm=id=>A.R.who(id)||{};
-    const rest=M.picked.filter(id=>!M.taps.includes(id));
-    const prompt=!sp.length?"No splits were taken. Use Fix splits to add the times.":!allDone?`Tap the name that finished ${ordinal(M.taps.length+1)} (${mtFmt(sp[M.taps.length])}).`:rest.length?`${sp.length} times for ${n} runners. The other ${rest.length} each get 1 second more than the place before, so they still get points.`:`All ${n} placed. Check the times, then send.`;
+    const sp=M.splits;const tp=M.taps;const allDone=tp.length>=n;const nm=id=>A.R.who(id)||{};
+    const prompt=!sp.length?"No splits were taken. Use Fix splits to add the times.":allDone?`All ${n} placed. Check the times, then send.`:`Tap the button next to the runner who finished ${ordinal(tp.length+1)}${tp.length<sp.length?` (${mtFmt(sp[tp.length])}).`:" (no split: 1 second after the place before)."}`;
     body=`<div class="prompt ${allDone&&sp.length?"done":""}" style="margin:0">${esc(prompt)}</div>`;
-    if(!allDone)body+=`<div class="namegrid">${M.picked.map(id=>{const p=nm(id);const i=M.taps.indexOf(id);return `<button type="button" class="namebtn" aria-pressed="${i>=0}" data-act="mttap" data-id="${esc(id)}">${i>=0?`<span class="medal m${Math.min(i+1,4)}" style="width:30px;height:30px">${i+1}</span>`:hdot(p.h)}<span class="t">${esc(pname(p))}</span></button>`}).join("")}</div>`;
-    else{
-      const last=sp[lim-1]||0;
-      const rows=M.taps.map((id,i)=>({id,t:sp[i],auto:false})).concat(rest.map((id,i)=>({id,t:last+(i+1)*100,auto:true})));
-      body+=`<div class="panel" style="padding:0;overflow:hidden"><table><thead><tr><th>Place</th><th>Runner</th><th class="num">Time</th></tr></thead><tbody>${rows.map((x,i)=>{const p=nm(x.id);return `<tr><td style="text-align:center;font-weight:800">${i+1}</td><td class="nmcell"><span class="htag">${hdot(p.h)}${esc(pname(p))}</span></td><td class="num"><b>${mtFmt(x.t)}</b>${x.auto?`<span class="under">+1 s</span>`:""}</td></tr>`}).join("")}</tbody></table></div>`;
-    }
+    if(sp.length>n)body+=`<div class="msg warn">${plural(sp.length,"split")} for ${plural(n,"runner")}. Check for a double tap with Fix splits.</div>`;
+    /* the names stay still; a second press takes that runner out and the places after close up */
+    body+=`<div class="pool ph track">${M.picked.map(id=>{const p=nm(id);const k=tp.indexOf(id);const pl=k+1;const nm2=esc(pname(p));
+      return `<div class="lane" style="grid-template-columns:minmax(0,1fr) auto"><div class="body" style="cursor:default"><span class="nm">${hdot(p.h)}<span>${nm2}</span></span></div>
+      <div class="wall mt"><button type="button" class="spot ${pl?(pl<=4?"p"+pl:"px"):""}" data-act="mttap" data-id="${esc(id)}" aria-label="${pl?`${nm2}, place ${pl}. Tap to remove`:`${nm2}, tap for place ${tp.length+1}`}" ${sp.length&&!lk?"":"disabled"}>${pl||""}</button>${pl?`<span class="mtt" style="color:#ffffff">${mtFmt(mtTimeAt(sp,k))}</span>`:""}</div></div>`}).join("")}</div>`;
     body+=`<div style="text-align:center"><button type="button" class="linkbtn" data-act="mtfix">Fix splits</button></div>`;
-    bar=`<button type="button" class="btn" data-act="mtundo" ${M.taps.length&&!lk?"":"disabled"}>Undo last</button><button type="button" class="btn navy" data-act="mtsend" ${allDone&&sp.length&&!lk?"":"disabled"}>Send to Recorder</button>`;
+    bar=`<button type="button" class="btn" data-act="mtundo" ${tp.length&&!lk?"":"disabled"}>Undo last</button><button type="button" class="btn navy" data-act="mtsend" ${allDone&&sp.length&&!lk?"":"disabled"}>Send to Recorder</button>`;
   }else{
     body=`<div class="msg ok">Race ${r.race} times sent to the Recorder.</div>
-      ${hasNext?`<button type="button" class="btn navy big" data-act="mtnext">Next race</button>`:`<button type="button" class="btn big" disabled>Waiting for marshal</button>`}
+      <button type="button" class="btn navy big" data-act="mtnext">Next race</button>
       <div class="row" style="flex-wrap:nowrap"><button type="button" class="btn" style="flex:1" data-act="sgoto">Check race</button><button type="button" class="btn" style="flex:1" data-act="soverall">Race overall</button></div>`;
   }
   return `${lockBar()}<div class="phone" style="gap:10px">${top}${head}${body}</div>
@@ -192,13 +192,47 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 if(A.mt.phase==="run")mtWake(true);
 /* Names done: the runners go on the race, so every device sees them. Their list order is kept */
 async function mtNamesDone(){
-  const r=slipRace();const M=A.mt;if(!r||!M.picked.length)return;
+  const M=A.mt;if(M.draft)return mtDraftDone();
+  const r=slipRace();if(!r||!M.picked.length)return;
   const lanes={};for(const l of Object.keys(r.lanes))lanes[l]=null;
   M.picked.forEach((id,i)=>{lanes[i+1]=id});
   const H=A.heats.find(h=>h.race===r.race);
   if(H)H.lanes=Object.fromEntries(Object.entries(Object.assign({},H.lanes,lanes)).filter(e=>e[1]));
   recompute();M.phase="ready";M.q="";mtSave();render();window.scrollTo(0,0);
   await w(()=>A.store.update("heats/"+rid(r.race),{lanes}));
+}
+/* Next race: on to the next race if one is waiting. If not, the phone gets ready for the next heat of this event
+   (decision 45). Nothing is saved until Names done, so a heat that never happens leaves no empty race */
+function mtNext(){
+  const r=slipRace();if(!r)return;
+  const n=nextRaceAfter(A.s.race);A.s.err=null;
+  if(n!=null){A.s.race=n}else if(r.multi){A.mt=mtBlank(null);A.mt.draft={k:r.k,x:r.x,g:r.g,run:A.cfg.runId||"",after:r.race};mtSave()}
+  render();window.scrollTo(0,0);
+}
+/* the next heat as a race, for the screen. A race the marshal sends meanwhile takes over, unless names are in */
+function mtDraftRace(){
+  const d=A.mt&&A.mt.draft;if(!d)return null;
+  const live=nextRaceAfter(d.after)!=null;
+  const ev=eventOf(A.cfg,d.k);
+  if(!ev||(d.run!==(A.cfg.runId||""))||(live&&!A.mt.picked.length)){A.mt=mtBlank(null);mtSave();return null}
+  const key=groupKey(d.k,d.x,d.g);
+  return {draft:true,race:A.counter,heat:heatsSentFor(key)+1,k:d.k,x:d.x,g:d.g,key,ev,multi:true,label:groupLabel(ev,d.x,d.g),lanes:{},filled:[],hasSlip:false};
+}
+function mtDraftDrop(){A.mt=mtBlank(null);mtSave();render()}
+MODALS.mtNoHeat=M=>`<h2>No more heats?</h2><p style="margin:0">The ${plural(M.n,"name")} picked for this heat will be cleared.</p><div class="acts"><button type="button" class="btn" data-act="closemodal">&lt; Back</button><button type="button" class="btn redfill" data-act="mtnoheatok">Clear the names</button></div>`;
+async function mtDraftDone(){
+  const M=A.mt;const r=mtDraftRace();if(!r||!M.picked.length||locked()||M.sending)return;
+  M.sending=true;
+  try{
+    const n=await A.store.nextRace();
+    const lanes={};M.picked.forEach((id,i)=>{lanes[i+1]=id});
+    const doc={race:n,k:r.k,x:r.x,g:r.g,heat:r.heat,multi:true,lanes,at:Date.now(),dev:DEV};
+    if(await w(()=>A.store.set("heats/"+rid(n),doc))){
+      A.heats=A.heats.filter(h=>h.race!==n).concat([Object.assign({_id:rid(n)},doc)]);recompute();
+      A.s.race=n;const keep=M.picked;A.mt=mtBlank(n,mtSig(A.R.races.get(n)));A.mt.picked=keep;A.mt.phase="ready";mtSave();
+    }
+  }catch(e){toast("Not saved. A race number needs a connection. Try again.")}
+  M.sending=false;render();window.scrollTo(0,0);
 }
 function mtGo(at){const M=A.mt;if(M.phase!=="ready"||locked())return;M.t0=at||Date.now();M.stopTap=0;M.phase="run";M.splits=[];M.taps=[];mtSave();mtWake(true);render()}
 function mtSplit(at){const M=A.mt;if(M.phase!=="run")return;M.splits.push(mtNow(at));mtSave();render()}
@@ -210,17 +244,19 @@ function mtStop(force,at){
 function mtTap(id){
   const M=A.mt;if(M.phase!=="place")return;
   const i=M.taps.indexOf(id);
-  if(i>=0)M.taps.splice(i,1);else if(M.taps.length<Math.min(M.splits.length,M.picked.length))M.taps.push(id);
+  if(i>=0)M.taps.splice(i,1);else if(M.taps.length<M.picked.length)M.taps.push(id);
   mtSave();render();
 }
 async function mtSend(force){
   const r=slipRace();const M=A.mt;if(!r||M.phase!=="place"||locked())return;
+  /* everyone is placed before it goes (decision 45) */
+  if(!M.splits.length||M.taps.length<M.picked.length)return;
   const key=rid(r.race);
   if(!force&&(r.hasSlip||r.nTimes>0)){A.modal={t:"mtReplace",race:r.race};render();return}
   A.modal=null;
   const laneOf=id=>Object.keys(r.lanes).find(l=>r.lanes[l]===id);
   const lanes={},read={};
-  M.taps.forEach((id,i)=>{const l=laneOf(id);lanes[l]={t:M.splits[i],st:"ok",src:"multi",keep:false,chk:false,o:i+1};read[l]=M.splits[i]});
+  M.taps.forEach((id,i)=>{const l=laneOf(id);if(!l)return;const t=mtTimeAt(M.splits,i);lanes[l]={t,st:"ok",src:"multi",keep:false,chk:false,o:i+1,auto:i>=M.splits.length};read[l]=t});
   const meta={race:r.race,multi:true,splits:M.splits.slice(),read,gen:r.gen,at:Date.now(),dev:DEV,test:false};
   A.slips[key]=meta;A.times[key]={lanes,src:"multi",checked:false,gen:r.gen};recompute();
   M.phase="sent";mtSave();

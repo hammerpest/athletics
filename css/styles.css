@@ -1,4 +1,4 @@
-/* Aths Opt 1.0. The swimming styles.css (one family of apps), then the athletics additions from the design canvas. */
+/* Aths Opt 1.1. The swimming styles.css (one family of apps), then the athletics additions from the design canvas. */
 /* Layout: navy CCAS header with the job badge and Job pill, then one working screen per job. Track screens show lanes 1 to 8 with the finish line on the right. */
 :root{
   --bg:#eef2f7;--surface:#ffffff;--sunk:#e6ebf3;--ink:#121b31;--muted:#556078;--line:#d3dae6;
@@ -354,6 +354,8 @@ th.todoh{outline:2px dashed var(--flame);outline-offset:-3px;color:var(--warn);b
 
 /* runners with no lanes */
 .namegrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+@media (min-width:700px){.namegrid.names4{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media (min-width:1000px){.namegrid.names4{grid-template-columns:repeat(4,minmax(0,1fr))}}
 .namebtn{display:flex;align-items:center;gap:8px;min-height:56px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--ink);font-weight:700;padding:6px 10px;text-align:left;cursor:pointer;min-width:0}
 .namebtn span.t{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
 .namebtn[aria-pressed="true"]{background:var(--sunk);color:var(--muted)}
@@ -389,8 +391,6 @@ td.todoh input,td.todoh select{font:700 .9rem var(--font-mono);min-height:48px;m
 .addlist{display:flex;flex-direction:column;gap:6px;max-height:50vh;overflow:auto}
 .addlist .pick{display:flex;width:100%;align-items:center;gap:10px;padding:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:8px;text-align:left;cursor:pointer;min-height:48px}
 .addlist .pick:disabled{opacity:.45;cursor:not-allowed}
-.hjset{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
-.hjset .btn{min-height:62px;font:800 1.15rem var(--font-mono)}
 .attrow.hts{grid-template-columns:repeat(4,minmax(0,1fr))}
 @media (max-width:700px){.tablewrap table{font-size:.92rem}.runrow{grid-template-columns:76px minmax(0,1fr) auto;gap:8px}.runrow .chip{grid-column:2;grid-row:2;justify-self:start}.runrow .gname{grid-column:2;grid-row:1}.runrow .btn{grid-column:3;grid-row:1/3}}
 

@@ -1,4 +1,4 @@
-/* ===== Storage layer (swappable). Local test store now; Supabase at Aths Opt 1.1 with the same calls. =====
+/* ===== Storage layer (swappable). Local test store now; Supabase at Aths Opt 1.2 with the same calls. =====
    Store API: mode, onDoc(path,cb), onCol(col,cb), get(path), set(path,data), update(path,data), del(path),
    nextRace(dev) -> number, presence(obj), onPeers(cb), pending() */
 const DEV=(()=>{let d=null;try{d=sessionStorage.getItem("aths_dev")}catch(e){}if(!d){const a=new Uint32Array(2);try{crypto.getRandomValues(a)}catch(e){a[0]=Date.now();a[1]=performance.now()*1000}d="d"+a[0].toString(36)+a[1].toString(36);try{sessionStorage.setItem("aths_dev",d)}catch(e){}}return d})();
@@ -94,7 +94,7 @@ function localStore(onQueue){
     update(path,data){return queue.run({op:"update",path,data:JSON.parse(JSON.stringify(data))})},
     del(path){return queue.run({op:"del",path})},
     /* one shared counter, safe when two devices send at once: no repeats, no gaps. Tabs share a lock here; the
-       server does the same job at Aths Opt 1.1 */
+       server does the same job at Aths Opt 1.2 */
     async nextRace(){
       if(offline)throw {code:"offline"};
       const run=async()=>{const d=fresh("counter/race")||{};const n=Number(d.next)||1;put("counter/race",{next:n+1,by:DEV,at:Date.now()});return n};

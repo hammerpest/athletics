@@ -192,7 +192,8 @@ async function addStudent(){
   if(!s||!f){toast("Type a surname and first name.");return}
   const st={id:"x-"+(s+"-"+f).toLowerCase().replace(/[^a-z0-9]+/g,"-")+"-"+Date.now().toString(36),s,f,h:document.getElementById("nsH").value,x:M.x,g:document.getElementById("nsG").value,added:true};
   const r=await w(()=>A.store.set("extras/"+st.id,st));if(!r)return;
-  A.extras=A.extras.concat([st]);A.modal=null;recompute();
+  /* the store may have already told this device about the new name */
+  if(!A.extras.some(x=>x.id===st.id))A.extras=A.extras.concat([st]);A.modal=null;recompute();
   await M.then(st);render();
 }
 

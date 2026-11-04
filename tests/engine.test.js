@@ -132,6 +132,26 @@ t("a runner with no time gets 1 second more than the place before, in list order
   eq(G.rows.map(r=>[r.id,r.eff,r.auto,r.pts]),[["d",17000,false,10],["b",18000,false,8],["a",18100,true,6],["c",18200,true,4]]);
   eq(G.final,true);
 });
+t("each place gets its split; past the last split, 1 second more than the place before (decision 45)",()=>{
+  const sp=[15000,15200,15300];
+  eq([0,1,2,3,4,5].map(k=>E.mtTimeAt(sp,k)),[15000,15200,15300,15400,15500,15600]);eq(E.mtTimeAt([],0),null);
+});
+t("the phone sends every place: auto places show +1 s and rank in that order",()=>{
+  const S={students:["a","b","c"].map(i=>st(i,"B","F","16"))};
+  run(S,1,"800","F","16",1,{1:"a",2:"b",3:"c"},{3:{t:17000,st:"ok",src:"multi",o:1},1:{t:17100,st:"ok",src:"multi",o:2,auto:true},2:{t:17200,st:"ok",src:"multi",o:3,auto:true}},[],{multi:true});
+  const G=compute(S).groups.get(groupKey("800","F","16"));
+  eq(G.rows.map(r=>[r.id,r.eff,r.auto,r.place]),[["c",17000,false,1],["a",17100,true,2],["b",17200,true,3]]);eq(G.final,true);
+});
+t("equal splits in one race: the place pressed on the phone decides",()=>{
+  const S={students:["a","b"].map(i=>st(i,"B","F","16"))};
+  run(S,1,"800","F","16",1,{1:"a",2:"b"},{1:{t:17000,st:"ok",src:"multi",o:2},2:{t:17000,st:"ok",src:"multi",o:1}},[],{multi:true});
+  eq(compute(S).groups.get(groupKey("800","F","16")).rows.map(r=>[r.id,r.place]),[["b",1],["a",2]]);
+});
+t("a time the Recorder types over an auto place loses the +1 s",()=>{
+  const S={students:["a","b"].map(i=>st(i,"B","F","16"))};
+  run(S,1,"800","F","16",1,{1:"a",2:"b"},{1:{t:17000,st:"ok",src:"multi"},2:{t:17100,st:"ok",src:"typed",auto:true}},[],{multi:true});
+  eq(compute(S).groups.get(groupKey("800","F","16")).rows[1].auto,false);
+});
 t("DNS in a multitimer race gets no automatic time",()=>{
   const S={students:["a","b"].map(i=>st(i,"B","F","16"))};
   run(S,1,"800","F","16",1,{1:"a",2:"b"},{1:{t:17000,st:"ok",src:"multi"},2:{st:"DNS"}},[],{multi:true});
@@ -215,9 +235,63 @@ t("high jump start heights come from the sheet",()=>{
   eq(E.hjStart(DEFAULT_CONFIG,"F","13"),105);eq(E.hjStart(DEFAULT_CONFIG,"M","13"),115);eq(E.hjStart(DEFAULT_CONFIG,"F","14"),110);eq(E.hjStart(DEFAULT_CONFIG,"M","14"),115);eq(E.hjStart(DEFAULT_CONFIG,"M","15"),120);eq(E.hjStart(DEFAULT_CONFIG,"F","18"),110);
 });
 const HJ=E.eventOf(DEFAULT_CONFIG,"HJ"),HR=E.fieldRule(DEFAULT_CONFIG,HJ);
-t("the tap order is O XO XXO XXX, and a pass (decision 37)",()=>{
-  eq(E.heightSeq(HR),["","O","XO","XXO","XXX","-"]);
-  eq(E.heightSeq(Object.assign({},HR,{pass:false})),["","O","XO","XXO","XXX"]);
+t("a box can be tapped through every result, with a pass after a miss (decisions 37, 41)",()=>{
+  eq(E.heightSeq(HR),["","O","X","XO","XX","XXO","XXX","-","X-","XX-"]);
+  eq(E.heightSeq(Object.assign({},HR,{pass:false})),["","O","X","XO","XX","XXO","XXX"]);
+});
+t("3 misses in a row is out, and a pass does not reset the count (decision 41)",()=>{
+  eq(E.hjOutBy({110:"XXX"},3,110),true);
+  eq(E.hjOutBy({110:"X-",115:"XX"},3,115),true);
+  eq(E.hjOutBy({110:"X-",115:"-",120:"XX"},3,120),true);
+  eq(E.hjOutBy({110:"XX-",115:"X"},3,115),true);
+  eq(E.hjOutBy({110:"X-",115:"X"},3,115),false);
+  eq(E.hjOutBy({110:"XXO",115:"XXO",120:"XX"},3,120),false);
+  eq(E.hjOutBy({110:"X-",115:"XO",120:"XX"},3,120),false);
+  eq(E.hjOutBy({110:"X-",115:"XX"},3,110),false);
+});
+t("a pass closes the box; a miss alone does not",()=>{
+  ["O","XO","XXO","-","X-","XX-"].forEach(v=>eq(E.hjClosed(v),true));
+  ["","X","XX"].forEach(v=>eq(E.hjClosed(v),false));
+});
+t("the bar: X- carries on, and misses at the next height finish the athlete",()=>{
+  const ids=["a","b"];const m={a:{h:{110:"O"}},b:{h:{110:"XX-"}}};
+  let p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m);eq(p.cur,113);eq(p.left,2);
+  m.a.h[113]="O";m.b.h[113]="X";
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m);eq(p.cur,116);eq(p.left,1);eq(p.out,1);
+});
+function hjRows(m){return Object.keys(m).map(id=>({id,m:m[id]}))}
+t("Now up: everyone's 1st try, then 2nd tries, in arrival order, with the try number (decision 40)",()=>{
+  const m={a:{h:{110:""}},b:{h:{}},c:{h:{}}};const ids=["a","b","c"];
+  const turn=()=>{const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m);return E.fieldTurn(HJ,HR,hjRows(m),false,p)};
+  let t1=turn();eq([t1.up,t1.next,t1.tryNo],[0,1,1]);
+  m.a.h[110]="X";t1=turn();eq([t1.up,t1.next,t1.tryNo],[1,2,1]);
+  m.b.h[110]="O";t1=turn();eq([t1.up,t1.next,t1.tryNo],[2,0,1]);
+  m.c.h[110]="-";t1=turn();eq([t1.up,t1.next,t1.tryNo],[0,-1,2]);
+  m.a.h[110]="XO";t1=turn();eq(t1.up,0);eq(t1.tryNo,1);
+});
+t("an athlete out on carried misses is not up again",()=>{
+  const m={a:{h:{110:"O",115:"O"}},b:{h:{110:"X-",115:"XX"}},c:{h:{110:"O",115:"X"}}};const ids=["a","b","c"];
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m);eq(p.cur,115);
+  const t1=E.fieldTurn(HJ,HR,hjRows(m),false,p);eq(t1.up,2);eq(t1.next,-1);eq(t1.tryNo,2);
+});
+t("all out: no one is up",()=>{
+  const m={a:{h:{110:"XXX"}},b:{h:{110:"X-",113:"XX"}}};
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b"],m);eq(p.cur,null);eq(E.fieldTurn(HJ,HR,hjRows(m),false,p).up,-1);
+});
+t("a pass after a miss counts in the misses overall for a tie (decisions 35, 41)",()=>{
+  const S={students:["a","b"].map(i=>st(i,"B","F","18"))};
+  fieldDoc(S,"HJ","F","18",{a:{h:{110:"X-",115:"O",120:"XXX"}},b:{h:{110:"O",115:"O",120:"XXX"}}});
+  eq(compute(S).groups.get(groupKey("HJ","F","18")).rows.map(r=>[r.id,r.place]),[["b",1],["a",2]]);
+});
+t("a field group starts on Take Names; marks or final mean it has started (decision 44)",()=>{
+  eq(E.fieldStarted(null),false);eq(E.fieldStarted({ath:{a:5}}),false);eq(E.fieldStarted({ath:{a:5},marks:{a:{a:{0:""}}}}),false);
+  eq(E.fieldStarted({started:true}),true);eq(E.fieldStarted({final:true}),true);
+  eq(E.fieldStarted({marks:{a:{a:{0:"534"}}}}),true);eq(E.fieldStarted({marks:{a:{h:{110:"X"}}}}),true);eq(E.fieldStarted({marks:{a:{t:{0:"Foul"}}}}),true);eq(E.fieldStarted({marks:{a:{ns:true}}}),true);
+});
+t("taken off on Take Names: the numbers close up",()=>{
+  const S={students:["a","b","c"].map(i=>st(i,"B","M","17"))};
+  S.field={};const id=E.fieldId(groupKey("LJ","M","17"));S.field[id]={k:"LJ",x:"M",g:"17",ath:{a:1,b:0,c:3},marks:{}};
+  eq(compute(S).groups.get(groupKey("LJ","M","17")).arrival.map(r=>[r.id,r.no]),[["a",1],["c",2]]);
 });
 t("girls: up 5 cm until 3 remain, then 3 cm",()=>{
   const ids=["a","b","c","d","e"];

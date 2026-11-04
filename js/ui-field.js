@@ -31,7 +31,10 @@ function stationGroups(id){return A.R.fgroups.filter(f=>f.station===id).sort((a,
 function stationNow(list){return list.findIndex(f=>{const G=A.R.groups.get(f.key);return !(G&&G.final)})}
 function renderField(){
   const f=fieldGroupOpen();
-  if(f&&A.R.stations.some(s=>s.id===f.station))return phoneNow()?renderFieldPhone(f):renderFieldTable(f);
+  if(f&&A.R.stations.some(s=>s.id===f.station)){
+    if(!fieldStarted(fieldDocOf(f)))return renderTakeNames(f);
+    return phoneNow()?renderFieldPhone(f):renderFieldTable(f);
+  }
   A.f.gid=null;
   return renderFieldStart();
 }
@@ -76,22 +79,31 @@ function bestCell(f,r,ri,dis){
   const fair=Object.values(r.m.t||{}).includes("Fair");
   return `<input class="markin" id="bs-${ri}" data-best="${esc(r.id)}" data-g="${f.id}" aria-label="${esc(pname(r.p))} best mark" value="${esc(fmtCell(r.m.best))}" placeholder="${fair?"metres":"–"}" inputmode="decimal" autocomplete="off" ${dis||!fair?"disabled":""}>`;
 }
+function hjOutCell(f,r,h){return hjOutAt(r.m.h,fieldRule(A.cfg,eventOf(A.cfg,f.k)).tries)===+h}
 function hjCell(f,r,h,v,dis,width){
-  const c=/O$/.test(v)?"clear":/^X+$/.test(v)?"out":v==="-"?"pass":"";
+  const c=/O$/.test(v)?"clear":hjOutCell(f,r,h)?"out":v.includes("-")?"pass":"";
   return `<button type="button" class="hjc ${c}" ${width?`style="width:${width}px"`:""} data-act="hjtap" data-g="${f.id}" data-id="${esc(r.id)}" data-h="${h}" aria-label="${esc(pname(r.p))} at ${fmtHeight(h)} metres: ${esc(v||"not tried")}" ${dis?"disabled":""}>${esc(v)||" "}</button>`;
 }
 function raiseText(x,rule){
   return x==="M"?`Boys: up 10 cm first, then 5 cm, then 3 cm once 3 athletes remain. ${rule.tries} tries at each height.`:`Girls: up 5 cm, then 3 cm once 3 athletes remain. ${rule.tries} tries at each height.`;
 }
+/* A1.9: the athlete who is up, the try they are on, and who follows (decisions 40 and 41) */
+function hjNowUp(v,edit){
+  const up=!v.fin&&v.turn.up>=0?v.rows[v.turn.up]:null,nx=!v.fin&&v.turn.next>=0?v.rows[v.turn.next]:null;const h=v.plan.cur;
+  const dis=edit&&up?"":"disabled";const data=up?`data-act="hjtry" data-id="${esc(up.id)}" data-h="${h}" data-box="${esc((up.m.h||{})[h]||"")}"`:"";
+  return `<div class="checkline" style="margin-bottom:12px"><div class="what"><span class="label">Now up${h!=null&&up?`, ${fmtHeight(h)} m, try ${v.turn.tryNo}`:""}</span><br>${up?esc(pname(up.p)):v.rows.length?"Everyone is done":"No athletes yet"}<br><span class="muted" style="font:600 .95rem var(--font-body)">Next: ${nx?esc(pname(nx.p)):"&ndash;"}</span></div>
+    <button type="button" class="btn go big" ${data} data-v="O" ${dis}>Clear</button><button type="button" class="btn redfill big" ${data} data-v="X" ${dis}>Miss</button>${v.rule.pass?`<button type="button" class="btn big" ${data} data-v="-" ${dis}>Pass</button>`:""}<button type="button" class="btn" data-act="fundo" ${v.fin?"disabled":""}>Undo last</button></div>`;
+}
 function renderFieldTable(f){
   const v=fieldView(f);const {ev,rule,rows}=v;const edit=fieldEditable(v);const dis=!edit;
-  let chips,head,body,note;
+  let chips,head,body,note,nowUp="";
   if(ev.style==="height"){
     const hts=v.plan.heights;
     chips=`<span class="chip info">${v.plan.cur!=null?`Next height: ${fmtHeight(v.plan.cur)} m`:"All out"}</span><span class="chip">Start ${fmtHeight(v.plan.start)} m</span><span class="chip">${v.plan.left} left in</span><span class="muted">${esc(raiseText(f.x,rule))}</span>`;
     head=`<th>No.</th><th>Athlete</th>${hts.map(h=>`<th style="text-align:center">${fmtHeight(h)}</th>`).join("")}<th class="num">Best</th><th>Place</th><th class="num">Points</th>`;
     body=rows.map(r=>`<tr><td style="text-align:center;font-weight:800">${r.no}</td><td class="nmcell"><span class="htag">${hdot(r.p.h)}<b>${esc(pname(r.p))}</b></span></td>${hts.map(h=>`<td style="text-align:center;padding:5px">${hjCell(f,r,h,(r.m.h||{})[h]||"",dis||(v.plan.cur!=null&&h>v.plan.cur),60)}</td>`).join("")}<td class="num"><span class="bestm">${r.best?fmtHeight(r.best):"&ndash;"}</span></td>${resultCells(r)}</tr>`);
-    note=`Tap a box to step through: O cleared first try, XO second, XXO third, XXX out${rule.pass?", - passed":""}. Equal heights: fewer misses at that height wins, then fewer misses overall, then they share the place.`;
+    note=`O is a clear, X a miss and - a pass. A pass after a miss shows as X-. ${rule.tries} misses in a row is out, and misses carry on to the next height after a pass. Tap a box to fix it. Equal heights: fewer misses at that height wins, then fewer misses overall, then they share the place.`;
+    nowUp=hjNowUp(v,edit);
   }else if(ev.style==="throw"){
     const w=weightLabel(ev,A.cfg,f.x,f.g);
     chips=`${w?`<span class="chip info">${esc(w)}</span>`:""}<span class="chip">${rule.attempts} throws each</span><span class="muted">The marker only moves for a better throw. Measure the best throw once, at the end.</span>`;
@@ -105,13 +117,13 @@ function renderFieldTable(f){
     note=`No. is the order athletes arrived, and is their jumping order. Type digits only: 534 is 5.34 m. Type x for a foul and - for a pass. Everyone with a valid mark gets points; no valid mark gets 0.`;
   }
   const cols=(head.match(/<th/g)||[]).length;
-  return `${lockBar()}${fieldHead(f,v)}<div class="row" style="margin-bottom:12px">${chips}</div>
+  return `${lockBar()}${fieldHead(f,v)}<div class="row" style="margin-bottom:12px">${chips}</div>${nowUp}
     <div class="panel" style="padding:0;overflow:hidden"><div class="tablewrap"><table class="field-table"><thead><tr>${head}</tr></thead>
-      <tbody>${body.join("")||`<tr><td colspan="${cols}" class="muted">No athletes yet. Number them with Add an athlete as they arrive.</td></tr>`}</tbody></table></div></div>
+      <tbody>${body.join("")||`<tr><td colspan="${cols}" class="muted">No athletes yet. Add them with Add an athlete as they arrive.</td></tr>`}</tbody></table></div></div>
     <p class="muted" style="font-size:.9rem;margin:10px 0 0">${note}</p>
     ${v.fin?`<div class="msg ok" style="margin-top:10px">Final. Results are in. Only the event coordinator can change them now.</div>`:""}`;
 }
-function fieldUndoPush(f,id,kind,key,prev){A.f.undo.push({g:f.id,id,kind,key,prev});A.f.undo=A.f.undo.slice(-40)}
+function fieldUndoPush(f,id,kind,key,prev,val){A.f.undo.push({g:f.id,id,kind,key,prev,val});A.f.undo=A.f.undo.slice(-40)}
 async function fieldWrite(f,patch){
   if(locked()){toast("Results are locked. Nothing can be changed.");return}
   const G=A.R.groups.get(f.key);
@@ -129,7 +141,7 @@ function setField(f,id,kind,key,val,noUndo){
   if(stationFinal(f))return;
   const m=curMark(f,id);const prev=kind==="best"?(m.best||""):kind==="ns"?!!m.ns:(m[kind]||{})[key]||"";
   if(prev===val)return;
-  if(!noUndo)fieldUndoPush(f,id,kind,key,prev);
+  if(!noUndo)fieldUndoPush(f,id,kind,key,prev,val);
   const patch=kind==="best"?{best:val}:kind==="ns"?{ns:val}:{[kind]:{[key]:val}};
   return fieldWrite(f,{marks:{[id]:patch}});
 }
@@ -143,6 +155,16 @@ function hjStep(f,id,h){
   const v=(curMark(f,id).h||{})[h]||"";
   setHeight(f,id,h,seq[(seq.indexOf(v)+1)%seq.length]);
 }
+/* Clear, Miss or Pass: one more try in the box of the athlete on screen, and only if that box is as it was drawn:
+   the other teacher may have just saved this try. A double tap counts once. The phone then moves to whoever is up */
+let hjLast=0;
+function hjTry(f,id,h,c,seen){
+  const now=performance.now();if(now-hjLast<300)return;hjLast=now;
+  const v=fieldView(f);const r=v.rows.find(x=>x.id===id);const box=r?(r.m.h||{})[h]||"":"";
+  if(!r||v.plan.cur!==h||!v.plan.isIn(id,h)||hjClosed(box)||box!==seen){toast("That try was just saved on another device. Check who is up.");render();return}
+  setHeight(f,id,h,box+c);
+  const up=fieldView(f).turn.up;if(up>=0){A.f.i=up;A.f.id=null;fSave()}
+}
 const THROW_SEQ=["","Fair","Foul","Pass"];
 function throwStep(f,id,a){const v=(curMark(f,id).t||{})[a]||"";setThrow(f,id,a,THROW_SEQ[(THROW_SEQ.indexOf(v)+1)%THROW_SEQ.length])}
 function fieldUndo(){
@@ -152,6 +174,16 @@ function fieldUndo(){
   if(fieldView(f).fin){toast("Final. Only the event coordinator can change it.");return}
   const u=A.f.undo.filter(x=>x.g===f.id).pop();if(!u){toast("Nothing to undo.");return}
   A.f.undo.splice(A.f.undo.lastIndexOf(u),1);
+  if(u.kind==="h"){
+    A.f.id=u.id;fSave();
+    /* the other teacher may have added a try since: take off this one try, never theirs */
+    const now=(curMark(f,u.id).h||{})[u.key]||"";
+    if(now!==u.val){
+      const mine=String(u.val).slice(String(u.prev).length);
+      if(mine.length!==1||!now.endsWith(mine)){toast("That box has changed since. Tap the box to fix it.");render();return}
+      return setField(f,u.id,"h",u.key,now.slice(0,-1),true);
+    }
+  }
   setField(f,u.id,u.kind,u.key,u.prev,true);
 }
 /* an athlete added by mistake, or who left before their first turn, comes off the list */
@@ -161,6 +193,38 @@ async function fieldToggle(f,id){
   const at=(fieldDocOf(f).ath||{})[id]||0;
   if(!at)return fieldAdd(f,id);
   await fieldWrite(f,{ath:{[id]:-at}});
+}
+/* A1.20 Take Names: every group opens here, for all five sports (decision 44). The tap order is the athlete's
+   number and their order for the event. A second tap takes them off and the numbers close up: nobody has
+   had a turn yet. Add an athlete stays for late arrivals once the group has started. */
+function renderTakeNames(f){
+  const v=fieldView(f);const lk=locked();const ph=phoneNow();
+  const name=(A.R.stations.find(s=>s.id===f.station)||{}).name;
+  const word=v.ev.style==="throw"?"throwing":"jumping";
+  const nos=new Map(v.rows.map(r=>[r.id,r.no]));
+  const q=(A.f.q||"").toLowerCase();
+  const list=eligible(v.ev,f.x,f.g).filter(s=>!q||listName(s).toLowerCase().includes(q)||nos.has(s.id));
+  const sub=`${plural(v.rows.length,"athlete")} · ${esc(name)} · ${esc(f.at)}${f.block!=null?" block":""}`;
+  const start=`<button type="button" class="btn navy ${ph?"":"big"}" data-act="fstart" ${lk?"disabled":""}>Start ${word}</button>`;
+  const all=`<button type="button" class="btn" data-act="fall">All groups</button>`;
+  const notOn=`<button type="button" class="btn" data-act="faddnew" ${lk?"disabled":""}>Not on the list</button>`;
+  const head=ph?`<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>FIELD</small><b>${esc(f.station)}</b></span><div class="info"><b>${esc(groupLabel(v.ev,f.x,f.g))}: Take Names</b><span>${sub}</span></div></div>`
+    :`<div class="racebar"><span class="racebadge"><small>FIELD</small><b>${esc(f.station)}</b></span><div class="info"><b>${esc(groupLabel(v.ev,f.x,f.g))}: Take Names</b><span>${sub}</span></div>${all}${notOn}${start}</div>`;
+  const grid=list.map(s=>{const no=nos.get(s.id);return `<button type="button" class="namebtn ${no?"sel":""}" aria-pressed="${!!no}" data-act="ftake" data-id="${esc(s.id)}" ${lk?"disabled":""}>${no?`<span class="medal m4" style="width:30px;height:30px;background:#ffffff;color:#1d3160">${no}</span>`:hdot(s.h)}<span class="t">${esc(s.f+" "+s.s)}</span></button>`}).join("");
+  return `${lockBar()}<div class="stack" style="gap:${ph?8:10}px">${head}
+    <div class="prompt" style="margin:0">Tap each athlete as they arrive. This is their number and their ${word} order.</div>
+    <label class="label" style="display:flex;flex-direction:column;gap:4px">Find an athlete<input type="search" id="tnfilter" placeholder="Type part of a name" value="${esc(A.f.q||"")}" autocomplete="off"></label>
+    <div class="namegrid names4">${grid||`<span class="muted">No names match.</span>`}</div></div>
+    ${ph?`<div class="pbar"><div class="wrap">${all}${notOn}${start}</div></div>`:""}`;
+}
+async function fieldTake(f,id){
+  if(((fieldDocOf(f).ath||{})[id]||0)>0)return fieldWrite(f,{ath:{[id]:0}});
+  return fieldAdd(f,id);
+}
+async function fieldStart(){
+  const f=fieldGroupOpen();if(!f)return;
+  A.f.q="";A.f.i=0;A.f.id=null;fSave();
+  await fieldWrite(f,{started:true});window.scrollTo(0,0);
 }
 async function fieldAdd(f,id){
   /* their number is the order they arrive (decision 32), even if two are added in one tick */
@@ -198,7 +262,8 @@ function renderFieldPhone(f){
   /* a mark still being typed when the group goes final is not saved, and says so */
   if(!edit&&(A.f.typed||A.f.a!=null)){if(A.f.typed)toast("Final. The typed mark was not saved.");A.f.typed="";A.f.a=null;fSave()}
   const undoBtn=`<button type="button" class="btn" data-act="fundo" ${v.fin?"disabled":""}>Undo last</button>`;
-  const r=fieldCur(v);const dis=edit?"":"disabled";const nx=r?rows[v.turn.next>=0&&A.f.i===v.turn.up?v.turn.next:nextAfter(rows,A.f.i)]:null;
+  const r=fieldCur(v);const dis=edit?"":"disabled";
+  const nx=!r?null:ev.style==="height"?rows[A.f.i===v.turn.up?v.turn.next:v.turn.up]:rows[v.turn.next>=0&&A.f.i===v.turn.up?v.turn.next:nextAfter(rows,A.f.i)];
   const w=ev.style==="throw"?weightFor(A.cfg,ev.k,f.x,f.g):"";
   const sub=!r?"No athletes yet":ev.style==="throw"?`No. ${r.no} of ${rows.length}${w?" · "+esc(ev.k==="SP"?"Shot":ev.name)+" "+esc(w):""}`:`Athlete ${r.no} of ${rows.length}`;
   const head=`<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>FIELD</small><b>${esc(f.station)}</b></span><div class="info"><b>${esc(groupLabel(ev,f.x,f.g))}</b><span>${sub}</span></div></div>`;
@@ -211,10 +276,13 @@ function renderFieldPhone(f){
   let main,bar;
   if(ev.style==="height"){
     const mh=r.m.h||{};const at=v.plan.cur!=null?v.plan.cur:v.plan.heights[0];const hs=v.plan.heights.filter(h=>h<=at||mh[h]);
-    main=`<div class="attrow hts">${hs.map(h=>{const c=mh[h]||"";return `<div class="attcell ${h===at?"cur":""} ${/^X+$/.test(c)?"foul":""}" ${edit?`data-act="hjtap" data-g="${f.id}" data-id="${esc(r.id)}" data-h="${h}"`:""}><span>${fmtHeight(h)} m</span><b>${esc(c)||" "}</b></div>`}).join("")}</div>
-      <div class="markshow" aria-live="polite">${v.plan.cur!=null?fmtHeight(at)+" m":"All out"}</div>
-      <div class="hjset">${heightSeq(rule).filter(s=>s&&s!=="-").map(s=>`<button type="button" class="btn" data-act="hjset" data-v="${s}" data-h="${at}" ${dis}>${s}</button>`).join("")}</div>`;
-    bar=`${undoBtn}${rule.pass?`<button type="button" class="btn" data-act="hjset" data-v="-" data-h="${at}" ${dis}>Pass</button>`:""}<button type="button" class="btn navy" data-act="fnext">Next athlete</button>`;
+    /* the same tries as the iPad: only an athlete still to go at this height can take one */
+    const box=mh[at]||"";const open=v.plan.cur!=null&&v.plan.isIn(r.id,at)&&!hjClosed(box);
+    const tryData=`data-act="hjtry" data-id="${esc(r.id)}" data-h="${at}" data-box="${esc(box)}"`;const tryDis=edit&&open?"":"disabled";
+    main=`<div class="attrow hts">${hs.map(h=>{const c=mh[h]||"";return `<div class="attcell ${h===v.plan.cur?"cur":""} ${hjOutCell(f,r,h)?"foul":""}" ${edit?`data-act="hjtap" data-g="${f.id}" data-id="${esc(r.id)}" data-h="${h}"`:""}><span>${fmtHeight(h)} m</span><b>${esc(c)||" "}</b></div>`}).join("")}</div>
+      <div class="markshow" aria-live="polite">${v.plan.cur!=null?fmtHeight(at)+" m"+(open?`, try ${box.length+1}`:""):"All out"}</div>
+      <div class="row" style="flex-wrap:nowrap"><button type="button" class="btn go big" style="flex:1;min-height:96px" ${tryData} data-v="O" ${tryDis}>Clear</button><button type="button" class="btn redfill big" style="flex:1;min-height:96px" ${tryData} data-v="X" ${tryDis}>Miss</button></div>`;
+    bar=`${undoBtn}${rule.pass?`<button type="button" class="btn" ${tryData} data-v="-" ${tryDis}>Pass</button>`:""}<button type="button" class="btn navy" data-act="fnext">Next athlete</button>`;
   }else if(ev.style==="throw"){
     const m=r.m.t||{};const n=rule.attempts;let cur=n;for(let i=0;i<n;i++)if(!m[i]){cur=i;break}
     const fair=Object.values(m).includes("Fair");

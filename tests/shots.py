@@ -30,6 +30,11 @@ async def run(pw,dev,theme):
     async def pick(p):
         # the first name still free; on a phone it can sit under the sticky search box until scrolled by hand
         await p.evaluate("document.querySelector('.picklist button.pick:not([disabled])').click()"); await p.wait_for_timeout(40)
+    async def has(p,sel): return await p.locator(sel).count()>0
+    async def takenames(p,n,start=True):
+        # Take Names (A1.20): the first n names free, in tap order. Not on a build before Aths Opt 1.1
+        for i in range(n): await p.click('.namebtn:not(.sel) >> nth=0'); await p.wait_for_timeout(30)
+        if start: await p.click('[data-act=fstart]'); await p.wait_for_timeout(150)
     async def tick(ms=60000):
         for p in pages: await p.evaluate(f"window.__t+={ms}")
     async def shot(p,name):
@@ -119,11 +124,19 @@ async def run(pw,dev,theme):
     await S.evaluate("window.__t+=1500"); await S.click('[data-act=mtsplit]'); await S.wait_for_timeout(100)
     await shot(S,"multi-run")
     await S.click('[data-act=mtstop]'); await shot(S,"multi-stopmodal"); await S.click('[data-act=mtstopok]'); await S.wait_for_timeout(100)
-    for i in [4,2]: await S.click(f'.namebtn >> nth={i}')
+    await shot(S,"multi-place-start")
+    for i in [4,2]: await S.click(f'[data-act=mttap] >> nth={i}')
     await shot(S,"multi-place")
-    for i in [0,5]: await S.click(f'.namebtn >> nth={i}')
+    for i in [0,5]: await S.click(f'[data-act=mttap] >> nth={i}')
+    if await has(S,'.spot'):
+        await S.click('[data-act=mttap] >> nth=3'); await S.wait_for_timeout(60); await shot(S,"multi-past-splits")
+        await S.click('[data-act=mttap] >> nth=2'); await S.wait_for_timeout(60); await shot(S,"multi-tap-to-remove")
+        await S.click('[data-act=mttap] >> nth=2'); await S.click('[data-act=mttap] >> nth=1')
     await S.wait_for_timeout(100); await shot(S,"multi-placed")
     await S.click('[data-act=mtsend]'); await S.wait_for_timeout(1500); await shot(S,"multi-sent")
+    if await has(S,'[data-act=mtnext]'):
+        await S.click('[data-act=mtnext]'); await S.wait_for_timeout(100); await shot(S,"multi-next-heat")
+        await S.click('[data-act=mtnoheat]'); await S.wait_for_timeout(100)
     await tick()
     # ---- recorder ----
     R=await page("3333"); await R.wait_for_timeout(200); await shot(R,"recorder-track")
@@ -144,10 +157,19 @@ async def run(pw,dev,theme):
     await F.click('[data-act=fstation][data-v=SP]'); await shot(F,"field-day-sp")
     await F.click('[data-act=fstation][data-v=LJ1]')
     await F.evaluate("fOpen(A.R.fgroups.find(f=>f.key==='LJ|M|17').id)"); await F.wait_for_timeout(150); await shot(F,"field-empty")
-    await F.click('[data-act=faddopen]'); await shot(F,"field-add")
-    for i in range(6): await F.click('.addlist .pick:not(.on) >> nth=0')
+    if await has(F,'[data-act=fstart]'):
+        await takenames(F,4,False); await shot(F,"field-names-part")
+        await F.click('.namebtn.sel >> nth=1'); await F.wait_for_timeout(100); await shot(F,"field-names-takeoff")
+        await F.fill('#tnfilter','an'); await F.wait_for_timeout(100); await shot(F,"field-names-find"); await F.fill('#tnfilter',''); await F.wait_for_timeout(100)
+        await takenames(F,3,False)
+    else:
+        await F.click('[data-act=faddopen]'); await shot(F,"field-add")
+        for i in range(6): await F.click('.addlist .pick:not(.on) >> nth=0')
     await F.click('[data-act=faddnew]'); await F.wait_for_timeout(100); await shot(F,"field-notonlist")
     await F.fill('#nsS','Newby'); await F.fill('#nsF','Sam'); await F.click('[data-act=addstudent]'); await F.wait_for_timeout(250)
+    if await has(F,'[data-act=fstart]'):
+        await shot(F,"field-names-full"); await F.click('[data-act=fstart]'); await F.wait_for_timeout(150)
+        await F.click('[data-act=faddopen]'); await shot(F,"field-add"); await F.click('.modal [data-act=closemodal]'); await F.wait_for_timeout(100)
     await F.evaluate("""(()=>{const f=fieldGroupOpen();const ids=fieldView(f).rows.map(r=>r.id);
       const m=[['534','x','541'],['498','502','x'],['x','x','x'],['561','558'],['487','-'],[],['515','x']];
       ids.forEach((id,i)=>m[i].forEach((v,a)=>setMark(f,id,a,v,true)));setNs(f,ids[5],true,true)})()""")
@@ -171,9 +193,12 @@ async def run(pw,dev,theme):
     # throws: fair, foul or pass, the best measured once
     await F.click('[data-act=fstation][data-v=SP]')
     await F.evaluate("fOpen(A.R.fgroups.find(f=>f.key==='SP|M|17').id)"); await F.wait_for_timeout(150)
-    await F.click('[data-act=faddopen]')
-    for i in range(7): await F.click('.addlist .pick:not(.on) >> nth=0')
-    await F.click('.modal [data-act=closemodal]'); await F.wait_for_timeout(150)
+    if await has(F,'[data-act=fstart]'):
+        await shot(F,"field-names-throw"); await takenames(F,7)
+    else:
+        await F.click('[data-act=faddopen]')
+        for i in range(7): await F.click('.addlist .pick:not(.on) >> nth=0')
+        await F.click('.modal [data-act=closemodal]'); await F.wait_for_timeout(150)
     await F.evaluate("""(()=>{const f=fieldGroupOpen();const ids=fieldView(f).rows.map(r=>r.id);
       const m=[['Fair','Foul','Fair'],['Fair','Fair','Foul'],['Foul','Foul','Foul'],['Fair','Fair','Fair'],['Fair','Pass'],[],['Foul','Fair']];
       ids.forEach((id,i)=>m[i].forEach((v,a)=>setThrow(f,id,a,v,true)));setBest(f,ids[0],'1124',true);setBest(f,ids[1],'1006',true);setBest(f,ids[3],'1287',true);setNs(f,ids[5],true,true)})()""")
@@ -191,16 +216,31 @@ async def run(pw,dev,theme):
     # high jump: the next height is worked out
     await F.click('[data-act=fstation][data-v=HJ1]')
     await F.evaluate("fOpen(A.R.fgroups.find(f=>f.key==='HJ|F|18').id)"); await F.wait_for_timeout(150); await shot(F,"field-high-empty")
-    await F.click('[data-act=faddopen]')
-    for i in range(6): await F.click('.addlist .pick:not(.on) >> nth=0')
-    await F.click('.modal [data-act=closemodal]'); await F.wait_for_timeout(150)
+    if await has(F,'[data-act=fstart]'):
+        await takenames(F,6); await shot(F,"field-high-start")
+    else:
+        await F.click('[data-act=faddopen]')
+        for i in range(6): await F.click('.addlist .pick:not(.on) >> nth=0')
+        await F.click('.modal [data-act=closemodal]'); await F.wait_for_timeout(150)
     await F.evaluate("""(()=>{const f=fieldGroupOpen();const ids=fieldView(f).rows.map(r=>r.id);
       const m=[['O','O','XO','XXO','XXX'],['O','XO','XXX'],['-','O','O','XO','XXO'],['O','XXX'],['XXX'],['O','O','XO','XXX']];
       const hs=[110,115,120,123,126];
       ids.forEach((id,i)=>m[i].forEach((v,a)=>setHeight(f,id,hs[a],v,true)))})()""")
     await F.wait_for_timeout(300); await shot(F,"field-high")
     assert await F.evaluate("fieldView(fieldGroupOpen()).plan.cur")==129
-    if not phone:
+    if await has(F,'[data-act=hjtry]'):
+        # Clear, Miss and Pass for the athlete who is up (decisions 40, 41): a pass after a miss, then out on carried misses
+        async def hj(v): await F.click(f'[data-act=hjtry][data-v="{v}"]'); await F.wait_for_timeout(350)
+        # on a phone a closed athlete has no Clear, Miss or Pass: Next athlete goes to whoever is up
+        if phone: await F.click('[data-act=fnext]'); await F.wait_for_timeout(100)
+        await hj("X"); await shot(F,"field-high-miss")
+        await hj("-"); await shot(F,"field-high-passed")
+        assert await F.evaluate("fieldView(fieldGroupOpen()).plan.cur")==132
+        await hj("X"); await hj("X"); await shot(F,"field-high-allout")
+        assert await F.evaluate("fieldView(fieldGroupOpen()).plan.cur")==None
+        await F.click('[data-act=fundo]'); await F.wait_for_timeout(120); await shot(F,"field-high-undo")
+        await hj("O"); await F.wait_for_timeout(100)
+    elif not phone:
         await F.click('.hjc:not([disabled]) >> nth=5'); await F.wait_for_timeout(100)
     else:
         await F.evaluate("A.f.i=2;A.f.id=null;render()"); await F.wait_for_timeout(100); await F.click('.hjset .btn >> nth=0'); await F.wait_for_timeout(100); await shot(F,"field-phone-high"); await F.click('[data-act=fundo]'); await F.wait_for_timeout(100)

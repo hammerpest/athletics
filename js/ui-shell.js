@@ -1,4 +1,4 @@
-/* ===== Aths Opt 1.0: app shell, PIN, header, shared helpers ===== */
+/* ===== Aths Opt 1.1: app shell, PIN, header, shared helpers ===== */
 const JOBS=[
   {k:"marshal",n:1,name:"Track Marshal",badge:"TRACK MARSHAL",desc:"Put runners in lanes and send each heat"},
   {k:"judge",n:2,name:"Place Judge",badge:"PLACE JUDGE",desc:"Tap the top places in each heat"},
@@ -25,7 +25,7 @@ function jsonGet(k){try{return JSON.parse(sessionStorage.getItem(k)||"{}")||{}}c
 function esc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 function rid(n){return "r"+String(n).padStart(4,"0")}
 function pinHash(p){let h=2166136261;const s="ccas-aths:"+p;for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}return (h>>>0).toString(16)}
-/* One PIN per job. The organiser PIN opens every job. Test PINs only; real ones are set on the server at Aths Opt 1.1 */
+/* One PIN per job. The organiser PIN opens every job. Test PINs only; real ones are set on the server at Aths Opt 1.2 */
 const PIN_ROLES=[["marshal","Track Marshal","1111"],["judge","Place Judge","2222"],["recorder","Recorder","3333"],["slips","Time Slips","4444"],["announcer","Announcer","5555"],["field","Field Station","6666"],["org","Carnival Organiser","9999"]];
 const DEFAULT_PINS=Object.fromEntries(PIN_ROLES.map(([k,,p])=>[k,pinHash(p)]));
 function pins(){const c=A.cfg.pins||{};return Object.fromEntries(PIN_ROLES.map(([k])=>[k,c[k]||DEFAULT_PINS[k]]))}
@@ -74,7 +74,7 @@ function schedule(){
 }
 document.addEventListener("focusout",()=>{if(A.dirty){A.dirty=false;setTimeout(()=>{const ae=document.activeElement;if(!(ae&&/INPUT|TEXTAREA|SELECT/.test(ae.tagName)))render();else A.dirty=true},50)}});
 async function connect(){
-  /* Supabase joins here at Aths Opt 1.1 with the same store calls */
+  /* Supabase joins here at Aths Opt 1.2 with the same store calls */
   const st=localStore(()=>{if(A.job==="slips")schedule();else renderHeader()});
   A.store=st;
   const s=A.store;
