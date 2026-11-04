@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version m. Replaces 4 November version l.
+Date: 4 November 2026, version n. Replaces 4 November version m.
+
+Changes on 4 November 2026 (version n): Jordan approved the redrawn field boards (A1.8 to A1.10, A1.12, A1.18, A1.19), so all 19 boards are approved (decision 39). Ask now: none.
 
 Changes on 4 November 2026 (version m): Jordan approved the changed A1.16 and answered yes to questions 30 to 32 (decisions 36 to 38). Ties placeholder removed from A1.16. Ask now: Jordan's OK on the redrawn field boards.
 
@@ -33,7 +35,7 @@ Owner: Jordan (PDHPE Head of Department, Central Coast Adventist School, Erina N
 ## 0. Where things stand (read first)
 
 - Project is ONLY the athletics carnival app. The swimming app (SWIM 2027- App/ccas-swimming) and cross country are separate projects, used for reference only.
-- Nothing is built. The design canvas (A1.1 to A1.17) is approved, apart from the field placeholders (decision 29). A1.16 is approved as changed. The field boards were redrawn from the sheets and wait for Jordan's OK, with new boards A1.18 and A1.19. Aths Opt 1.0 is being built.
+- Nothing is built. All 19 boards, A1.1 to A1.19, are approved (decision 39). Aths Opt 1.0 is being built.
 - How it will be built, and the lessons from the swimming app, are in CLAUDE.md.
 - Made-up data only: the 620 test students ("CCAS XC test students 620.xlsx").
 - No GitHub repo or Supabase project yet.
@@ -110,7 +112,7 @@ A competitor may not move up an age in any event.
 
 **Next level:** results may be used for HRIS selection. The top 2 in every individual event, field events included, go on the HRIS team list (decisions 18 and 24), sent as a file, like swimming (decision 19). Relays are not on it.
 
-### 2.2 The design canvas (approved 4 November 2026, apart from the field placeholders)
+### 2.2 The design canvas (all 19 boards approved 4 November 2026)
 
 First published 4 November 2026, redrawn the same day with decisions 20 to 28: https://claude.ai/artifact/VaZiJKE2cce41ykKbkD1tg (private to Jordan until shared). Page "Boards" is the light theme and page "Dark theme" repeats all 19 boards. Boards can be tried with Play. Made from the swimming styles.css with made-up test students. The source is in design/ (make_boards.py, make_css.py, aths-extra.css, aths.css).
 
@@ -182,6 +184,7 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 36. (4 November 2026, answers question 30) Equal best marks in long jump, shot put, discus and javelin share the place and points.
 37. (4 November 2026, answers question 31) High jump: an athlete can pass a height.
 38. (4 November 2026, answers question 32) Marks are to the nearest centimetre (5.34 m).
+39. (4 November 2026) Jordan approved the redrawn field boards, so all 19 boards are approved, with no placeholders left in the field rules. Any visual change from here needs Jordan's OK.
 
 ## 4. Rules and constraints
 
@@ -193,7 +196,7 @@ None yet.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: Jordan's OK on the redrawn field boards.
+Ask now: none.
 
 - (Closed by 36 to 38) Questions 30 to 32.
 - (Closed by 20 to 24, 26 to 28, 31) Questions 21 to 29.
