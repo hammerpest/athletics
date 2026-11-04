@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 5 November 2026, version w. Replaces 5 November version v.
+Date: 5 November 2026, version x. Replaces 5 November version w.
+
+Changes on 5 November 2026 (version x): Jordan approved the Back link on the New age or event screen (decision 52). A1.5 redrawn to show it. Ask now: none.
 
 Changes on 5 November 2026 (version w): Aths Opt 1.2 is built on the local staging branch, nothing pushed. It builds decisions 48 to 50: the multitimer places screen has a time slot in every row from the start, so buttons do not move, with the time in white on navy; after Send, Next heat (with the race name) is 1 tap, and New age or event picks race, boys or girls and age on the phone, then Take names, with no job change and the race number taken only at Names done; a link goes to the Track Marshal PIN screen. A1.1 needed no change (the app already goes straight to the job). The Supabase build moves to Aths Opt 1.3. Engine tests 69 of 69 (no engine change). Flow tests all pass. Check 1: 860 screenshots against the previous commit; only the multitimer screens changed (multi-past-splits, multi-place, multi-place-start, multi-placed, multi-sent, multi-tap-to-remove, plus the new multi-new-pick). Check 2: Chrome (MacBook width, by script) passed the multitimer and New age or event; the last 3 fixes from version t were not walked in Chrome again (flow tests cover them). Check 3: a fresh-eyes review found 1 must-fix and 3 should-fix faults; the must-fix (New age or event was cancelled if the marshal had already sent later races) and 2 should-fix (a Back link on the pick screen, and a stale pick screen after a clear) are fixed and covered by new flow tests. The 4th (pick buttons do not check lock) is left: no race can be made without Names done, which does check it. The fixes were not re-reviewed. Ask now: none.
 
@@ -256,6 +258,7 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 49. (5 November 2026, answers question 41) The items in 2.3 that differ from the boards are OK. A1.1 is redrawn to match the app: a job PIN opens its job straight away.
 50. (5 November 2026, answers question 42) After sending, the multitimer phone offers Next heat (1 tap) or New age or event, picked on the phone. Any other race goes through the Track Marshal.
 51. (5 November 2026) Jordan approved the redrawn A1.1 and A1.5, so all 20 boards are approved again.
+52. (5 November 2026) The New age or event screen keeps its Back link, so a helper who taps it by mistake does not lose their place. Drawn on A1.5.
 
 ## 4. Rules and constraints
 

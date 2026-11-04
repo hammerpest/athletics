@@ -286,6 +286,7 @@ def multitimer(dark):
 <div class="mrow" style="padding:0"><span class="label">Boys or girls</span><div class="choices"><sc-for list="{{{{cX}}}}" as="c" hint-placeholder-count="2"><button type="button" class="choice" aria-pressed="{{{{c.on}}}}" onClick="{{{{c.tap}}}}">{{{{c.l}}}}</button></sc-for></div></div>
 <div class="mrow" style="padding:0"><span class="label">Age</span><div class="choices"><sc-for list="{{{{cG}}}}" as="c" hint-placeholder-count="6"><button type="button" class="choice" aria-pressed="{{{{c.on}}}}" onClick="{{{{c.tap}}}}">{{{{c.l}}}}</button></sc-for></div></div>
 <button type="button" class="btn navy big" onClick="{{{{again}}}}">Take names</button>
+<button type="button" class="btn" onClick="{{{{backSent}}}}">Back</button>
 <a class="linkbtn" style="text-align:center" href="{lnk("MarshalPick",dark)}">Another race: go to the Track Marshal</a>
 </sc-if>
 </div></main></div>
@@ -298,7 +299,7 @@ def multitimer(dark):
     const timeAt = (k) => k < sp.length ? sp[k] : sp[sp.length - 1] + (k - sp.length + 1) * 100;
     const O = (x) => x + (x % 100 > 10 && x % 100 < 14 ? 'th' : (['th','st','nd','rd'][x % 10] || 'th'));
     out = { isNames: ph === 'names', isClock: ph === 'ready' || ph === 'run', isReady: ph === 'ready', isRun: ph === 'run', isPlace: ph === 'place', isSent: ph === 'sent', isPick: ph === 'pick', raceNo: st.race, label: st.e + ', ' + st.x + ' ' + (st.e === '1500 m' ? 'Open' : st.g),
-      newGroup: () => set({ ph: 'pick' }),
+      newGroup: () => set({ ph: 'pick' }), backSent: () => set({ ph: 'sent' }),
       cEv: ['800 m','1500 m'].map((l) => ({ l, on: st.e === l, tap: () => set({ e: l }) })), cX: ['Girls','Boys'].map((l) => ({ l, on: st.x === l, tap: () => set({ x: l }) })),
       cG: (st.e === '1500 m' ? ['Open'] : ['12 & 13','14','15','16','17','18+']).map((l) => ({ l, on: st.e === '1500 m' || st.g === l, tap: () => set({ g: l }) })),
       hasBar: ph === 'names' || ph === 'place' || ph === 'run', sub: 'No lanes · ' + n + ' runners',
