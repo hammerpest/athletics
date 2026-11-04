@@ -152,10 +152,10 @@ function renderHouses(){
     return `<div class="panel" style="padding:10px 12px"><b style="font-family:var(--font-display)">${esc(grpName(a))}</b>${rows}</div>`}).join("");
   return `<div class="stack"><div class="row" style="justify-content:space-between"><h2>House points</h2>${statusChip()}</div>
     <div class="hcards">${cards}</div>
-    <div class="grid2" style="grid-template-columns:minmax(0,.9fr) minmax(0,1.1fr);align-items:start">
-      <div class="panel stack"><h3>Points by age group</h3><table><thead><tr><th>Age group</th>${HOUSES.map(h=>`<th class="num">${hdot(h.c)}</th>`).join("")}</tr></thead><tbody>${rowsAge}
+    <div class="grid2 hsplit">
+      <div class="panel stack"><h3>Points by age group</h3><div class="tablewrap"><table><thead><tr><th>Age group</th>${HOUSES.map(h=>`<th class="num">${hdot(h.c)}</th>`).join("")}</tr></thead><tbody>${rowsAge}
         <tr><td>Relays</td>${HOUSES.map(h=>`<td class="num">${fmtPts(R.house[h.c].relay)}</td>`).join("")}</tr>
-        <tr><td><b>Total</b></td>${HOUSES.map(h=>`<td class="num"><b>${fmtPts(R.house[h.c].total)}</b></td>`).join("")}</tr></tbody></table>
+        <tr><td><b>Total</b></td>${HOUSES.map(h=>`<td class="num"><b>${fmtPts(R.house[h.c].total)}</b></td>`).join("")}</tr></tbody></table></div>
         <span class="muted" style="font-size:.85rem">Girls and boys together. Relays count for houses only. The 1500 m: ${qchip(14)}</span></div>
       <div class="stack"><h3>Age champions</h3><div class="grid2">${champ}</div>
         <span class="muted" style="font-size:.85rem">Most points, counting only 1st, 2nd and 3rd place. Relays do not count. Joint champions have no runner up.</span></div>

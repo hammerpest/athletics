@@ -267,6 +267,29 @@ t("blockNow moves on as groups go final",()=>{
   eq(E.blockNow(compute(S)),2);
 });
 
+t("short format: rounds run in order until everyone has 2 jumps, and nobody is locked early",()=>{
+  const ev=E.eventOf(DEFAULT_CONFIG,"LJ");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
+  const rows=[{id:"a",m:{a:{0:"400"}}},{id:"b",m:{}},{id:"c",m:{}},{id:"d",m:{}},{id:"e",m:{}},{id:"f",m:{}}];
+  const t=E.fieldTurn(ev,rule,rows,true,null);eq(t.up,1);eq(t.next,2);eq(t.third,null);
+});
+t("a late athlete does not move the bar; the bar stays where the boxes show",()=>{
+  const m={a:{h:{110:"O",115:"O",120:"O"}},b:{h:{110:"O",115:"O",120:"O"}},c:{h:{110:"O",115:"O",120:"O"}},d:{h:{110:"O",115:"O",120:"O"}}};
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b","c","d"],m);eq(p.cur,125);
+  const q=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b","c","d","late"],m);eq(q.cur,125);
+  m.a.h[125]="O";m.b.h[125]="XXX";m.c.h[125]="XXX";m.d.h[125]="O";
+  const r=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b","c","d","late"],m);eq(r.cur,128);eq(r.left,3);
+  m.late={h:{128:"O"}};
+  const s=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b","c","d","late"],m);eq(s.cur,128);eq(s.heights.includes(120),true);
+});
+t("a mark typed with the point is metres; too few digits is refused",()=>{
+  eq(E.cleanMark("5.3"),"530");eq(E.cleanMark("5.34"),"534");eq(E.cleanMark("534"),"534");eq(E.markOk("53"),false);eq(E.markOk("534"),true);eq(E.markOk("x"),true);eq(E.markOk(""),true);
+});
+t("equal multitimer splits keep the tap order inside a heat",()=>{
+  const S={students:["a","b"].map(i=>st(i,"B","F","16"))};
+  run(S,1,"800","F","16",1,{1:"a",2:"b"},{1:{t:15000,st:"ok",src:"multi",o:2},2:{t:15000,st:"ok",src:"multi",o:1}},[],{multi:true});
+  const G=compute(S).groups.get(groupKey("800","F","16"));eq(G.rows.map(r=>[r.id,r.place,r.pts]),[["b",1,10],["a",2,8]]);
+});
+
 /* ---- houses and champions (decisions 5, 15) ---- */
 t("age champion counts only 1st to 3rd; 4th-and-below points still go to the house",()=>{
   const S={students:["a","b","c","d"].map(i=>st(i,"N","M","15"))};

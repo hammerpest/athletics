@@ -220,7 +220,7 @@ async function mtSend(force){
   A.modal=null;
   const laneOf=id=>Object.keys(r.lanes).find(l=>r.lanes[l]===id);
   const lanes={},read={};
-  M.taps.forEach((id,i)=>{const l=laneOf(id);lanes[l]={t:M.splits[i],st:"ok",src:"multi",keep:false,chk:false};read[l]=M.splits[i]});
+  M.taps.forEach((id,i)=>{const l=laneOf(id);lanes[l]={t:M.splits[i],st:"ok",src:"multi",keep:false,chk:false,o:i+1};read[l]=M.splits[i]});
   const meta={race:r.race,multi:true,splits:M.splits.slice(),read,gen:r.gen,at:Date.now(),dev:DEV,test:false};
   A.slips[key]=meta;A.times[key]={lanes,src:"multi",checked:false,gen:r.gen};recompute();
   M.phase="sent";mtSave();

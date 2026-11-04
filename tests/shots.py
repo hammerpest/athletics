@@ -157,9 +157,14 @@ async def run(pw,dev,theme):
         assert await F.evaluate("A.R.groups.get('LJ|M|17').rows[1].best")==545
     else:
         await F.click('[data-act=fsave]'); await F.wait_for_timeout(100)
-        await F.click('.keypad.fp [data-k="5"]'); await F.click('.keypad.fp [data-k="1"]'); await F.click('.keypad.fp [data-k="2"]'); await shot(F,"field-phone-typed")
+        await F.evaluate("A.f.i=3;render()"); await F.wait_for_timeout(100)
+        await F.click('.keypad.fp [data-k="5"]'); await F.click('.keypad.fp [data-k="1"]'); await shot(F,"field-phone-short")
+        await F.click('[data-act=fsave]'); await F.wait_for_timeout(100); assert await F.evaluate("A.f.typed")=="51"   # 2 digits refused, kept
+        await F.click('.keypad.fp [data-k="2"]'); await shot(F,"field-phone-typed")
         await F.click('[data-act=fsave]'); await F.wait_for_timeout(150); await shot(F,"field-phone-saved")
         await F.click('[data-act=fundo]'); await F.wait_for_timeout(150); await shot(F,"field-phone-undo")
+        await F.click('.attcell[data-act=fcell] >> nth=0'); await F.wait_for_timeout(100); await shot(F,"field-phone-change")
+        await F.evaluate("A.f.a=null;render()"); await F.evaluate("A.f.i=0;render()"); await F.wait_for_timeout(100); await shot(F,"field-phone-alldone")
     await F.click('[data-act=ffinish]'); await shot(F,"field-finishmodal"); await F.click('[data-act=ffinishok]'); await tick(); await F.wait_for_timeout(250); await shot(F,"field-final")
     await F.click('[data-act=fall]')
     # throws: fair, foul or pass, the best measured once

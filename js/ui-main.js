@@ -62,6 +62,7 @@ function wireInputs(){
   /* field marks: Enter moves to the next box in the row; every box saves on its own */
   document.querySelectorAll("[data-mark]").forEach(inp=>{
     const save=()=>{const fg=fieldGroupById(inp.dataset.g);if(!fg)return;const v=cleanMark(inp.value);
+      if(!markOk(v)){toast("Type 3 digits: 534 is 5.34 m.");render();return}
       const cur=((fieldDocOf(fg).marks||{})[inp.dataset.mark]||{}).a||{};
       if((cur[inp.dataset.a]||"")!==v)setMark(fg,inp.dataset.mark,+inp.dataset.a,v)};
     inp.onfocus=()=>{const v=cleanMark(inp.value);if(v&&v!=="x"&&v!=="-")inp.value=v;inp.select()};
@@ -69,7 +70,7 @@ function wireInputs(){
     inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const all=[...document.querySelectorAll("[data-mark]:not(:disabled)")];const nx=all[all.indexOf(inp)+1];inp.onchange=null;save();if(nx)nx.focus();else inp.blur()}};
   });
   document.querySelectorAll("[data-best]").forEach(inp=>{
-    const save=()=>{const fg=fieldGroupById(inp.dataset.g);if(!fg)return;const v=cleanMark(inp.value).replace(/[^0-9]/g,"");setBest(fg,inp.dataset.best,v)};
+    const save=()=>{const fg=fieldGroupById(inp.dataset.g);if(!fg)return;const v=cleanMark(inp.value).replace(/[^0-9]/g,"");if(!markOk(v)){toast("Type 3 digits: 1124 is 11.24 m.");render();return}setBest(fg,inp.dataset.best,v)};
     inp.onfocus=()=>{const v=cleanMark(inp.value);if(v)inp.value=v;inp.select()};
     inp.onchange=()=>{if(!A.rendering)save()};
     inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();inp.onchange=null;save();inp.blur()}};
@@ -187,7 +188,10 @@ const ACT={
   fopen:el=>fOpen(el.dataset.v),
   fall:()=>{A.f.gid=null;A.f.typed="";fSave();render();window.scrollTo(0,0)},
   faddopen:()=>{A.f.filter="";A.modal={t:"fieldAdd"};render()},
-  fadd:async el=>{const f=fieldGroupOpen();if(f)await fieldAdd(f,el.dataset.id)},
+  fadd:async el=>{const f=fieldGroupOpen();if(f)await fieldToggle(f,el.dataset.id)},
+  fcell:el=>{A.f.a=+el.dataset.a;A.f.typed="";render()},
+  rfadd:()=>{const f=A.R.fgroups.find(x=>x.key===A.r.fkey);if(!f)return;A.f.gid=f.id;A.f.filter="";A.modal={t:"fieldAdd"};render()},
+  rfreopen:()=>{const f=A.R.fgroups.find(x=>x.key===A.r.fkey);if(f)fieldWrite(f,{final:false})},
   faddnew:()=>{const f=fieldGroupOpen();if(!f)return;A.modal={t:"addStudent",x:f.x,ages:[f.g],then:async st=>{await fieldAdd(f,st.id)}};render()},
   fns:el=>{const f=fieldGroupById(el.dataset.g);if(!f)return;const on=!!((fieldDocOf(f).marks||{})[el.dataset.id]||{}).ns;setNs(f,el.dataset.id,!on)},
   hjtap:el=>{const f=fieldGroupById(el.dataset.g);if(f)hjStep(f,el.dataset.id,+el.dataset.h)},

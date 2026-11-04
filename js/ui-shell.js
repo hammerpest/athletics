@@ -135,7 +135,7 @@ function renderHeader(){
     :A.job==="results"?`<button type="button" class="hlink" data-act="goto" data-job="houses">Houses</button><button type="button" class="hlink" data-act="goto" data-job="announcer">Back to Announcer</button>`
     :A.job==="houses"?`<button type="button" class="hlink" data-act="goto" data-job="results">Results</button><button type="button" class="hlink" data-act="goto" data-job="announcer">Back to Announcer</button>`:"";
   const jobs=A.role==="org"?[...JOBS,ORG_JOB]:[];
-  const slim=slimHdr();h.classList.toggle("slim",slim);
+  const slim=slimHdr();h.classList.toggle("slim",slim);h.classList.toggle("unstick",A.job==="results"||A.job==="houses");
   if(slim){h.innerHTML=`<div class="wrap"><div class="topin"><span class="live ${cls}"><i></i>${esc(s&&s.mode==="local"&&!s.pending()?"Test mode":live)}</span>${jobPill(jobs)}</div></div>`;return}
   h.innerHTML=`<div class="wrap"><div class="topin">
     ${j?`<span class="jobbadge">${esc(j.badge)}</span>`:""}

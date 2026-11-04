@@ -182,11 +182,12 @@ function renderRecField(){
   const right=`<div class="stack">
     <div class="racebar" style="margin:0"><span class="racebadge"><small>FIELD</small><b>${esc(sel.station)}</b></span><div class="info"><b>${esc(groupLabel(ev,sel.x,sel.g))}</b><span>${esc(stn(sel.station))} · ${esc(when)}<span class="chip ${G&&G.final?"final":""}">${G?G.status:"Not started"}</span></span></div></div>
     <div class="panel" style="padding:0;overflow:hidden"><div class="tablewrap">${recFieldTable(sel,G,ev,ovr)}</div></div>
-    ${ovr?`<div class="msg warn">Override is on. Changes show on every device at once.</div>`:""}
+    ${ovr?`<div class="msg warn">Override is on. Changes show on every device at once.</div>
+      <div class="row"><button type="button" class="btn" data-act="rfadd">Add an athlete</button>${G&&G.final?`<button type="button" class="btn" data-act="rfreopen">Reopen this group</button>`:""}</div>`:""}
     <p class="muted" style="font-size:.86rem;margin:0">Results are final at the station. The event coordinator can overrule any result at any time.</p>
     <button type="button" class="btn big" data-act="rovr">${ovr?"Finish override":"Override (event coordinator)"}</button>
   </div>`;
-  return `${lockBar()}<div class="recgrid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.5fr)">${left}${right}</div>`;
+  return `${lockBar()}<div class="recgrid rf">${left}${right}</div>`;
 }
 function recFieldTable(f,G,ev,ovr){
   const v=fieldView(f);const rule=v.rule;const rows=G?G.rows:[];const dis=!ovr||locked();
@@ -199,6 +200,6 @@ function recFieldTable(f,G,ev,ovr){
   };
   const best=(r,ri)=>ev.style==="throw"&&ovr?bestCell(f,r,ri,dis):`<span class="bestm">${r.best?(hts?fmtHeight(r.best):fmtMark(r.best)):"&ndash;"}</span>`;
   return `<table><thead><tr><th>Place</th><th>Athlete</th>${heads}<th class="num">Best</th><th class="num">Points</th><th></th></tr></thead><tbody>
-    ${rows.map((r,ri)=>`<tr><td>${placeCell(r.place,r.tie)}</td><td class="nmcell"><span class="htag">${hdot(r.p.h)}${esc(pname(r.p))}</span></td>${box(r,ri)}<td class="num">${best(r,ri)}</td><td class="num">${fmtPts(r.pts||0)}</td><td>${r.tag?`<span class="tag ${r.tag==="NEW RECORD"?"rec":"eq"}">${r.tag}</span> `:""}${r.hris?`<span class="tag hris">HRIS</span>`:""}</td></tr>`).join("")||`<tr><td colspan="${5+(hts?hts.length:n)}" class="muted">No athletes entered yet.</td></tr>`}
+    ${rows.map((r,ri)=>`<tr><td>${placeCell(r.place,r.tie)}</td><td class="nmcell"><span class="htag">${hdot(r.p.h)}${esc(pname(r.p))}</span></td>${box(r,ri)}<td class="num">${best(r,ri)}</td><td class="num">${fmtPts(r.pts||0)}</td><td>${ovr&&!hts?`<button type="button" class="stbtn" data-act="fns" data-g="${f.id}" data-id="${esc(r.id)}" aria-pressed="${!!r.m.ns}" ${dis?"disabled":""}>NS</button> `:""}${r.tag?`<span class="tag ${r.tag==="NEW RECORD"?"rec":"eq"}">${r.tag}</span> `:""}${r.hris?`<span class="tag hris">HRIS</span>`:""}</td></tr>`).join("")||`<tr><td colspan="${5+(hts?hts.length:n)}" class="muted">No athletes entered yet.</td></tr>`}
   </tbody></table>`;
 }

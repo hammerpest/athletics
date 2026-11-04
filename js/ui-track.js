@@ -240,12 +240,12 @@ function renderJudge(){
   const info=`<div class="info"><b>${esc(r.label)}</b><span>Heat ${r.heat}${r.race<max?(ph?" · Earlier race":" · Earlier race: changes save straight away"):""}</span></div>`;
   if(ph)return `${lockBar()}<div class="racebar ph">${badge(r.race,"sm")}${info}</div>
     <div class="prompt ${done?"done":""}">${esc(prompt)}</div>
-    <div class="pool ph track">${lanes}</div>
+    <div class="pool ph track judge">${lanes}</div>
     <div class="row" style="margin-top:12px">${goto}${reset}</div>
     <div class="pbar"><div class="wrap">${undo}${next.replace(" big","")}</div></div>`;
   return `${lockBar()}<div class="racebar">${badge(r.race,"xl")}${info}${goto}${next}</div>
     <div class="prompt ${done?"done":""}">${esc(prompt)}</div>
-    <div class="pool track">${lanes}</div>
+    <div class="pool track judge">${lanes}</div>
     <div class="row" style="margin-top:12px">${undo}${reset}</div>`;
 }
 async function judgeTap(l){

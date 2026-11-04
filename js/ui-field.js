@@ -94,7 +94,7 @@ function renderFieldTable(f){
   }
   const cols=(head.match(/<th/g)||[]).length;
   return `${lockBar()}${fieldHead(f,v)}<div class="row" style="margin-bottom:12px">${chips}</div>
-    <div class="panel" style="padding:0;overflow:hidden"><div class="tablewrap"><table><thead><tr>${head}</tr></thead>
+    <div class="panel" style="padding:0;overflow:hidden"><div class="tablewrap"><table class="field-table"><thead><tr>${head}</tr></thead>
       <tbody>${body.join("")||`<tr><td colspan="${cols}" class="muted">No athletes yet. Number them with Add an athlete as they arrive.</td></tr>`}</tbody></table></div></div>
     <p class="muted" style="font-size:.9rem;margin:10px 0 0">${note}</p>
     ${v.fin?`<div class="msg ok" style="margin-top:10px">Final. Results are in. Only the event coordinator can change them now.</div>`:""}`;
@@ -133,9 +133,16 @@ function throwStep(f,id,a){const v=(curMark(f,id).t||{})[a]||"";setThrow(f,id,a,
 function fieldUndo(){
   const f=fieldGroupOpen();if(!f)return;
   if(A.f.typed){A.f.typed="";fSave();render();return}
+  /* final at the station: only the event coordinator can change it (decision 23) */
+  if(fieldView(f).fin){toast("Final. Only the event coordinator can change it.");return}
   const u=A.f.undo.filter(x=>x.g===f.id).pop();if(!u){toast("Nothing to undo.");return}
   A.f.undo.splice(A.f.undo.lastIndexOf(u),1);
   setField(f,u.id,u.kind,u.key,u.prev,true);
+}
+/* an athlete added by mistake, or who left before their first turn, comes off the list */
+async function fieldToggle(f,id){
+  if(!(fieldDocOf(f).ath||{})[id])return fieldAdd(f,id);
+  await fieldWrite(f,{ath:{[id]:0}});
 }
 async function fieldAdd(f,id){
   /* their number is the order they arrive (decision 32), even if two are added in one tick */
@@ -148,7 +155,7 @@ MODALS.fieldAdd=M=>{
   const list=eligible(ev,f.x,f.g).filter(s=>!q||listName(s).toLowerCase().includes(q));
   return `<h2>Add an athlete</h2><p class="muted" style="margin:0">${esc(groupLabel(ev,f.x,f.g))}. Tap each athlete as they arrive: this is their number and their order.</p>
     <input id="ffilter" placeholder="Type to find a name" value="${esc(A.f.filter||"")}" autocomplete="off">
-    <div class="addlist">${list.map(s=>`<button type="button" class="pick" data-act="fadd" data-id="${esc(s.id)}" ${on[s.id]?"disabled":""}>${hdot(s.h)}<span>${esc(listName(s))}</span>${on[s.id]?`<span class="muted" style="margin-left:auto;font-size:.8rem">On the list</span>`:""}</button>`).join("")||`<div class="muted" style="padding:10px">No names match.</div>`}</div>
+    <div class="addlist">${list.map(s=>{const m=(fieldDocOf(f).marks||{})[s.id];const has=!!m&&JSON.stringify(m).replace(/[{}":,]|\b(a|t|h|ns|best|false)\b|\d+(?=":)/g,"").length>0;return `<button type="button" class="pick" data-act="fadd" data-id="${esc(s.id)}" ${on[s.id]&&has?"disabled":""}>${hdot(s.h)}<span>${esc(listName(s))}</span>${on[s.id]?`<span class="muted" style="margin-left:auto;font-size:.8rem">${has?"On the list":"On the list. Tap to take off"}</span>`:""}</button>`}).join("")||`<div class="muted" style="padding:10px">No names match.</div>`}</div>
     <div class="acts"><button type="button" class="btn" data-act="faddnew">Not on the list</button><button type="button" class="btn primary" data-act="closemodal">Done</button></div>`;
 };
 MODALS.fieldFinish=M=>`<h2>Finish this group?</h2><p style="margin:0">${esc(M.label)}. The results go final and show on every device. After this only the event coordinator can change them.</p>${M.unmeasured?`<div class="msg warn">${plural(M.unmeasured,"athlete has","athletes have")} a fair throw but no best mark yet, so ${M.unmeasured===1?"gets":"get"} 0 points.</div>`:""}<div class="acts"><button type="button" class="btn" data-act="closemodal">&lt; Back</button><button type="button" class="btn go" data-act="ffinishok">Group finished</button></div>`;
@@ -159,9 +166,18 @@ async function fieldFinish(){
 
 /* ---------- phone: one athlete at a time (A1.10, A1.19) ---------- */
 function nextAfter(rows,i){for(let k=1;k<=rows.length;k++){const j=(i+k)%rows.length;if(!rows[j].m.ns)return j}return i}
+/* the jump box the keypad fills: the one tapped to change, else the next empty one */
+function jumpBox(v,r){
+  const a=r.m.a||{};const n=v.rule.attempts;
+  const can=i=>!(i===2&&v.turn.third&&!v.turn.third.has(r.id));
+  if(A.f.a!=null&&A.f.a<n&&can(A.f.a))return A.f.a;
+  for(let i=0;i<n;i++)if(!a[i]&&can(i))return i;
+  return -1;
+}
 function renderFieldPhone(f){
   const v=fieldView(f);const {ev,rule,rows}=v;const edit=fieldEditable(v);
   if(A.f.i>=rows.length)A.f.i=0;
+  const undoBtn=`<button type="button" class="btn" data-act="fundo" ${v.fin?"disabled":""}>Undo last</button>`;
   const r=rows[A.f.i];const dis=edit?"":"disabled";const nx=r?rows[v.turn.next>=0&&A.f.i===v.turn.up?v.turn.next:nextAfter(rows,A.f.i)]:null;
   const w=ev.style==="throw"?weightFor(A.cfg,ev.k,f.x,f.g):"";
   const sub=!r?"No athletes yet":ev.style==="throw"?`No. ${r.no} of ${rows.length}${w?" · "+esc(ev.k==="SP"?"Shot":ev.name)+" "+esc(w):""}`:`Athlete ${r.no} of ${rows.length}`;
@@ -175,26 +191,25 @@ function renderFieldPhone(f){
   let main,bar;
   if(ev.style==="height"){
     const mh=r.m.h||{};const at=v.plan.cur!=null?v.plan.cur:v.plan.heights[0];const hs=v.plan.heights.filter(h=>h<=at||mh[h]);
-    main=`<div class="attrow hts">${hs.map(h=>{const c=mh[h]||"";return `<div class="attcell ${h===at?"cur":""} ${/^X+$/.test(c)?"foul":""}"><span>${fmtHeight(h)} m</span><b>${esc(c)||" "}</b></div>`}).join("")}</div>
+    main=`<div class="attrow hts">${hs.map(h=>{const c=mh[h]||"";return `<div class="attcell ${h===at?"cur":""} ${/^X+$/.test(c)?"foul":""}" ${edit?`data-act="hjtap" data-g="${f.id}" data-id="${esc(r.id)}" data-h="${h}"`:""}><span>${fmtHeight(h)} m</span><b>${esc(c)||" "}</b></div>`}).join("")}</div>
       <div class="markshow" aria-live="polite">${v.plan.cur!=null?fmtHeight(at)+" m":"All out"}</div>
       <div class="hjset">${heightSeq(rule).filter(s=>s&&s!=="-").map(s=>`<button type="button" class="btn" data-act="hjset" data-v="${s}" data-h="${at}" ${dis}>${s}</button>`).join("")}</div>`;
-    bar=`<button type="button" class="btn" data-act="fundo">Undo last</button>${rule.pass?`<button type="button" class="btn" data-act="hjset" data-v="-" data-h="${at}" ${dis}>Pass</button>`:""}<button type="button" class="btn navy" data-act="fnext">Next athlete</button>`;
+    bar=`${undoBtn}${rule.pass?`<button type="button" class="btn" data-act="hjset" data-v="-" data-h="${at}" ${dis}>Pass</button>`:""}<button type="button" class="btn navy" data-act="fnext">Next athlete</button>`;
   }else if(ev.style==="throw"){
     const m=r.m.t||{};const n=rule.attempts;let cur=n;for(let i=0;i<n;i++)if(!m[i]){cur=i;break}
     const fair=Object.values(m).includes("Fair");
     const shown=!t&&r.m.best?fmtMark(markCm(r.m.best))+" m":show;
-    main=`<div class="attrow" style="grid-template-columns:repeat(${Math.min(n,4)},minmax(0,1fr))">${Array.from({length:n},(_,i)=>`<div class="attcell ${i===cur?"cur":""} ${m[i]==="Foul"?"foul":""}"><span>Throw ${i+1}</span><b style="font-size:1.05rem">${esc(m[i]||"")||" "}</b></div>`).join("")}</div>
+    main=`<div class="attrow" style="grid-template-columns:repeat(${Math.min(n,4)},minmax(0,1fr))">${Array.from({length:n},(_,i)=>`<div class="attcell ${i===cur?"cur":""} ${m[i]==="Foul"?"foul":""}" ${edit&&m[i]?`data-act="ttap" data-g="${f.id}" data-id="${esc(r.id)}" data-a="${i}"`:""}><span>Throw ${i+1}</span><b style="font-size:1.05rem">${esc(m[i]||"")||" "}</b></div>`).join("")}</div>
       ${cur<n?`<button type="button" class="btn go big" style="min-height:96px" data-act="fthrow" data-v="Fair" ${dis}>Fair</button><div class="row" style="flex-wrap:nowrap"><button type="button" class="btn redfill big" style="flex:1;min-height:96px" data-act="fthrow" data-v="Foul" ${dis}>Foul</button><button type="button" class="btn big" style="flex:1;min-height:96px" data-act="fthrow" data-v="Pass" ${dis}>Pass</button></div>`
        :fair?`<span class="label">Measure the best throw</span><div class="markshow" aria-live="polite">${shown}</div>${pad(["1","2","3","4","5","6","7","8","9","Clear","0","Back"])}`
        :`<div class="msg warn">No fair throw, so no mark and 0 points.</div>`}`;
-    bar=`<button type="button" class="btn" data-act="fundo">Undo last</button><button type="button" class="btn navy" data-act="fsave">Next athlete</button>`;
+    bar=`${undoBtn}<button type="button" class="btn navy" data-act="fsave">Next athlete</button>`;
   }else{
     const a=r.m.a||{};const third=!v.turn.third||v.turn.third.has(r.id);const n=rule.attempts;
-    let cur=n;for(let i=0;i<n;i++)if(!a[i]){cur=i;break}
-    if(cur===2&&!third)cur=n;
-    main=`<div class="attrow" style="grid-template-columns:repeat(${Math.min(n,4)},minmax(0,1fr))">${Array.from({length:n},(_,i)=>`<div class="attcell ${i===cur?"cur":""} ${a[i]==="x"?"foul":""}"><span>Jump ${i+1}</span><b>${esc(a[i]==="x"?"Foul":fmtCell(a[i]))||(i===2&&!third?"–":" ")}</b></div>`).join("")}</div>
-      <div class="markshow" aria-live="polite">${show}</div>${pad(["1","2","3","4","5","6","7","8","9","Foul","0","Back"])}`;
-    bar=`<button type="button" class="btn" data-act="fundo">Undo last</button><button type="button" class="btn" data-act="fpass" ${dis}>Pass</button><button type="button" class="btn navy" data-act="fsave">${t?"Save mark":"Next athlete"}</button>`;
+    const cur=jumpBox(v,r);const pdis=cur<0?"disabled":dis;
+    main=`<div class="attrow" style="grid-template-columns:repeat(${Math.min(n,4)},minmax(0,1fr))">${Array.from({length:n},(_,i)=>`<div class="attcell ${i===cur?"cur":""} ${a[i]==="x"?"foul":""}" ${edit&&a[i]?`data-act="fcell" data-a="${i}"`:""}><span>Jump ${i+1}</span><b>${esc(a[i]==="x"?"Foul":fmtCell(a[i]))||(i===2&&!third?"–":" ")}</b></div>`).join("")}</div>
+      <div class="markshow" aria-live="polite">${cur<0?"All jumps done":show}</div>${pad(["1","2","3","4","5","6","7","8","9","Foul","0","Back"]).replace(/ ?>(\d|Foul|Back)<\/button>/g,cur<0?" disabled>$1</button>":">$1</button>")}`;
+    bar=`${undoBtn}<button type="button" class="btn" data-act="fpass" ${pdis}>Pass</button><button type="button" class="btn navy" data-act="fsave">${t?"Save mark":"Next athlete"}</button>`;
   }
   return `${lockBar()}<div class="stack" style="gap:8px">${head}${name}${main}${tools}
     ${v.fin?`<div class="msg ok">Final. Only the event coordinator can change them now.</div>`:""}</div>
@@ -210,19 +225,22 @@ function fieldPhoneAct(kind,val){
       else if(val==="Back")A.f.typed=A.f.typed.slice(0,-1);else A.f.typed="";
       fSave();render();return;
     }
-    if(kind==="save"){if(A.f.typed)setBest(f,r.id,A.f.typed);nextUp()}
+    if(kind==="save"){
+      if(A.f.typed&&!markOk(A.f.typed)){toast("Type 3 digits: 1124 is 11.24 m.");return}
+      if(A.f.typed)setBest(f,r.id,A.f.typed);nextUp()}
     return;
   }
-  const a=r.m.a||{};let cur=-1;for(let i=0;i<rule.attempts;i++)if(!a[i]){cur=i;break}
-  if(cur===2&&v.turn.third&&!v.turn.third.has(r.id))cur=-1;
+  const cur=jumpBox(v,r);
   if(kind==="key"){
     if(/^[0-9]$/.test(val)){if(A.f.typed.length<4&&(A.f.typed||val!=="0"))A.f.typed+=val;fSave();render();return}
     if(val==="Back"){A.f.typed=A.f.typed.slice(0,-1);fSave();render();return}
-    if(cur>=0){A.f.typed="";fSave();setMark(f,r.id,cur,"x")}return;
+    if(cur>=0){A.f.typed="";A.f.a=null;fSave();setMark(f,r.id,cur,"x")}return;
   }
-  if(kind==="pass"){if(cur>=0){A.f.typed="";fSave();setMark(f,r.id,cur,"-")}return}
+  if(kind==="pass"){if(cur>=0){A.f.typed="";A.f.a=null;fSave();setMark(f,r.id,cur,"-")}return}
   if(kind==="save"){
-    if(A.f.typed&&cur>=0){const m=A.f.typed;A.f.typed="";fSave();setMark(f,r.id,cur,m);return}
-    nextUp();
+    if(A.f.typed&&cur>=0){
+      if(!markOk(A.f.typed)){toast("Type 3 digits: 534 is 5.34 m.");return}
+      const m=A.f.typed;A.f.typed="";A.f.a=null;fSave();setMark(f,r.id,cur,m);return}
+    A.f.a=null;nextUp();
   }
 }

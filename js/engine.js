@@ -152,10 +152,14 @@ function markCm(v){return /^[0-9]+$/.test(String(v==null?"":v))&&+v>0?+v:0}
 /* a tape reading rounds down, never up */
 function fmtMark(cm){if(!cm)return "";return MARK_DP===1?(Math.floor(cm/10)/10).toFixed(1):(cm/100).toFixed(2)}
 function fmtHeight(cm){return cm?(cm/100).toFixed(2):""}
+/* a mark needs 3 digits: 53 is more likely a slip of the finger than 0.53 m */
+function markOk(v){return v===""||v==="x"||v==="-"||String(v).length>=3}
 function fmtCell(v){if(v==null||v==="")return "";if(v==="x")return "X";if(v==="-")return "Pass";const c=markCm(v);return c?fmtMark(c):String(v)}
 function cleanMark(raw){
   const v=String(raw==null?"":raw).trim().toLowerCase();
   if(v==="x"||v==="foul")return "x";if(v==="-"||v==="p"||v==="pass")return "-";
+  /* 5.3 typed with the point is 5.30 m */
+  if(/^\d*\.\d*$/.test(v)&&v!=="."){return String(Math.round(parseFloat(v)*100))}
   return v.replace(/[^0-9]/g,"").replace(/^0+/,"").slice(0,4);
 }
 
@@ -233,10 +237,16 @@ function hjPlan(cfg,ev,rule,x,g,ids,marks){
   const isIn=(id,upto)=>!(marks[id]||{}).ns&&!Object.keys((marks[id]||{}).h||{}).some(h=>+h<=upto&&cell(id,h)===allOut);
   const steps=rule.raise[x]||rule.raise.F;
   const raiseAt=(n,left)=>left<=rule.lastLeft?rule.lastRaise:steps[Math.min(n,steps.length-1)];
+  /* boxes already filled show where the bar really went, so a late athlete or a corrected box never moves it */
+  const typed=[...new Set(ids.flatMap(id=>Object.keys((marks[id]||{}).h||{}).filter(h=>cell(id,h)).map(Number)))].sort((a,b)=>a-b);
   const hs=[start];let cur=start,raises=0;
   for(let i=0;i<80;i++){
     const h=hs[hs.length-1];const still=ids.filter(id=>isIn(id,h-1));
-    const done=still.length>0&&still.every(id=>{const v=cell(id,h);return /O$/.test(v)||v==="-"||v===allOut});
+    const above=typed.find(t=>t>h);
+    if(above!=null){hs.push(above);raises++;continue}
+    /* above the start, someone with no boxes yet is a late arrival and does not hold up the round */
+    const wait=h===start?still:still.filter(id=>Object.values((marks[id]||{}).h||{}).some(Boolean));
+    const done=wait.length>0&&wait.every(id=>{const v=cell(id,h);return /O$/.test(v)||v==="-"||v===allOut});
     if(!done){cur=still.length||!ids.length?h:null;break}
     const left=still.filter(id=>isIn(id,h)).length;
     if(!left){cur=null;break}
@@ -276,6 +286,8 @@ function fieldRow(ev,rule,m){
 function bestOfTwo(r){const a=r.m.a||{};return Math.max(markCm(a[0]),markCm(a[1]))}
 function thirdJump(rows,rule,short){
   if(!short)return null;
+  /* the cut comes once everyone has had their 2 jumps */
+  if(rows.some(r=>!r.m.ns&&!((r.m.a||{})[0]&&(r.m.a||{})[1])))return null;
   const two=rows.filter(r=>!r.m.ns).map(bestOfTwo).filter(Boolean).sort((a,b)=>b-a);
   const cut=two[Math.min(rule.shortTop-1,two.length-1)]||0;
   return new Set(rows.filter(r=>!r.m.ns&&cut&&bestOfTwo(r)>=cut).map(r=>r.id));
@@ -391,7 +403,7 @@ function compute(S){
     const relay=!!G.ev.relay;const Q=relay?PR:P;const rows=[];
     for(const r of G.heats)for(const ln of r.filled){
       const v=r.times[ln]||{};const e=r.eff[ln];
-      rows.push({id:r.lanes[ln],p:who(r.lanes[ln]),race:r.race,heat:r.heat,lane:+ln,st:v.st||(v.t!=null||e?"ok":"wait"),rec:v.t!=null?v.t:null,eff:e?e.eff:null,pink:!!(e&&e.pink),auto:!!(e&&e.auto),judge:r.placeTaps[ln]||null,place:null,pts:0});
+      rows.push({id:r.lanes[ln],p:who(r.lanes[ln]),race:r.race,heat:r.heat,lane:+ln,st:v.st||(v.t!=null||e?"ok":"wait"),rec:v.t!=null?v.t:null,eff:e?e.eff:null,pink:!!(e&&e.pink),auto:!!(e&&e.auto),judge:r.placeTaps[ln]||v.o||null,place:null,pts:0});
     }
     const ok=rows.filter(x=>x.eff!=null&&!noTimeSt(x.st)).sort((a,b)=>a.eff-b.eff);
     let i=0;
@@ -568,5 +580,5 @@ function parseRecordRows(text,cfg){
 }
 if(typeof module!=="undefined")module.exports={AGE_GROUPS,AGES_DOWN,HOUSES,TEAMS,DEFAULT_EVENTS,DEFAULT_TIMETABLE,DEFAULT_CONFIG,RULE_DIST,RULE_THROW,RULE_HIGH,
   eventOf,programEvents,newEvent,stationsOf,fieldGroups,fieldId,fieldRule,heightSeq,hjPlan,hjStart,weightFor,fieldTurn,thirdJump,sheetPair,groupKey,groupLabel,grpName,teamId,
-  parseTime,fmtTime,oddTime,markCm,fmtMark,fmtCell,cleanMark,heatEffective,lateSlip,pointsFor,compute,blockNow,hrisList,resultText,
+  parseTime,fmtTime,oddTime,markCm,markOk,fmtMark,fmtCell,cleanMark,heatEffective,lateSlip,pointsFor,compute,blockNow,hrisList,resultText,
   parseStudents,parseRecordRows,ageOn,ageGroup};
