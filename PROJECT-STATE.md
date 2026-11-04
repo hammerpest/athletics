@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 5 November 2026, version t. Replaces 4 November version s.
+Date: 5 November 2026, version u. Replaces 5 November version t.
+
+Changes on 5 November 2026 (version u): Jordan answered yes to questions 40 to 42 (decisions 48 to 50). A1.1 and A1.5 redrawn, waiting for Jordan's OK before they are built. Ask now: Jordan's OK on A1.1 and A1.5.
 
 Changes on 5 November 2026 (version t): Aths Opt 1.1 is built on the local staging branch, nothing pushed. It has decisions 40 to 46: high jump Now up and Next with Clear, Miss and Pass, on iPad and phone; a job PIN goes straight to its job (this already worked; now tested); Take Names opens every field group, all five sports, phone too; in the 800 m and 1500 m every runner is placed with a button next to their name, and Send needs everyone. The Supabase build is now Aths Opt 1.2. Jordan answered question 39 (decision 47): the event coordinator is one person on one phone, which is what is built. Engine tests 69 of 69. Flow tests 84 of 84. Check 1: 852 screenshots, 2 runs, 0 different (the macbook-dark set differed by up to 0.51% and matched when re-run); the screens changed from the last build are in 2.3. Check 2: Chrome at MacBook size passed before the last 3 fixes. Chrome then lost its connection, so those 3 fixes were walked in the built-in browser at 1512 wide; the phone and iPad walk-throughs in the built-in browser also ran before them, and flow tests cover the phone fix. Check 3: a fresh-eyes review found 3 must-fix and 7 should-fix faults, and its re-check found no must-fix and 3 more should-fix faults; 12 are fixed and 1 waits for Aths Opt 1.2 (section 5). The reviewer did not see the last 3 fixes. New questions 40 to 42. Ask now: 40 to 42.
 
@@ -238,6 +240,9 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 45. (4 November 2026, answers question 38; adds to decision 20) 800 m and 1500 m: all names are marshalled. The time slip person starts the race, takes a split as each runner crosses the line, and stops after the last one. Runners stand in line in finishing order. The person then sees the names down the side, like swimming, and presses the button next to each name once, in finishing order. Each place gets its split time. Past the last split, each place gets 1 second more than the place before. Next race gets ready for the next heat.
 46. (4 November 2026) Jordan approved A1.1, A1.5, A1.9 and A1.20, so all 20 boards are approved. This confirms Take Names (decision 44).
 47. (5 November 2026, answers question 39) 800 m and 1500 m: the event coordinator enters the names as the marshal, times the race on the multitimer, then clicks the places next to the students' names. One person, one phone.
+48. (5 November 2026, answers question 40) Multitimer places: every row has room for the time from the start, so buttons do not move, and the time text is stronger (white on navy).
+49. (5 November 2026, answers question 41) The items in 2.3 that differ from the boards are OK. A1.1 is redrawn to match the app: a job PIN opens its job straight away.
+50. (5 November 2026, answers question 42) After sending, the multitimer phone offers Next heat (1 tap) or New age or event, picked on the phone. Any other race goes through the Track Marshal.
 
 ## 4. Rules and constraints
 
@@ -252,11 +257,9 @@ See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: 40 to 42.
+Ask now: Jordan's OK on A1.1 and A1.5.
 
-- (Ask now) 40. Multitimer places screen: when a runner is placed, their time appears under the button and the rows below move down 19 px, so the buttons move while you are tapping. The time is 4.45 to 1 on the blue lanes in the light theme, just under 4.5. Both are as drawn on A1.5. Keep it, or give every row room for the time from the start and make the time text stronger? Either needs your OK as it changes an approved look.
-- (Ask now) 41. Are the items in 2.3 that differ from the boards or are not drawn OK? Should A1.1 be redrawn to go straight to the job?
-- (Ask now) 42. With one person on one phone (decision 47): a further heat is 1 tap, Next race. A new age group or event needs a race number from the Track Marshal screen, so it is 8 or 9 taps: Job, Track Marshal, race, sex, age, Go, Job, Time Slips, Next race. It works with the organiser PIN and loses nothing. Keep it, or add a short way to pick the next age from the multitimer screen?
+- (Closed by 48 to 50) Questions 40 to 42.
 - (Closed by 47) 39. 800 m and 1500 m: who enters the names.
 - (Closed by 40 to 45) Questions 33 to 38.
 - (Closed by 36 to 38) Questions 30 to 32.

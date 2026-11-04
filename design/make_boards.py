@@ -141,7 +141,7 @@ def home(dark):
 <div class="dots"><sc-for list="{{{{dots}}}}" as="d" hint-placeholder-count="4"><i class="{{{{d.c}}}}"></i></sc-for></div>
 <div class="keypad"><sc-for list="{{{{keys}}}}" as="k" hint-placeholder-count="12"><button type="button" onClick="{{{{k.press}}}}" aria-label="{{{{k.aria}}}}">{{{{k.label}}}}</button></sc-for></div>
 <sc-if value="{{{{wrong}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg bad" role="alert">That PIN is not right. Try again.</div></sc-if>
-<button type="button" class="btn primary big" style="width:276px" onClick="{{{{start}}}}">Start</button>
+<sc-if value="{{{{direct}}}}" hint-placeholder-val="{{{{false}}}}"><a class="btn primary big" style="width:276px" href="{{{{href}}}}">Start</a></sc-if><sc-if value="{{{{notDirect}}}}" hint-placeholder-val="{{{{true}}}}"><button type="button" class="btn primary big" style="width:276px" onClick="{{{{start}}}}">Start</button></sc-if>
 </div>
 </sc-if>
 <sc-if value="{{{{showJobs}}}}" hint-placeholder-val="{{{{false}}}}">
@@ -151,13 +151,15 @@ def home(dark):
 </div>
 </sc-if>
 </main></div>'''
-    logic = r'''
+    links = {str(pin): lnk(f, dark) for n, pin, l, d, f, c in jobs if pin != 9}
+    logic = "const JL = " + J(links) + r'''
     const labels = ['1','2','3','4','5','6','7','8','9','Clear','0','Back'];
     const keys = labels.map((l) => ({ label: l, aria: /^[0-9]$/.test(l) ? 'Digit ' + l : l, press: () => {
       if (/^[0-9]$/.test(l)) { if (st.pin.length < 4) set({ pin: st.pin + l, wrong: false }); }
       else if (l === 'Clear') set({ pin: '' }); else set({ pin: st.pin.slice(0, -1) }); } }));
     const show = {}; [1,2,3,4,5,6,9].forEach((k) => { show['j' + k] = st.org ? true : k === Number(st.pin[0]); });
-    out = { showPin: !st.ok, showJobs: st.ok, wrong: st.wrong, keys, show, jobsLine: st.org ? 'Choose your job.' : 'Your job.',
+    const direct = st.pin.length === 4 && !!JL[st.pin[0]];
+    out = { showPin: !st.ok, showJobs: st.ok, wrong: st.wrong, keys, show, direct, notDirect: !direct, href: direct ? JL[st.pin[0]] : '', jobsLine: st.org ? 'Choose your job.' : 'Your job.',
       dots: [0,1,2,3].map((i) => ({ c: i < st.pin.length ? 'on' : '' })),
       start: () => { if (st.pin.length < 4) return; if (st.pin !== '9999' && !(Number(st.pin[0]) >= 1 && Number(st.pin[0]) <= 6)) set({ pin: '', wrong: true }); else set({ ok: true, org: st.pin === '9999' }); },
       signout: () => set({ ok: false, pin: '', org: false }) };
@@ -257,7 +259,7 @@ def multitimer(dark):
     roster = names("F","16",17,5)
     body = header("TIME SLIPS","Time Slips",dark,slim=True) + f'''
 <div class="scroll"><main class="wrap" style="padding-top:10px;padding-bottom:96px"><div class="phone" style="gap:10px">
-<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>RACE</small><b>35</b></span><div class="info"><b>800 m, Girls 16</b><span>{{{{sub}}}}</span></div></div>
+<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>RACE</small><b>{{{{raceNo}}}}</b></span><div class="info"><b>{{{{label}}}}</b><span>{{{{sub}}}}</span></div></div>
 <sc-if value="{{{{isNames}}}}" hint-placeholder-val="{{{{true}}}}">
 <div class="prompt" style="margin:0">Tap each runner on the start line.</div>
 <label class="label" style="display:flex;flex-direction:column;gap:4px">Find a runner<input type="search" placeholder="Type part of a name"></label>
@@ -273,11 +275,18 @@ def multitimer(dark):
 <sc-if value="{{{{isPlace}}}}" hint-placeholder-val="{{{{false}}}}">
 <div class="prompt {{{{doneC}}}}" style="margin:0">{{{{prompt}}}}</div>
 <div class="pool ph track"><sc-for list="{{{{toPlace}}}}" as="p" hint-placeholder-count="15"><div class="lane" style="grid-template-columns:minmax(0,1fr) auto"><div class="body" style="cursor:default"><span class="nm"><span class="hdot h{{{{p.h}}}}">{{{{p.h}}}}</span><span>{{{{p.n}}}}</span></span></div>
-<div class="wall mt"><button type="button" class="spot {{{{p.c}}}}" onClick="{{{{p.tap}}}}" aria-label="{{{{p.aria}}}}">{{{{p.pl}}}}</button><sc-if value="{{{{p.on}}}}" hint-placeholder-val="{{{{false}}}}"><span class="mtt" style="color:#ffffff">{{{{p.t}}}}</span></sc-if></div></div></sc-for></div>
+<div class="wall mt"><button type="button" class="spot {{{{p.c}}}}" onClick="{{{{p.tap}}}}" aria-label="{{{{p.aria}}}}">{{{{p.pl}}}}</button><span class="mtt" style="display:block;min-height:18px;min-width:62px;box-sizing:border-box;text-align:center;border-radius:4px;{{{{p.ts}}}}">{{{{p.t}}}}</span></div></div></sc-for></div>
 </sc-if>
 <sc-if value="{{{{isSent}}}}" hint-placeholder-val="{{{{false}}}}">
-<div class="msg ok">Race 35 times sent to the Recorder.</div><button type="button" class="btn navy big" onClick="{{{{again}}}}">Next race</button>
+<div class="msg ok">Race {{{{raceNo}}}} times sent to the Recorder.</div><button type="button" class="btn navy big" onClick="{{{{again}}}}">Next heat, {{{{label}}}}</button><button type="button" class="btn big" onClick="{{{{newGroup}}}}">New age or event</button>
 <div class="row" style="flex-wrap:nowrap"><a class="btn" style="flex:1" href="{lnk("Recorder",dark)}">Check race</a><a class="btn" style="flex:1" href="{lnk("Recorder",dark)}">Race overall</a></div>
+</sc-if>
+<sc-if value="{{{{isPick}}}}" hint-placeholder-val="{{{{false}}}}">
+<div class="mrow" style="padding:0"><span class="label">Race</span><div class="choices"><sc-for list="{{{{cEv}}}}" as="c" hint-placeholder-count="2"><button type="button" class="choice" aria-pressed="{{{{c.on}}}}" onClick="{{{{c.tap}}}}">{{{{c.l}}}}</button></sc-for></div></div>
+<div class="mrow" style="padding:0"><span class="label">Boys or girls</span><div class="choices"><sc-for list="{{{{cX}}}}" as="c" hint-placeholder-count="2"><button type="button" class="choice" aria-pressed="{{{{c.on}}}}" onClick="{{{{c.tap}}}}">{{{{c.l}}}}</button></sc-for></div></div>
+<div class="mrow" style="padding:0"><span class="label">Age</span><div class="choices"><sc-for list="{{{{cG}}}}" as="c" hint-placeholder-count="6"><button type="button" class="choice" aria-pressed="{{{{c.on}}}}" onClick="{{{{c.tap}}}}">{{{{c.l}}}}</button></sc-for></div></div>
+<button type="button" class="btn navy big" onClick="{{{{again}}}}">Take names</button>
+<a class="linkbtn" style="text-align:center" href="{lnk("MarshalPick",dark)}">Another race: go to the Track Marshal</a>
 </sc-if>
 </div></main></div>
 <sc-if value="{{{{hasBar}}}}" hint-placeholder-val="{{{{true}}}}">''' + pbar('<button type="button" class="btn" onClick="{{undo}}">{{undoL}}</button><button type="button" class="btn navy" onClick="{{main}}">{{mainL}}</button>') + '''</sc-if>'''
@@ -288,7 +297,10 @@ def multitimer(dark):
     // a place past the last split gets 1 second more than the place before
     const timeAt = (k) => k < sp.length ? sp[k] : sp[sp.length - 1] + (k - sp.length + 1) * 100;
     const O = (x) => x + (x % 100 > 10 && x % 100 < 14 ? 'th' : (['th','st','nd','rd'][x % 10] || 'th'));
-    out = { isNames: ph === 'names', isClock: ph === 'ready' || ph === 'run', isReady: ph === 'ready', isRun: ph === 'run', isPlace: ph === 'place', isSent: ph === 'sent',
+    out = { isNames: ph === 'names', isClock: ph === 'ready' || ph === 'run', isReady: ph === 'ready', isRun: ph === 'run', isPlace: ph === 'place', isSent: ph === 'sent', isPick: ph === 'pick', raceNo: st.race, label: st.e + ', ' + st.x + ' ' + (st.e === '1500 m' ? 'Open' : st.g),
+      newGroup: () => set({ ph: 'pick' }),
+      cEv: ['800 m','1500 m'].map((l) => ({ l, on: st.e === l, tap: () => set({ e: l }) })), cX: ['Girls','Boys'].map((l) => ({ l, on: st.x === l, tap: () => set({ x: l }) })),
+      cG: (st.e === '1500 m' ? ['Open'] : ['12 & 13','14','15','16','17','18+']).map((l) => ({ l, on: st.e === '1500 m' || st.g === l, tap: () => set({ g: l }) })),
       hasBar: ph === 'names' || ph === 'place' || ph === 'run', sub: 'No lanes · ' + n + ' runners',
       ppl: roster.map((r, i) => { const on = st.picked.includes(i); return { n: r.n, h: r.h, on, c: on ? 'sel' : '', tap: () => set({ picked: on ? st.picked.filter((x) => x !== i) : st.picked.concat([i]) }) }; }),
       clock: fmt(ph === 'ready' ? 0 : (sp.length ? sp[sp.length - 1] + 212 : 15120)), runC: ph === 'run' ? 'run' : '',
@@ -296,14 +308,14 @@ def multitimer(dark):
       nSp: sp.length, nRun: n, last: sp.map((t, i) => ({ i: i + 1, t: fmt(t) })).slice(-5).reverse(),
       doneC: allDone ? 'done' : '',
       prompt: allDone ? 'All ' + n + ' placed. Check the times, then send.' : 'Tap the button next to the runner who finished ' + O(tp.length + 1) + (tp.length < sp.length ? ' (' + fmt(sp[tp.length]) + ').' : ' (no split: 1 second after the place before).'),
-      toPlace: st.picked.map((i) => { const p = tp.indexOf(i) + 1; return { n: roster[i].n, h: roster[i].h, on: p > 0, pl: p || '', t: p ? fmt(timeAt(p - 1)) : '', c: p ? (p <= 4 ? 'p' + p : 'px') : '', aria: p ? roster[i].n + ', place ' + p + '. Tap to remove' : roster[i].n + ', tap for place ' + (tp.length + 1), tap: () => set({ taps: p ? tp.filter((x) => x !== i) : tp.concat([i]) }) }; }),
+      toPlace: st.picked.map((i) => { const p = tp.indexOf(i) + 1; return { n: roster[i].n, h: roster[i].h, on: p > 0, pl: p || '', t: p ? fmt(timeAt(p - 1)) : ' ', ts: p ? 'background:#1d3160;color:#ffffff' : '', c: p ? (p <= 4 ? 'p' + p : 'px') : '', aria: p ? roster[i].n + ', place ' + p + '. Tap to remove' : roster[i].n + ', tap for place ' + (tp.length + 1), tap: () => set({ taps: p ? tp.filter((x) => x !== i) : tp.concat([i]) }) }; }),
       undoL: ph === 'names' ? 'Add not on list' : (ph === 'run' ? 'Undo last split' : 'Undo last'), undo: () => { if (ph === 'run') set({ splits: sp.slice(0, -1) }); if (ph === 'place') set({ taps: tp.slice(0, -1) }); },
       mainL: ph === 'names' ? 'Names done' : (ph === 'run' ? 'Fix splits' : 'Send to Recorder'),
       main: () => { if (ph === 'names') set({ ph: 'ready' }); if (ph === 'place' && allDone) set({ ph: 'sent' }); },
-      again: () => set({ ph: 'names', taps: [], splits: st.seed }) };
+      again: () => set({ ph: 'names', taps: [], splits: st.seed, race: st.race + 1 }) };
 '''
     seed = [15120+337*i+(i*i*7)%90 for i in range(10)]
-    return body, logic, "{ ph: 'names', picked: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], taps: [4,9,1,12,0,7,3], splits: " + J(seed) + ", seed: " + J(seed) + " }"
+    return body, logic, "{ e: '800 m', x: 'Girls', g: '16', race: 35, ph: 'names', picked: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], taps: [4,9,1,12,0,7,3], splits: " + J(seed) + ", seed: " + J(seed) + " }"
 
 # ---------- A1.17 Track Marshal: relay ----------
 def marshal_relay(dark):
@@ -839,11 +851,11 @@ def organiser(dark):
 # ---------- layout on the canvas ----------
 gap = 80; rowgap = 120
 R1 = 0; R2 = 820 + rowgap + 103; R3 = R2 + 982 + rowgap + 103
-board("Main","A1.1 Home: a job PIN goes to its job; only the organiser PIN shows all jobs, iPad landscape",*IPAD,home,0,R1)
+board("Main","A1.1 Home: a job PIN opens its job straight away; only the organiser PIN shows all jobs, iPad landscape",*IPAD,home,0,R1)
 board("MarshalPick","A1.2 Track Marshal (a): pick race, boys or girls, age, iPad landscape",*IPAD,marshal_pick,1260,R1)
 board("MarshalLanes","A1.3 Track Marshal (b): names into lanes, iPad landscape",*IPAD,marshal_lanes,2520,R1)
 board("PlaceJudge","A1.4 Track Place Judge: tap the top 4 at the finish line, phone",*PHONE,judge,3780,R1,radius=40)
-board("Multitimer","A1.5 Multitimer (800 m, 1500 m): names, START, a split for each runner, STOP, then a button next to each name in finish order, phone",*PHONE,multitimer,4250,R1,radius=40)
+board("Multitimer","A1.5 Multitimer (800 m, 1500 m): names, START, splits, STOP, a button next to each name, then next heat or a new age on the phone",*PHONE,multitimer,4250,R1,radius=40)
 board("TimeSlips","A1.6 Time Slips: photo each heat's slip, phone",*PHONE,slips,4720,R1,radius=40)
 board("FieldStart","A1.7 Field Station (a): pick the station, its day from the timetable, iPad landscape",*IPAD,field_start,0,R2)
 board("FieldMarks","A1.8 Field Station (b): long jump, every jump measured, iPad landscape",*IPAD,field_marks,1260,R2)
