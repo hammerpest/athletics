@@ -2,7 +2,7 @@
 
 Date: 4 November 2026, version r. Replaces 4 November version q.
 
-Changes on 4 November 2026 (version r): Jordan tried the questions 33 to 38 (decisions 40 to 45). Boards changed: A1.1 (a job PIN goes to its job), A1.5 (a button next to each name; everyone is placed), A1.9 (Now up and Next, with Clear, Miss and Pass), and new A1.20 (Take Names). The app does not have these yet: they go in once Jordan OKs the boards. Now 20 boards. New question 39. Ask now: 39, and Jordan's OK on A1.1, A1.5, A1.9 and A1.20.
+Changes on 4 November 2026 (version r): Jordan answered questions 33 to 38 (decisions 40 to 45). Boards changed: A1.1 (a job PIN goes to its job), A1.5 (a button next to each name; everyone is placed), A1.9 (Now up and Next, with Clear, Miss and Pass), and new A1.20 (Take Names). The app does not have these yet: they go in once Jordan OKs the boards. Now 20 boards. New question 39. Ask now: 39, and Jordan's OK on A1.1, A1.5, A1.9 and A1.20.
 
 Changes on 4 November 2026 (version q): The MacBook walk-through ran in Jordan's Chrome at 1512 wide, on commit 17ebf62, with buttons pressed by script. Passed: PINs, 620 test students, Marshal, Place Judge, typed times, slip photo (a late slip did not overwrite typed times), multitimer with 12 runners and 4 times (the other 8 got +1 s each), long jump to Final, shot put weights and fair or foul, high jump opens, Announcer, Results, HRIS list, newsletter, Houses, all 9 Organiser sections, reload opens where the job is up to, no sideways scroll, no console errors, all app files loaded. Not covered in Chrome: Chrome screenshots time out (the same fault as swimming), so no screen was compared by eye with a baseline there; the download buttons were not pressed (flow tests cover them). Ask now: 33 to 38.
 
