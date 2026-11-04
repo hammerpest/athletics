@@ -91,7 +91,7 @@ function raiseText(x,rule){
 function hjNowUp(v,edit){
   const up=!v.fin&&v.turn.up>=0?v.rows[v.turn.up]:null,nx=!v.fin&&v.turn.next>=0?v.rows[v.turn.next]:null;const h=v.plan.cur;
   const dis=edit&&up?"":"disabled";const data=up?`data-act="hjtry" data-id="${esc(up.id)}" data-h="${h}" data-box="${esc((up.m.h||{})[h]||"")}"`:"";
-  return `<div class="checkline" style="margin-bottom:12px"><div class="what"><span class="label">Now up${h!=null&&up?`, ${fmtHeight(h)} m, try ${v.turn.tryNo}`:""}</span><br>${up?esc(pname(up.p)):v.rows.length?"Everyone is done":"No athletes yet"}<br><span class="muted" style="font:600 .95rem var(--font-body)">Next: ${nx?esc(pname(nx.p)):"&ndash;"}</span></div>
+  return `<div class="checkline" style="margin-bottom:12px"><div class="what"><span class="label">Now up${h!=null&&up?`, ${fmtHeight(h)} m, try ${v.turn.tryNo}`:""}</span><br>${up?esc(pname(up.p)):v.fin?"Final":v.rows.length?"Everyone is done":"No athletes yet"}<br><span class="muted" style="font:600 .95rem var(--font-body)">Next: ${nx?esc(pname(nx.p)):"&ndash;"}</span></div>
     <button type="button" class="btn go big" ${data} data-v="O" ${dis}>Clear</button><button type="button" class="btn redfill big" ${data} data-v="X" ${dis}>Miss</button>${v.rule.pass?`<button type="button" class="btn big" ${data} data-v="-" ${dis}>Pass</button>`:""}<button type="button" class="btn" data-act="fundo" ${v.fin?"disabled":""}>Undo last</button></div>`;
 }
 function renderFieldTable(f){
@@ -185,6 +185,8 @@ function fieldUndo(){
     }
   }
   setField(f,u.id,u.kind,u.key,u.prev,true);
+  /* the bar stays where the boxes show, so tell the teacher if this try was at a lower height */
+  if(u.kind==="h"&&fieldView(f).rows.some(r=>Object.keys(r.m.h||{}).some(h=>+h>u.key&&r.m.h[h])))toast("The bar has moved on. Check this athlete's box.");
 }
 /* an athlete added by mistake, or who left before their first turn, comes off the list */
 async function fieldToggle(f,id){
@@ -263,7 +265,7 @@ function renderFieldPhone(f){
   if(!edit&&(A.f.typed||A.f.a!=null)){if(A.f.typed)toast("Final. The typed mark was not saved.");A.f.typed="";A.f.a=null;fSave()}
   const undoBtn=`<button type="button" class="btn" data-act="fundo" ${v.fin?"disabled":""}>Undo last</button>`;
   const r=fieldCur(v);const dis=edit?"":"disabled";
-  const nx=!r?null:ev.style==="height"?rows[A.f.i===v.turn.up?v.turn.next:v.turn.up]:rows[v.turn.next>=0&&A.f.i===v.turn.up?v.turn.next:nextAfter(rows,A.f.i)];
+  const nx=r?rows[v.turn.next>=0&&A.f.i===v.turn.up?v.turn.next:nextAfter(rows,A.f.i)]:null;
   const w=ev.style==="throw"?weightFor(A.cfg,ev.k,f.x,f.g):"";
   const sub=!r?"No athletes yet":ev.style==="throw"?`No. ${r.no} of ${rows.length}${w?" · "+esc(ev.k==="SP"?"Shot":ev.name)+" "+esc(w):""}`:`Athlete ${r.no} of ${rows.length}`;
   const head=`<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>FIELD</small><b>${esc(f.station)}</b></span><div class="info"><b>${esc(groupLabel(ev,f.x,f.g))}</b><span>${sub}</span></div></div>`;

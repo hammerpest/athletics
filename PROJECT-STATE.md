@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version s. Replaces 4 November version r.
+Date: 5 November 2026, version t. Replaces 4 November version s.
+
+Changes on 5 November 2026 (version t): Aths Opt 1.1 is built on the local staging branch, nothing pushed. It has decisions 40 to 46: high jump Now up and Next with Clear, Miss and Pass, on iPad and phone; a job PIN goes straight to its job (this already worked; now tested); Take Names opens every field group, all five sports, phone too; in the 800 m and 1500 m every runner is placed with a button next to their name, and Send needs everyone. The Supabase build is now Aths Opt 1.2. Jordan answered question 39 (decision 47): the event coordinator is one person on one phone, which is what is built. Engine tests 69 of 69. Flow tests 84 of 84. Check 1: 852 screenshots, 2 runs, 0 different (the macbook-dark set differed by up to 0.51% and matched when re-run); the screens changed from the last build are in 2.3. Check 2: Chrome at MacBook size passed before the last 3 fixes. Chrome then lost its connection, so those 3 fixes were walked in the built-in browser at 1512 wide; the phone and iPad walk-throughs in the built-in browser also ran before them, and flow tests cover the phone fix. Check 3: a fresh-eyes review found 3 must-fix and 7 should-fix faults, and its re-check found no must-fix and 3 more should-fix faults; 12 are fixed and 1 waits for Aths Opt 1.2 (section 5). The reviewer did not see the last 3 fixes. New questions 40 to 42. Ask now: 40 to 42.
 
 Changes on 4 November 2026 (version s): Jordan approved A1.1, A1.5, A1.9 and A1.20, so all 20 boards are approved (decision 46), and said to build them. Question 39 is still open; the build follows the board (the multitimer phone enters the names). Ask now: 39.
 
@@ -45,7 +47,7 @@ Owner: Jordan (PDHPE Head of Department, Central Coast Adventist School, Erina N
 ## 0. Where things stand (read first)
 
 - Project is ONLY the athletics carnival app. The swimming app (SWIM 2027- App/ccas-swimming) and cross country are separate projects, used for reference only.
-- All 19 boards, A1.1 to A1.19, are approved (decision 39). Aths Opt 1.0 is built in test mode on the local staging branch (section 2.3), waiting for Jordan's look and questions 33 to 38. Nothing is pushed, and main has no app yet.
+- All 20 boards, A1.1 to A1.20, are approved (decision 46). Aths Opt 1.1 is built in test mode on the local staging branch (section 2.3), waiting for Jordan's look and questions 40 to 42. Nothing is pushed, and main has no app yet.
 - How it will be built, and the lessons from the swimming app, are in CLAUDE.md.
 - Made-up data only: the 620 test students ("CCAS XC test students 620.xlsx").
 - No GitHub repo or Supabase project yet.
@@ -119,11 +121,11 @@ A competitor may not move up an age in any event.
 - All heats are run as finals: times are taken in every heat, and the fastest time over all heats of an age wins.
 - 100 m, 200 m and 400 m: athletes stay in their own lane, or are disqualified. Starting blocks may be used.
 
-- 800 m and 1500 m: one person enters the names and runs the multitimer on a phone, as in swimming's 100 m. A marshalled runner with no time gets 1 second more than the place before (decision 20).
+- 800 m and 1500 m: the event coordinator enters the names as marshal, runs the multitimer on a phone, then presses the button next to each name in finish order (decisions 45 and 47). Each place gets its split. Past the last split, each place gets 1 second more than the place before.
 
 **Next level:** results may be used for HRIS selection. The top 2 in every individual event, field events included, go on the HRIS team list (decisions 18 and 24), sent as a file, like swimming (decision 19). Relays are not on it.
 
-### 2.2 The design canvas (all 19 boards approved 4 November 2026)
+### 2.2 The design canvas (all 20 boards approved 4 November 2026)
 
 First published 4 November 2026, redrawn the same day with decisions 20 to 28: https://claude.ai/artifact/VaZiJKE2cce41ykKbkD1tg (private to Jordan until shared). Page "Boards" is the light theme and page "Dark theme" repeats all 20 boards. Boards can be tried with Play. Made from the swimming styles.css with made-up test students. The source is in design/ (make_boards.py, make_css.py, aths-extra.css, aths.css).
 
@@ -154,18 +156,32 @@ New looks to approve: bright blue lanes with white lines, as at Mingara, with a 
 
 Assumed in the draft, not decided: race numbers count track heats only, and field groups are named by station and group. Runners with no time in the 800 m and 1500 m are listed after the timed runners, each 1 second later, in list order. The Time Slips phone opens the multitimer for the 800 m and 1500 m only; the 100 m to 400 m and relays use the Place Judge and slips. Marks are typed in metres to 2 decimals (decision 38). iPad portrait and other sizes are not drawn; they follow the swimming layouts.
 
-### 2.3 Aths Opt 1.0 (test mode, 4 November 2026)
+### 2.3 Aths Opt 1.0 and 1.1 (test mode, 4 and 5 November 2026)
 
-**Built:** every job on boards A1.1 to A1.19, at all four sizes, light and dark, with the program, timetable, field rules, heights and weights held as organiser data. Results rules are in one file, js/engine.js, with tests in tests/engine.test.js. The screens are in js/ui-*.js, and the look is css/styles.css (the swimming styles plus design/aths-extra.css, including Swim Opt 2.9's full-screen name list on a phone).
+**Aths Opt 1.1 (5 November 2026):** decisions 40 to 46 are built, matching A1.1, A1.5, A1.9 and A1.20.
+- High jump (iPad and phone): Now up, the try number and Next, with Clear, Miss, Pass and Undo last. Everyone has their 1st try at a height in arrival order, then 2nd tries, then 3rd. Boxes can still be tapped to fix them. A double tap counts once. A try another device has just saved is refused, and Undo takes off only this device's try.
+- Take Names: a group opens here until Start. A second tap takes an athlete off and the numbers close up. After Start, Add an athlete is as before.
+- 800 m and 1500 m: Send needs everyone placed. Next race goes to the next race if one is waiting. If not, the phone gets ready for the next heat of the same event, and the race number is only taken at Names done, so a heat that never runs leaves no empty race.
 
-**Not built yet:** the Supabase store, server rules and SQL (Aths Opt 1.1); the slip reader (test buttons make up times until a photo of a track slip arrives, question 19); the real HRIS file (a plain CSV list for now, question 20). baseline/ is made once Jordan approves this build.
+**Screens changed on purpose in 1.1 (from the last build):** 239 shots over these screens. Field: field-empty, field-add, field-notonlist, field-marks, field-short, field-final, field-finishmodal, field-high, field-high-empty, and field-phone-alldone, change, saved, short, typed and undo. Multitimer: multi-place-start, multi-place, multi-placed, multi-sent. Data only, because the test run now places every runner and field athletes are in a different order: announcer, announcer-next, houses, results, results-field, results-hris, results-locked, results-newsletter, recorder-track, recorder-gorace, recorder-multi, recorder-field, recorder-field-high, recorder-field-override, recorder-field-pin, org-newcarnival-records, pastyear-recorder. New: field-names-part, takeoff, find, full and throw; field-high-start, miss, passed, allout and undo; multi-past-splits, multi-tap-to-remove, multi-next-heat. Gone: field-phone-high (its buttons changed; the new field-high shots cover the phone).
+
+**Differs from the boards or not drawn (question 41):**
+- A1.1: the board shows a one-tile "Your job" step. The app goes straight to the job (decision 42).
+- A1.5: Heat N in the line under the race on a next heat; No more heats, which asks first if names are picked; Fix splits on the places screen; a warning when there are more splits than runners.
+- A1.9: a box tapped to fix it also stops at X and XX, as a try can end there. The box where an athlete goes out on carried misses (X- then XX) is red.
+- A1.20: 4 columns on iPad landscape and MacBook as drawn; 3 on iPad portrait; 2 on a phone. The phone layout is not drawn: All groups, Not on the list and Start are in the bottom bar.
+- Phone high jump (not drawn): the same rules, with Clear and Miss on screen and Pass in the bottom bar. After a try it moves to whoever is up. Next athlete goes round the whole list so any box can be fixed.
+
+**Built in 1.0:** every job on boards A1.1 to A1.19, at all four sizes, light and dark, with the program, timetable, field rules, heights and weights held as organiser data. Results rules are in one file, js/engine.js, with tests in tests/engine.test.js. The screens are in js/ui-*.js, and the look is css/styles.css (the swimming styles plus design/aths-extra.css, including Swim Opt 2.9's full-screen name list on a phone).
+
+**Not built yet:** the Supabase store, server rules and SQL (Aths Opt 1.2); the slip reader (test buttons make up times until a photo of a track slip arrives, question 19); the real HRIS file (a plain CSV list for now, question 20). baseline/ is made once Jordan approves this build.
 
 **Tests:** node tests/engine.test.js, tests/flow.py (the swimming lessons: race numbers, relief helpers, offline queue, late slips, backup and restore, clear, lock), tests/shots.py and tests/shots_all.sh (every screen, size and theme), tests/visual_diff.py, tests/serve.py (test server).
 
-**For Aths Opt 1.1:** field boxes save one at a time, so the server must merge each box, not replace the document, or two teachers can overwrite each other. Test mode tabs do not prove this. The race counter must be safe on the server, as in swimming.
+**For Aths Opt 1.2:** field boxes save one at a time, so the server must merge each box, not replace the document, or two teachers can overwrite each other. Test mode tabs do not prove this. The race counter must be safe on the server, as in swimming.
 
 **In the app but not drawn on the boards (question 36):**
-- Phone field stations: a row with Add an athlete, All groups and Group finished. Tap a filled jump to change it. A phone high jump screen.
+- Phone field stations: a row with Add an athlete, All groups and Group finished. Tap a filled jump to change it. A phone high jump screen (changed in 1.1).
 - Recorder: Back to latest, Next race, Cancel this race, Re-run this race. Override also has Add an athlete, NS and Reopen this group.
 - Organiser: PIN table, Next race number, Events not run, a records list with a paste box, the student list paste box. Attempts and the heights and weights table can be edited there.
 - Place Judge: Back to latest. Time Slips: the test slip reader panel. Results: a new record band. Announcer: Earlier result.
@@ -221,6 +237,7 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 44. (4 November 2026, answers question 37) Each field group starts with a Take Names screen: tap all the athletes for that event, in arrival order, then start jumping or throwing. Add an athlete stays for late arrivals. Jordan said "maybe", so this is drawn on A1.20 for his OK.
 45. (4 November 2026, answers question 38; adds to decision 20) 800 m and 1500 m: all names are marshalled. The time slip person starts the race, takes a split as each runner crosses the line, and stops after the last one. Runners stand in line in finishing order. The person then sees the names down the side, like swimming, and presses the button next to each name once, in finishing order. Each place gets its split time. Past the last split, each place gets 1 second more than the place before. Next race gets ready for the next heat.
 46. (4 November 2026) Jordan approved A1.1, A1.5, A1.9 and A1.20, so all 20 boards are approved. This confirms Take Names (decision 44).
+47. (5 November 2026, answers question 39) 800 m and 1500 m: the event coordinator enters the names as the marshal, times the race on the multitimer, then clicks the places next to the students' names. One person, one phone.
 
 ## 4. Rules and constraints
 
@@ -228,14 +245,19 @@ See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
 
 ## 5. Current problems
 
+- The last 3 Aths Opt 1.1 fixes (phone Next athlete, the Final label, the bar has moved on message) were not walked in Chrome, as the extension lost its connection on 5 November 2026. Repeat that short pass when it is back.
 - Claude in Chrome cannot take screenshots here (script injection times out), so check 2 in Chrome reads the screens as text and cannot compare them by eye with a baseline.
+- A device that reloads with field saves still in its queue shows the group as it was until the queue sends. Nothing is lost, and this is not only Take Names. Fix it with the store at Aths Opt 1.2: the screens should read the queue on load.
 - The Place Judge's "By time" text is 4.4 to 1 on the approved blue lanes, just under 4.5. The organiser switch is drawn 30 px tall, with a 48 px tap area. Both are as approved, so left unchanged.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: 39.
+Ask now: 40 to 42.
 
-- (Ask now) 39. 800 m and 1500 m: who enters the names? Drawn: the person with the multitimer, on the phone (decision 20). Or the Track Marshal on the iPad?
+- (Ask now) 40. Multitimer places screen: when a runner is placed, their time appears under the button and the rows below move down 19 px, so the buttons move while you are tapping. The time is 4.45 to 1 on the blue lanes in the light theme, just under 4.5. Both are as drawn on A1.5. Keep it, or give every row room for the time from the start and make the time text stronger? Either needs your OK as it changes an approved look.
+- (Ask now) 41. Are the items in 2.3 that differ from the boards or are not drawn OK? Should A1.1 be redrawn to go straight to the job?
+- (Ask now) 42. With one person on one phone (decision 47): a further heat is 1 tap, Next race. A new age group or event needs a race number from the Track Marshal screen, so it is 8 or 9 taps: Job, Track Marshal, race, sex, age, Go, Job, Time Slips, Next race. It works with the organiser PIN and loses nothing. Keep it, or add a short way to pick the next age from the multitimer screen?
+- (Closed by 47) 39. 800 m and 1500 m: who enters the names.
 - (Closed by 40 to 45) Questions 33 to 38.
 - (Closed by 36 to 38) Questions 30 to 32.
 - (Closed by 20 to 24, 26 to 28, 31) Questions 21 to 29.
@@ -257,8 +279,9 @@ Ask now: 39.
 3. (Done) Field rules from the sheets and Jordan's answers (decisions 32 to 38).
 4. (Done) Build Aths Opt 1.0 in test mode, with engine tests. Checks 1 to 3 (version q).
    Done: the third review of the last fixes (version p) and the MacBook walk-through in Chrome (version q).
-5. NOW: build decisions 40 to 46 into the app, with checks 1 to 3 again. Jordan answers 39. Once Jordan approves the build, save the screenshots to baseline/.
-6. Jordan makes the GitHub repo and the Supabase project (Sydney) from click-by-click steps. Aths Opt 1.1 goes live on staging with made-up data.
+5. (Done 5 November 2026) Decisions 40 to 46 built as Aths Opt 1.1, with checks 1 to 3.
+6. NOW: Jordan looks at Aths Opt 1.1 and answers questions 40 to 42. Once Jordan approves the build, save the screenshots to baseline/.
+7. Jordan makes the GitHub repo and the Supabase project (Sydney) from click-by-click steps. Aths Opt 1.2 goes live on staging with made-up data.
 
 ## 8. Files and links
 

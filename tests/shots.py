@@ -232,7 +232,7 @@ async def run(pw,dev,theme):
         # Clear, Miss and Pass for the athlete who is up (decisions 40, 41): a pass after a miss, then out on carried misses
         async def hj(v): await F.click(f'[data-act=hjtry][data-v="{v}"]'); await F.wait_for_timeout(350)
         # on a phone a closed athlete has no Clear, Miss or Pass: Next athlete goes to whoever is up
-        if phone: await F.click('[data-act=fnext]'); await F.wait_for_timeout(100)
+        while phone and not await has(F,'[data-act=hjtry]:not([disabled])'): await F.click('[data-act=fnext]'); await F.wait_for_timeout(100)
         await hj("X"); await shot(F,"field-high-miss")
         await hj("-"); await shot(F,"field-high-passed")
         assert await F.evaluate("fieldView(fieldGroupOpen()).plan.cur")==132

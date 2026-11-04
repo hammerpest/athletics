@@ -212,8 +212,8 @@ const ACT={
   fpass:()=>fieldPhoneAct("pass"),
   fsave:()=>fieldPhoneAct("save"),
   fnext:()=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);if(!v.rows.length)return;const t=v.turn;
-    /* high jump: the same athlete the Next line names */
-    A.f.i=t.up<0?nextAfter(v.rows,A.f.i):t.up!==A.f.i?t.up:v.ev.style==="height"?(t.next>=0?t.next:A.f.i):nextAfter(v.rows,A.f.i);A.f.id=null;fSave();render();window.scrollTo(0,0)},
+    /* high jump: the athlete the Next line names, and on round the list, so any athlete's box can be fixed */
+    A.f.i=v.ev.style==="height"?(t.up===A.f.i&&t.next>=0?t.next:nextAfter(v.rows,A.f.i)):t.up>=0&&t.up!==A.f.i?t.up:nextAfter(v.rows,A.f.i);A.f.id=null;fSave();render();window.scrollTo(0,0)},
   fundo:()=>fieldUndo(),
   ffinish:()=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);A.modal={t:"fieldFinish",label:groupLabel(v.ev,f.x,f.g),unmeasured:v.rows.filter(r=>r.noMeasure).length};render()},
   ffinishok:()=>fieldFinish(),
