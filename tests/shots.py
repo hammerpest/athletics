@@ -27,6 +27,9 @@ async def run(pw,dev,theme):
     async def dopin(p,c):
         for k in c: await p.click(f'.keypad [data-k="{k}"]')
         await p.click('[data-act=pinstart]'); await p.wait_for_timeout(120)
+    async def pick(p):
+        # the first name still free; on a phone it can sit under the sticky search box until scrolled by hand
+        await p.evaluate("document.querySelector('.picklist button.pick:not([disabled])').click()"); await p.wait_for_timeout(40)
     async def tick(ms=60000):
         for p in pages: await p.evaluate(f"window.__t+={ms}")
     async def shot(p,name):
@@ -66,21 +69,22 @@ async def run(pw,dev,theme):
     await M.click('[data-act=mgo]'); await shot(M,"marshal-notready"); await M.click('[data-act=closemodal]')
     await M.click('[data-act=mpick][data-v="100"]'); await M.click('[data-act=mpick][data-v=M]'); await M.click('[data-act=mpick][data-f=g][data-v="18"]'); await shot(M,"marshal-ready")
     await M.click('[data-act=mgo]'); await shot(M,"marshal-lanes-listopen")
-    for i in range(8): await M.click('.picklist button.pick:not([disabled]) >> nth=0')
+    for i in range(8): await pick(M)
     await shot(M,"marshal-lanes-full")
     await M.reload(); await M.wait_for_function("!!A.store"); await M.wait_for_timeout(250)
     assert await M.evaluate("Object.keys(A.m.lanes).length")==8   # a half-filled lane list survives a reload
     await M.click('[data-act=mnext]'); await M.wait_for_timeout(200)
-    for i in range(3): await M.click('.picklist button.pick:not([disabled]) >> nth=0')
+    for i in range(3): await pick(M)
+    await M.click('[data-act=mclose]'); await M.wait_for_timeout(60)   # on a phone the name list covers the screen
     await M.click('[data-act=mnew]'); await shot(M,"marshal-confirmheat"); await M.click('[data-act=mconfirm]'); await M.wait_for_timeout(200)
     await shot(M,"marshal-sent")
     await M.click('[data-act=menu]'); await shot(M,"marshal-jobmenu"); await M.click('[data-act=menu]')
     # relay, no names
     await M.click('[data-act=mpick][data-f=k][data-v=R]'); await M.click('[data-act=mpick][data-v=F]'); await M.click('[data-act=mpick][data-f=g][data-v=J]'); await shot(M,"marshal-relay-ready")
     await M.click('[data-act=mgo]'); await shot(M,"marshal-relay-open")
-    await M.click('.picklist button.pick:not([disabled]) >> nth=0'); await M.click('[data-act=mlane][data-l="4"]'); await M.click('.picklist button.pick:not([disabled]) >> nth=0')
+    await pick(M); await M.click('[data-act=mlane][data-l="4"]'); await pick(M)
     await shot(M,"marshal-relay-lanes")
-    await M.click('[data-act=mlane][data-l="5"]'); await M.click('.picklist button.pick:not([disabled]) >> nth=0')
+    await M.click('[data-act=mlane][data-l="5"]'); await pick(M)
     await M.click('[data-act=mnew]'); await M.click('[data-act=mconfirm]'); await M.wait_for_timeout(200)
     # 800 m goes to the multitimer phone
     await M.click('[data-act=mpick][data-f=k][data-v="800"]'); await M.click('[data-act=mpick][data-v=F]'); await M.click('[data-act=mpick][data-f=g][data-v="16"]'); await shot(M,"marshal-800-ready")
@@ -152,7 +156,7 @@ async def run(pw,dev,theme):
         await F.fill('#mk-4-2','5.45'); await F.press('#mk-4-2','Enter'); await F.wait_for_timeout(200)
         assert await F.evaluate("A.R.groups.get('LJ|M|17').rows[1].best")==545
     else:
-        await F.click('[data-act=fnext]'); await F.wait_for_timeout(100)
+        await F.click('[data-act=fsave]'); await F.wait_for_timeout(100)
         await F.click('.keypad.fp [data-k="5"]'); await F.click('.keypad.fp [data-k="1"]'); await F.click('.keypad.fp [data-k="2"]'); await shot(F,"field-phone-typed")
         await F.click('[data-act=fsave]'); await F.wait_for_timeout(150); await shot(F,"field-phone-saved")
         await F.click('[data-act=fundo]'); await F.wait_for_timeout(150); await shot(F,"field-phone-undo")

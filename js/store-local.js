@@ -76,9 +76,11 @@ function localStore(onQueue){
   const emitPeers=()=>{const list=[...peers.values()];peersCb.forEach(cb=>cb(list))};
   let counterLock=Promise.resolve();
   let offline=false;
+  /* the latest copy, so two tabs saving different boxes never overwrite each other */
+  const fresh=path=>{try{const v=localStorage.getItem(PFX+path);return v==null?mem[path]:JSON.parse(v)}catch(e){return mem[path]}};
   const write=async w=>{
     if(offline)throw {code:"offline"};
-    if(w.op==="set")put(w.path,w.data);else if(w.op==="update")put(w.path,merge(mem[w.path],w.data));else put(w.path,null);
+    if(w.op==="set")put(w.path,w.data);else if(w.op==="update")put(w.path,merge(fresh(w.path),w.data));else put(w.path,null);
   };
   const queue=makeQueue(write,onQueue,()=>!offline);
   /* test mode: ask other tabs who is here, and say goodbye on close */
@@ -91,9 +93,12 @@ function localStore(onQueue){
     set(path,data){return queue.run({op:"set",path,data:JSON.parse(JSON.stringify(data))})},
     update(path,data){return queue.run({op:"update",path,data:JSON.parse(JSON.stringify(data))})},
     del(path){return queue.run({op:"del",path})},
+    /* one shared counter, safe when two devices send at once: no repeats, no gaps. Tabs share a lock here; the
+       server does the same job at Aths Opt 1.1 */
     async nextRace(){
       if(offline)throw {code:"offline"};
-      const run=async()=>{const d=mem["counter/race"]||{};const n=Number(d.next)||1;put("counter/race",{next:n+1,by:DEV,at:Date.now()});return n};
+      const run=async()=>{const d=fresh("counter/race")||{};const n=Number(d.next)||1;put("counter/race",{next:n+1,by:DEV,at:Date.now()});return n};
+      if(navigator.locks)return navigator.locks.request("aths_counter",run);
       const p=counterLock.then(run);counterLock=p.catch(()=>{});return p;
     },
     presence(obj){const pres=Object.assign({dev:DEV},peers.get(DEV)||{},obj);peers.set(DEV,pres);emitPeers();if(ch)ch.postMessage({pres})},

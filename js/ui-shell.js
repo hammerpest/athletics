@@ -136,7 +136,7 @@ function renderHeader(){
     :A.job==="houses"?`<button type="button" class="hlink" data-act="goto" data-job="results">Results</button><button type="button" class="hlink" data-act="goto" data-job="announcer">Back to Announcer</button>`:"";
   const jobs=A.role==="org"?[...JOBS,ORG_JOB]:[];
   const slim=slimHdr();h.classList.toggle("slim",slim);
-  if(slim){h.innerHTML=`<div class="wrap"><div class="topin"><span class="live ${cls}"><i></i>${esc(live)}</span>${jobPill(jobs)}</div></div>`;return}
+  if(slim){h.innerHTML=`<div class="wrap"><div class="topin"><span class="live ${cls}"><i></i>${esc(s&&s.mode==="local"&&!s.pending()?"Test mode":live)}</span>${jobPill(jobs)}</div></div>`;return}
   h.innerHTML=`<div class="wrap"><div class="topin">
     ${j?`<span class="jobbadge">${esc(j.badge)}</span>`:""}
     <div class="ttl"><b>Athletics Carnival ${A.past?esc(A.past):esc(curYear())}</b><small>${headerSub()}</small></div>

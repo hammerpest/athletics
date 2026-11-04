@@ -54,7 +54,7 @@ function nameCell(r,v,i){
 function resultCells(r){return `<td>${placeCell(r.place,r.tie)}</td><td class="num"><b>${fmtPts(r.pts||0)}</b></td>`}
 function markCell(f,r,ri,a,v,dis){
   const c=v==="x"?"foul":v==="-"?"pass":"";
-  return `<input class="markin ${c}" id="mk-${ri}-${a}" data-mark="${esc(r.id)}" data-a="${a}" data-g="${f.id}" aria-label="${esc(pname(r.p))} jump ${a+1}" value="${esc(fmtCell(v))}" placeholder="${dis==="off"?"–":"metres"}" inputmode="decimal" autocomplete="off" ${dis?"disabled":""}>`;
+  return `<input class="markin ${c}" id="mk-${ri}-${a}" data-mark="${esc(r.id)}" data-a="${a}" data-g="${f.id}" aria-label="${esc(pname(r.p))} jump ${a+1}" value="${esc(v==="-"?"-":fmtCell(v))}" placeholder="${dis==="off"?"–":"metres"}" inputmode="decimal" autocomplete="off" ${dis?"disabled":""}>`;
 }
 function throwCell(f,r,a,v,dis){
   const c=v==="Fair"?"clear":v==="Foul"?"out":v==="Pass"?"pass":"";
