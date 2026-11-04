@@ -79,7 +79,7 @@ function renderFieldTable(f){
     chips=`<span class="chip info">${v.plan.cur!=null?`Next height: ${fmtHeight(v.plan.cur)} m`:"All out"}</span><span class="chip">Start ${fmtHeight(v.plan.start)} m</span><span class="chip">${v.plan.left} left in</span><span class="muted">${esc(raiseText(f.x,rule))}</span>`;
     head=`<th>No.</th><th>Athlete</th>${hts.map(h=>`<th style="text-align:center">${fmtHeight(h)}</th>`).join("")}<th class="num">Best</th><th>Place</th><th class="num">Points</th>`;
     body=rows.map(r=>`<tr><td style="text-align:center;font-weight:800">${r.no}</td><td class="nmcell"><span class="htag">${hdot(r.p.h)}<b>${esc(pname(r.p))}</b></span></td>${hts.map(h=>`<td style="text-align:center;padding:5px">${hjCell(f,r,h,(r.m.h||{})[h]||"",dis||(v.plan.cur!=null&&h>v.plan.cur),60)}</td>`).join("")}<td class="num"><span class="bestm">${r.best?fmtHeight(r.best):"&ndash;"}</span></td>${resultCells(r)}</tr>`);
-    note=`Tap a box to step through: O cleared first try, XO second, XXO third, XXX out${rule.pass?", - passed":""}. Equal heights: fewer misses at that height wins, then fewer misses overall, then they share the place. ${qchip(31)}`;
+    note=`Tap a box to step through: O cleared first try, XO second, XXO third, XXX out${rule.pass?", - passed":""}. Equal heights: fewer misses at that height wins, then fewer misses overall, then they share the place.`;
   }else if(ev.style==="throw"){
     const w=weightLabel(ev,A.cfg,f.x,f.g);
     chips=`${w?`<span class="chip info">${esc(w)}</span>`:""}<span class="chip">${rule.attempts} throws each</span><span class="muted">The marker only moves for a better throw. Measure the best throw once, at the end.</span>`;

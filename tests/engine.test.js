@@ -172,7 +172,7 @@ t("the attempts setting limits which attempts count",()=>{
   fieldDoc(S,"LJ","M","17",{a:{a:{0:"400",1:"410",2:"500"}}});
   eq(compute(S).groups.get(groupKey("LJ","M","17")).rows[0].best,410);
 });
-t("equal marks share the place and points until question 30 is answered; next best jump as a setting",()=>{
+t("equal marks share the place and points (decision 36); next best jump stays a setting in the engine",()=>{
   const marks={a:{a:{0:"500",1:"490"}},b:{a:{0:"500",1:"480"}},c:{a:{0:"400"}}};
   const S={students:["a","b","c"].map(i=>st(i,"B","F","15"))};
   fieldDoc(S,"LJ","F","15",marks);
@@ -215,7 +215,7 @@ t("high jump start heights come from the sheet",()=>{
   eq(E.hjStart(DEFAULT_CONFIG,"F","13"),105);eq(E.hjStart(DEFAULT_CONFIG,"M","13"),115);eq(E.hjStart(DEFAULT_CONFIG,"F","14"),110);eq(E.hjStart(DEFAULT_CONFIG,"M","14"),115);eq(E.hjStart(DEFAULT_CONFIG,"M","15"),120);eq(E.hjStart(DEFAULT_CONFIG,"F","18"),110);
 });
 const HJ=E.eventOf(DEFAULT_CONFIG,"HJ"),HR=E.fieldRule(DEFAULT_CONFIG,HJ);
-t("the tap order is O XO XXO XXX, and a pass while question 31 stands",()=>{
+t("the tap order is O XO XXO XXX, and a pass (decision 37)",()=>{
   eq(E.heightSeq(HR),["","O","XO","XXO","XXX","-"]);
   eq(E.heightSeq(Object.assign({},HR,{pass:false})),["","O","XO","XXO","XXX"]);
 });
@@ -251,7 +251,7 @@ t("high jump: best height cleared; ties by misses at the height, then overall, t
   eq(G.rows.map(r=>[r.id,r.best,r.place]),[["e",118,1],["c",115,2],["d",115,2],["b",115,4],["a",115,5],["f",0,null]]);
   eq(G.rows[1].pts,7);eq(G.rows[5].pts,0);
 });
-t("marks print to 2 decimals; 1 decimal rounds down as a setting (question 32)",()=>{
+t("marks print to 2 decimals; 1 decimal rounds down as an engine setting (decision 38)",()=>{
   eq(E.fmtMark(534),"5.34");
   const S={config:cfgWith({markDp:1}),students:[]};compute(S);eq(E.fmtMark(539),"5.3");
   compute({students:[]});eq(E.fmtMark(539),"5.39");

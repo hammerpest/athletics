@@ -54,7 +54,7 @@ const DEFAULT_CONFIG={
   name:"CCAS Athletics Carnival 2027",date:"2027-06-18",ageDate:"2027-12-31",venue:"Mingara Athletics Track",lanes:8,chief:"Jordan Dennis",
   points:{p1:10,p2:8,p3:6,rest:4},relayPoints:{p1:20,p2:16,p3:12,rest:8},
   events:DEFAULT_EVENTS,timetable:DEFAULT_TIMETABLE,locs:{HJ:2,LJ:2,SP:1,D:2,J:1},rules:{},sheet:DEFAULT_SHEET,
-  /* question 32: marks to the nearest centimetre. Assumed until Jordan decides */
+  /* marks to the nearest centimetre (decision 38) */
   markDp:2,
   /* question 14: how the Open 1500 m counts. Assumed until Jordan decides */
   open:{house:true,champ:false},

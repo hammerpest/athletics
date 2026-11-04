@@ -78,8 +78,6 @@ function wireInputs(){
     const k=el.dataset.rule,fld=el.dataset.f;const v=fld==="ties"?el.value:+el.value;
     saveCfg({rules:Object.assign({},A.cfg.rules||{},{[k]:Object.assign({},(A.cfg.rules||{})[k]||{},{[fld]:v})})},"Rule saved");
   }});
-  document.querySelectorAll("[data-pass]").forEach(el=>{el.onchange=()=>{const k=el.dataset.pass;saveCfg({rules:Object.assign({},A.cfg.rules||{},{[k]:Object.assign({},(A.cfg.rules||{})[k]||{},{pass:el.checked})})},"Rule saved")}});
-  const dp=document.getElementById("cDp");if(dp)dp.onchange=()=>saveCfg({markDp:+dp.value},"Saved");
   document.querySelectorAll("[data-sheet]").forEach(el=>{el.onchange=()=>{
     saveCfg({sheet:sheetOf(A.cfg).map(r=>r.a===el.dataset.sheet?Object.assign({},r,{[el.dataset.f]:el.value.trim()}):r)},"Saved");
   }});
