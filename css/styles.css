@@ -405,3 +405,4 @@ td.todoh input,td.todoh select{font:700 .9rem var(--font-mono);min-height:48px;m
 @media (max-width:699px){header.top.unstick{position:static}}
 .attcell[data-act]{cursor:pointer}
 .keypad button:disabled{opacity:.45;cursor:not-allowed}
+@media (max-width:720px){.prompt.mtp{min-height:calc(4.35em + 24px)}}

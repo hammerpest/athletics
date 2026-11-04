@@ -10,6 +10,7 @@ function slipRace(){
 function slipQueued(){return A.s.queued||0}
 function slipWaiting(race){return !!(A.s.waiting&&A.s.waiting[race])}
 function renderSlips(){
+  if(A.mt&&A.mt.draft&&A.mt.draft.pick){if(A.mt.draft.run===(A.cfg.runId||""))return renderMultiPick();A.mt=mtBlank(null);mtSave()}
   const r=mtDraftRace()||slipRace();const waiting=slipQueued();
   const top=waiting?`<div class="msg warn">No signal. ${plural(waiting,"photo")} waiting to send. It sends by itself when there is signal.</div>`:"";
   if(!r)return `<div class="phone">${top}${waitingCard("Waiting for the marshal","Race 1 appears here once it is sent.")}</div>`;
@@ -161,17 +162,18 @@ function renderMulti(r,top){
   }else if(M.phase==="place"){
     const sp=M.splits;const tp=M.taps;const allDone=tp.length>=n;const nm=id=>A.R.who(id)||{};
     const prompt=!sp.length?"No splits were taken. Use Fix splits to add the times.":allDone?`All ${n} placed. Check the times, then send.`:`Tap the button next to the runner who finished ${ordinal(tp.length+1)}${tp.length<sp.length?` (${mtFmt(sp[tp.length])}).`:" (no split: 1 second after the place before)."}`;
-    body=`<div class="prompt ${allDone&&sp.length?"done":""}" style="margin:0">${esc(prompt)}</div>`;
+    body=`<div class="prompt mtp ${allDone&&sp.length?"done":""}" style="margin:0">${esc(prompt)}</div>`;
     if(sp.length>n)body+=`<div class="msg warn">${plural(sp.length,"split")} for ${plural(n,"runner")}. Check for a double tap with Fix splits.</div>`;
     /* the names stay still; a second press takes that runner out and the places after close up */
     body+=`<div class="pool ph track">${M.picked.map(id=>{const p=nm(id);const k=tp.indexOf(id);const pl=k+1;const nm2=esc(pname(p));
       return `<div class="lane" style="grid-template-columns:minmax(0,1fr) auto"><div class="body" style="cursor:default"><span class="nm">${hdot(p.h)}<span>${nm2}</span></span></div>
-      <div class="wall mt"><button type="button" class="spot ${pl?(pl<=4?"p"+pl:"px"):""}" data-act="mttap" data-id="${esc(id)}" aria-label="${pl?`${nm2}, place ${pl}. Tap to remove`:`${nm2}, tap for place ${tp.length+1}`}" ${sp.length&&!lk?"":"disabled"}>${pl||""}</button>${pl?`<span class="mtt" style="color:#ffffff">${mtFmt(mtTimeAt(sp,k))}</span>`:""}</div></div>`}).join("")}</div>`;
+      <div class="wall mt"><button type="button" class="spot ${pl?(pl<=4?"p"+pl:"px"):""}" data-act="mttap" data-id="${esc(id)}" aria-label="${pl?`${nm2}, place ${pl}. Tap to remove`:`${nm2}, tap for place ${tp.length+1}`}" ${sp.length&&!lk?"":"disabled"}>${pl||""}</button><span class="mtt" style="display:block;min-height:18px;min-width:62px;box-sizing:border-box;text-align:center;border-radius:4px;${pl?"background:#1d3160;color:#ffffff":""}">${pl?mtFmt(mtTimeAt(sp,k)):"&nbsp;"}</span></div></div>`}).join("")}</div>`;
     body+=`<div style="text-align:center"><button type="button" class="linkbtn" data-act="mtfix">Fix splits</button></div>`;
     bar=`<button type="button" class="btn" data-act="mtundo" ${tp.length&&!lk?"":"disabled"}>Undo last</button><button type="button" class="btn navy" data-act="mtsend" ${allDone&&sp.length&&!lk?"":"disabled"}>Send to Recorder</button>`;
   }else{
     body=`<div class="msg ok">Race ${r.race} times sent to the Recorder.</div>
-      <button type="button" class="btn navy big" data-act="mtnext">Next race</button>
+      <button type="button" class="btn navy big" data-act="mtnext">${nextRaceAfter(r.race)!=null?"Next race":"Next heat, "+esc(r.label)}</button>
+      <button type="button" class="btn big" data-act="mtnew">New age or event</button>
       <div class="row" style="flex-wrap:nowrap"><button type="button" class="btn" style="flex:1" data-act="sgoto">Check race</button><button type="button" class="btn" style="flex:1" data-act="soverall">Race overall</button></div>`;
   }
   return `${lockBar()}<div class="phone" style="gap:10px">${top}${head}${body}</div>
@@ -209,9 +211,38 @@ function mtNext(){
   if(n!=null){A.s.race=n}else if(r.multi){A.mt=mtBlank(null);A.mt.draft={k:r.k,x:r.x,g:r.g,run:A.cfg.runId||"",after:r.race};mtSave()}
   render();window.scrollTo(0,0);
 }
+/* New age or event (decision 49): pick the race, boys or girls and age on the phone, then Take names.
+   The race number is taken only when Names done is pressed, the same safe way as Next heat. */
+function mtNew(){
+  const r=slipRace();if(!r)return;
+  A.mt=mtBlank(null);A.mt.draft={pick:true,k:r.k,x:r.x,g:r.g,run:A.cfg.runId||"",after:Math.max(r.race,...liveRaces().map(x=>x.race))};mtSave();
+  render();window.scrollTo(0,0);
+}
+function mtPick(f,v){
+  const d=A.mt.draft;if(!d||!d.pick)return;
+  d[f]=v;
+  if(f==="k"){const ev=eventOf(A.cfg,v);if(ev&&!groupsOf(ev).includes(d.g))d.g=groupsOf(ev)[0]}
+  mtSave();render();
+}
+function mtTake(){
+  const d=A.mt.draft;if(!d||!d.pick||!eventOf(A.cfg,d.k)||!d.x||!d.g)return;
+  A.mt.draft={k:d.k,x:d.x,g:d.g,run:d.run,after:d.after};mtSave();render();window.scrollTo(0,0);
+}
+function renderMultiPick(){
+  const d=A.mt.draft;const evs=trackEvents(A.cfg).filter(e=>e.run==="multi");const ev=eventOf(A.cfg,d.k);
+  const row=(t,inner)=>`<div class="mrow" style="padding:0"><span class="label">${t}</span><div class="choices">${inner}</div></div>`;
+  const ch=(f,v,l,on)=>`<button type="button" class="choice" data-act="mtpick" data-f="${f}" data-v="${esc(v)}" aria-pressed="${on}">${esc(l)}</button>`;
+  const head=`<div class="racebar ph" style="margin:0">${badge(A.counter,"sm")}<div class="info"><b>${esc(ev&&d.x&&d.g?groupLabel(ev,d.x,d.g):"New race")}</b><span>No lanes · 0 runners</span></div></div>`;
+  return `${lockBar()}<div class="phone" style="gap:10px">${head}
+    ${row("Race",evs.map(e=>ch("k",e.k,e.name,d.k===e.k)).join(""))}
+    ${row("Boys or girls",[["F","Girls"],["M","Boys"]].map(([v,l])=>ch("x",v,l,d.x===v)).join(""))}
+    ${row("Age",groupChoices(ev).map(c=>ch("g",c.g,c.l,d.g===c.g)).join(""))}
+    <button type="button" class="btn navy big" data-act="mttake" ${locked()?"disabled":""}>Take names</button>
+    <button type="button" class="linkbtn" style="text-align:center" data-act="mtmarshal">Another race: go to the Track Marshal</button><button type="button" class="linkbtn" style="text-align:center" data-act="mtnoheatok">Back</button></div>`;
+}
 /* the next heat as a race, for the screen. A race the marshal sends meanwhile takes over, unless names are in */
 function mtDraftRace(){
-  const d=A.mt&&A.mt.draft;if(!d)return null;
+  const d=A.mt&&A.mt.draft;if(!d||d.pick)return null;
   const live=nextRaceAfter(d.after)!=null;
   const ev=eventOf(A.cfg,d.k);
   if(!ev||(d.run!==(A.cfg.runId||""))||(live&&!A.mt.picked.length)){A.mt=mtBlank(null);mtSave();return null}

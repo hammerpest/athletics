@@ -137,6 +137,9 @@ async def run(pw,dev,theme):
     if await has(S,'[data-act=mtnext]'):
         await S.click('[data-act=mtnext]'); await S.wait_for_timeout(100); await shot(S,"multi-next-heat")
         await S.click('[data-act=mtnoheat]'); await S.wait_for_timeout(100)
+    if await has(S,'[data-act=mtnew]'):
+        await S.click('[data-act=mtnew]'); await S.wait_for_timeout(100); await shot(S,"multi-new-pick")
+        await S.evaluate("mtDraftDrop()"); await S.wait_for_timeout(100)
     await tick()
     # ---- recorder ----
     R=await page("3333"); await R.wait_for_timeout(200); await shot(R,"recorder-track")
