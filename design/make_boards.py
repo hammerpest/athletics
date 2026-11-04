@@ -759,10 +759,10 @@ def organiser(dark):
 </div></sc-if>
 <sc-if value="{{is.field}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Field event rules</h2><p class="muted" style="margin:0">From the 2027 CCAS instruction sheets. Change them here to suit your school.</p>
 <table><thead><tr><th>Event</th><th>Attempts</th><th>What is measured</th><th>Ties</th></tr></thead><tbody>
-<tr><td><b>Long jump</b></td><td>3 jumps. If too many athletes, 2 jumps, then the top 4 get a 3rd</td><td>Every jump</td><td class="todoh">[SHARE THE PLACE? Q30]</td></tr>
-<tr><td><b>Shot put</b></td><td>3 throws</td><td>The best throw only</td><td class="todoh">[SHARE THE PLACE? Q30]</td></tr>
-<tr><td><b>Discus</b></td><td>3 throws</td><td>The best throw only</td><td class="todoh">[SHARE THE PLACE? Q30]</td></tr>
-<sc-if value="{{jav}}" hint-placeholder-val="{{false}}"><tr><td><b>Javelin</b></td><td>3 throws</td><td>The best throw only</td><td class="todoh">[SHARE THE PLACE? Q30]</td></tr></sc-if>
+<tr><td><b>Long jump</b></td><td>3 jumps. If too many athletes, 2 jumps, then the top 4 get a 3rd</td><td>Every jump</td><td>Share the place and points</td></tr>
+<tr><td><b>Shot put</b></td><td>3 throws</td><td>The best throw only</td><td>Share the place and points</td></tr>
+<tr><td><b>Discus</b></td><td>3 throws</td><td>The best throw only</td><td>Share the place and points</td></tr>
+<sc-if value="{{jav}}" hint-placeholder-val="{{false}}"><tr><td><b>Javelin</b></td><td>3 throws</td><td>The best throw only</td><td>Share the place and points</td></tr></sc-if>
 <tr><td><b>High jump</b></td><td>3 tries at each height, out after 3 misses in a row</td><td>Highest height cleared</td><td>Fewer misses at that height, then overall, then share</td></tr></tbody></table>
 <div class="row"><span class="chip">High jump raises</span><span class="muted">Girls: 5 cm until 3 remain, then 3 cm. Boys: 10 cm first, then 5 cm until 3 remain, then 3 cm.</span></div>
 <h3>Heights and weights</h3><table><thead><tr><th>Age</th><th>High jump start, G / B</th><th>Shot, G / B</th><th>Discus, G / B</th><sc-if value="{{jav}}" hint-placeholder-val="{{false}}"><th>Javelin, G / B</th></sc-if></tr></thead><tbody><sc-for list="{{wts}}" as="w" hint-placeholder-count="7"><tr><td><b>{{w.a}}</b></td><td>{{w.hj}}</td><td>{{w.s}}</td><td>{{w.d}}</td><sc-if value="{{jav}}" hint-placeholder-val="{{false}}"><td>{{w.j}}</td></sc-if></tr></sc-for></tbody></table>

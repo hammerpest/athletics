@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version l. Replaces 4 November version k.
+Date: 4 November 2026, version m. Replaces 4 November version l.
+
+Changes on 4 November 2026 (version m): Jordan approved the changed A1.16 and answered yes to questions 30 to 32 (decisions 36 to 38). Ties placeholder removed from A1.16. Ask now: Jordan's OK on the redrawn field boards.
 
 Changes on 4 November 2026 (version l): Jordan sent the 2027 field event instruction sheets, saved in docs/2027 field event sheets/ (Long Jump, High Jump, Shot Put, Discus, Javelin). They answer most of question 8 (decisions 32 to 35). Field boards redrawn; new boards A1.18 and A1.19 for throws. New questions 30 to 32 for what the sheets do not cover. Ask now: 30 to 32, and Jordan's OK on A1.16 and the redrawn field boards.
 
@@ -31,7 +33,7 @@ Owner: Jordan (PDHPE Head of Department, Central Coast Adventist School, Erina N
 ## 0. Where things stand (read first)
 
 - Project is ONLY the athletics carnival app. The swimming app (SWIM 2027- App/ccas-swimming) and cross country are separate projects, used for reference only.
-- Nothing is built. The design canvas (A1.1 to A1.17) is approved, apart from the field placeholders (decision 29). A1.16 and the field boards have changed since and wait for Jordan's OK, with new boards A1.18 and A1.19. Aths Opt 1.0 is being built.
+- Nothing is built. The design canvas (A1.1 to A1.17) is approved, apart from the field placeholders (decision 29). A1.16 is approved as changed. The field boards were redrawn from the sheets and wait for Jordan's OK, with new boards A1.18 and A1.19. Aths Opt 1.0 is being built.
 - How it will be built, and the lessons from the swimming app, are in CLAUDE.md.
 - Made-up data only: the 620 test students ("CCAS XC test students 620.xlsx").
 - No GitHub repo or Supabase project yet.
@@ -129,14 +131,14 @@ First published 4 November 2026, redrawn the same day with decisions 20 to 28: h
 | A1.13 | Announcer: on the track now, read out next, field now, house standings | Phone |
 | A1.14 | Results: event results, HRIS Team List, newsletter draft | MacBook |
 | A1.15 | Houses: standings, points by age group, age champions | iPad landscape |
-| A1.16 | Carnival Organiser: 9 sections, with field event rules added, add or remove events, and 1 or 2 locations for each sport (changed after approval, waiting for Jordan's OK) | MacBook |
+| A1.16 | Carnival Organiser: 9 sections, with field event rules, add or remove events, and 1 or 2 locations for each sport (approved) | MacBook |
 | A1.17 | Track Marshal (c): relay, a house in each lane, no names | iPad landscape |
 | A1.18 | Field Station (e): throws, fair or foul, best throw measured once (new) | iPad landscape |
 | A1.19 | Field Station (f): throws, one athlete at a time (new) | Phone |
 
 New looks to approve: bright blue lanes with white lines, as at Mingara, with a chequered finish line, and dashed orange boxes for anything not settled (placeholders; they go when the answer is in). Bronze is #cd7f32 as in CLAUDE.md (the swimming app uses a darker bronze), with dark text on it.
 
-Assumed in the draft, not decided: race numbers count track heats only, and field groups are named by station and group. Runners with no time in the 800 m and 1500 m are listed after the timed runners, each 1 second later, in list order. The Time Slips phone opens the multitimer for the 800 m and 1500 m only; the 100 m to 400 m and relays use the Place Judge and slips. Marks are typed in metres to 2 decimals (question 32). iPad portrait and other sizes are not drawn; they follow the swimming layouts.
+Assumed in the draft, not decided: race numbers count track heats only, and field groups are named by station and group. Runners with no time in the 800 m and 1500 m are listed after the timed runners, each 1 second later, in list order. The Time Slips phone opens the multitimer for the 800 m and 1500 m only; the 100 m to 400 m and relays use the Place Judge and slips. Marks are typed in metres to 2 decimals (decision 38). iPad portrait and other sizes are not drawn; they follow the swimming layouts.
 
 ## 3. Decisions
 
@@ -177,6 +179,9 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 33. (4 November 2026) Long jump: 3 jumps, every jump measured. If there are too many athletes, 2 jumps each, then the top 4 get a 3rd (the teacher turns this on; the sheet sets no number).
 34. (4 November 2026) Shot put, discus and javelin: 3 throws, marked fair, foul or pass. The marker only moves for a better throw, so only the best throw is measured, once, at the end. Weights by age are shown at the station. In the 12 & 13 group, discus differs by age (12 years 0.75 kg, 13 years 1 kg).
 35. (4 November 2026) High jump: starting height by age and sex from the sheet. 3 tries at each height, out after 3 misses in a row. Raises: girls 5 cm until 3 remain, then 3 cm; boys 10 cm first, then 5 cm until 3 remain, then 3 cm. The app works out the next height. Ties: fewer misses at the tied height, then fewer overall, then they share the place.
+36. (4 November 2026, answers question 30) Equal best marks in long jump, shot put, discus and javelin share the place and points.
+37. (4 November 2026, answers question 31) High jump: an athlete can pass a height.
+38. (4 November 2026, answers question 32) Marks are to the nearest centimetre (5.34 m).
 
 ## 4. Rules and constraints
 
@@ -188,11 +193,9 @@ None yet.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: 30 to 32, and Jordan's OK on A1.16 and the redrawn field boards.
+Ask now: Jordan's OK on the redrawn field boards.
 
-- (Ask now) 30. Equal best marks in long jump, shot put, discus or javelin: do they share the place and points? The sheets do not say. Throws cannot use a next-best mark, as only the best is measured.
-- (Ask now) 31. High jump: can an athlete pass a height? The sheets do not say. Drawn as allowed.
-- (Ask now) 32. Marks to the nearest centimetre (5.34 m)?
+- (Closed by 36 to 38) Questions 30 to 32.
 - (Closed by 20 to 24, 26 to 28, 31) Questions 21 to 29.
 - (Later) 20. A sample of the athletics file HRIS takes (for example a Hy-Tek Track & Field Meet Manager export), with the student details removed, as was done for swimming. The writer is built to match it.
 - (Later) 14. The 1500 m is Open. Do its points count for houses (4th and below 4)? Do its place points count for the athlete's own age champion?
@@ -209,7 +212,7 @@ Ask now: 30 to 32, and Jordan's OK on A1.16 and the redrawn field boards.
 1. (Done 4 November 2026) Questions 12 to 18 answered (decisions 12 to 19).
 2. (Done as a first draft 4 November 2026) The design canvas, A1.1 to A1.16 (section 2.2).
    Done: Jordan approved all boards (decision 29).
-3. (Mostly done) Field rules from the sheets (decisions 32 to 35). Questions 30 to 32 before the field boards are final.
+3. (Done) Field rules from the sheets and Jordan's answers (decisions 32 to 38).
 4. Build Aths Opt 1.0 in test mode, with engine tests. Checks 1 to 3.
 5. Jordan makes the GitHub repo and the Supabase project (Sydney) from click-by-click steps. Aths Opt 1.1 goes live on staging with made-up data.
 
