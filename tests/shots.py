@@ -144,7 +144,7 @@ async def run(pw,dev,theme):
     await F.click('[data-act=fstation][data-v=LJ1]')
     await F.evaluate("fOpen(A.R.fgroups.find(f=>f.key==='LJ|M|17').id)"); await F.wait_for_timeout(150); await shot(F,"field-empty")
     await F.click('[data-act=faddopen]'); await shot(F,"field-add")
-    for i in range(6): await F.click('.addlist .pick:not([disabled]) >> nth=0')
+    for i in range(6): await F.click('.addlist .pick:not(.on) >> nth=0')
     await F.click('[data-act=faddnew]'); await F.wait_for_timeout(100); await shot(F,"field-notonlist")
     await F.fill('#nsS','Newby'); await F.fill('#nsF','Sam'); await F.click('[data-act=addstudent]'); await F.wait_for_timeout(250)
     await F.evaluate("""(()=>{const f=fieldGroupOpen();const ids=fieldView(f).rows.map(r=>r.id);
@@ -171,7 +171,7 @@ async def run(pw,dev,theme):
     await F.click('[data-act=fstation][data-v=SP]')
     await F.evaluate("fOpen(A.R.fgroups.find(f=>f.key==='SP|M|17').id)"); await F.wait_for_timeout(150)
     await F.click('[data-act=faddopen]')
-    for i in range(7): await F.click('.addlist .pick:not([disabled]) >> nth=0')
+    for i in range(7): await F.click('.addlist .pick:not(.on) >> nth=0')
     await F.click('.modal [data-act=closemodal]'); await F.wait_for_timeout(150)
     await F.evaluate("""(()=>{const f=fieldGroupOpen();const ids=fieldView(f).rows.map(r=>r.id);
       const m=[['Fair','Foul','Fair'],['Fair','Fair','Foul'],['Foul','Foul','Foul'],['Fair','Fair','Fair'],['Fair','Pass'],[],['Foul','Fair']];
@@ -191,7 +191,7 @@ async def run(pw,dev,theme):
     await F.click('[data-act=fstation][data-v=HJ1]')
     await F.evaluate("fOpen(A.R.fgroups.find(f=>f.key==='HJ|F|18').id)"); await F.wait_for_timeout(150); await shot(F,"field-high-empty")
     await F.click('[data-act=faddopen]')
-    for i in range(6): await F.click('.addlist .pick:not([disabled]) >> nth=0')
+    for i in range(6): await F.click('.addlist .pick:not(.on) >> nth=0')
     await F.click('.modal [data-act=closemodal]'); await F.wait_for_timeout(150)
     await F.evaluate("""(()=>{const f=fieldGroupOpen();const ids=fieldView(f).rows.map(r=>r.id);
       const m=[['O','O','XO','XXO','XXX'],['O','XO','XXX'],['-','O','O','XO','XXO'],['O','XXX'],['XXX'],['O','O','XO','XXX']];
