@@ -172,32 +172,92 @@ t("the attempts setting limits which attempts count",()=>{
   fieldDoc(S,"LJ","M","17",{a:{a:{0:"400",1:"410",2:"500"}}});
   eq(compute(S).groups.get(groupKey("LJ","M","17")).rows[0].best,410);
 });
-t("ties share until the rule is set; countback on the next best mark when set",()=>{
+t("equal marks share the place and points until question 30 is answered; next best jump as a setting",()=>{
   const marks={a:{a:{0:"500",1:"490"}},b:{a:{0:"500",1:"480"}},c:{a:{0:"400"}}};
   const S={students:["a","b","c"].map(i=>st(i,"B","F","15"))};
-  fieldDoc(S,"D","F","15",marks);
-  eq(compute(S).groups.get(groupKey("D","F","15")).rows.map(r=>[r.place,r.pts]),[[1,9],[1,9],[3,6]]);
-  S.config=cfgWith({rules:{D:{ties:"countback"}}});
-  eq(compute(S).groups.get(groupKey("D","F","15")).rows.map(r=>[r.id,r.place,r.pts]),[["a",1,10],["b",2,8],["c",3,6]]);
+  fieldDoc(S,"LJ","F","15",marks);
+  eq(compute(S).groups.get(groupKey("LJ","F","15")).rows.map(r=>[r.place,r.pts,!!r.tie]),[[1,9,true],[1,9,true],[3,6,false]]);
+  S.config=cfgWith({rules:{LJ:{ties:"countback"}}});
+  eq(compute(S).groups.get(groupKey("LJ","F","15")).rows.map(r=>[r.id,r.place,r.pts]),[["a",1,10],["b",2,8],["c",3,6]]);
 });
-t("high jump: best height cleared, heights follow the rule",()=>{
-  const rule=E.fieldRule(DEFAULT_CONFIG,E.eventOf(DEFAULT_CONFIG,"HJ"));
-  eq(rule.tries,3);eq(E.heightList(rule,{}),[120,125,130,135,140,145]);
-  eq(E.heightList(rule,{a:{h:{145:"O"}}}).slice(-1)[0],150);
-  eq(E.heightSeq(rule),["","O","XO","XXO","XXX","-"]);
-  const S={students:["a","b","c","d"].map(i=>st(i,"J","F","18"))};
-  fieldDoc(S,"HJ","F","18",{a:{h:{120:"O",125:"O",130:"XO",135:"XXX"}},b:{h:{120:"-",125:"O",130:"O",135:"XO"}},c:{h:{120:"XXX"}},d:{ns:true}});
+t("long jump short format: 2 jumps, then the top 4 get a 3rd (decision 33)",()=>{
+  const ev=E.eventOf(DEFAULT_CONFIG,"LJ");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
+  const row=(id,x,y)=>({id,m:{a:{0:x,1:y}}});
+  const rows=[row("a","400","410"),row("b","500","x"),row("c","300","310"),row("d","450","-"),row("e","420","x"),row("f","x","x")];
+  eq([...E.thirdJump(rows,rule,true)].sort(),["a","b","d","e"]);
+  eq(E.thirdJump(rows,rule,false),null);
+  const t=E.fieldTurn(ev,rule,rows,true,null);eq(t.up,0);eq(t.next,1);
+});
+t("now up and next follow the arrival order, skipping a no show",()=>{
+  const ev=E.eventOf(DEFAULT_CONFIG,"SP");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
+  const rows=[{id:"a",m:{t:{0:"Fair"}}},{id:"b",m:{ns:true}},{id:"c",m:{}},{id:"d",m:{}}];
+  const t=E.fieldTurn(ev,rule,rows,false,null);eq(t.up,2);eq(t.next,3);
+  const done=E.fieldTurn(ev,rule,[{id:"a",m:{t:{0:"Fair",1:"Foul",2:"Pass"}}}],false,null);eq(done.up,-1);
+});
+t("throws: fair, foul or pass, and only the measured best counts (decision 34)",()=>{
+  const S={students:["a","b","c","d"].map(i=>st(i,"B","M","17"))};
+  fieldDoc(S,"SP","M","17",{a:{t:{0:"Fair",1:"Foul",2:"Fair"},best:"1124"},b:{t:{0:"Foul",1:"Foul",2:"Foul"}},c:{t:{0:"Fair"},best:"1287"},d:{t:{0:"Fair"}}},true);
+  const G=compute(S).groups.get(groupKey("SP","M","17"));
+  eq(G.rows.map(r=>[r.id,r.best,r.place,r.pts]),[["c",1287,1,10],["a",1124,2,8],["b",0,null,0],["d",0,null,0]]);
+  eq(G.rows[3].noMeasure,true);eq(G.rows[2].noMeasure,false);
+});
+t("a typed best with no fair throw does not count",()=>{
+  const S={students:[st("a","B","M","17")]};
+  fieldDoc(S,"D","M","17",{a:{t:{0:"Foul"},best:"3000"}},true);
+  eq(compute(S).groups.get(groupKey("D","M","17")).rows[0].best,0);
+});
+t("weights by age and sex, with 12 and 13 split where they differ",()=>{
+  eq(E.weightFor(DEFAULT_CONFIG,"SP","M","17"),"5 kg");eq(E.weightFor(DEFAULT_CONFIG,"SP","F","18"),"4 kg");eq(E.weightFor(DEFAULT_CONFIG,"SP","M","13"),"3 kg");
+  eq(E.weightFor(DEFAULT_CONFIG,"D","F","13"),"12 years 0.75 kg, 13 years 1 kg");
+  eq(E.weightFor(DEFAULT_CONFIG,"D","M","16"),"1.5 kg");eq(E.weightFor(DEFAULT_CONFIG,"J","M","18"),"800 g");
+});
+t("high jump start heights come from the sheet",()=>{
+  eq(E.hjStart(DEFAULT_CONFIG,"F","13"),105);eq(E.hjStart(DEFAULT_CONFIG,"M","13"),115);eq(E.hjStart(DEFAULT_CONFIG,"F","14"),110);eq(E.hjStart(DEFAULT_CONFIG,"M","14"),115);eq(E.hjStart(DEFAULT_CONFIG,"M","15"),120);eq(E.hjStart(DEFAULT_CONFIG,"F","18"),110);
+});
+const HJ=E.eventOf(DEFAULT_CONFIG,"HJ"),HR=E.fieldRule(DEFAULT_CONFIG,HJ);
+t("the tap order is O XO XXO XXX, and a pass while question 31 stands",()=>{
+  eq(E.heightSeq(HR),["","O","XO","XXO","XXX","-"]);
+  eq(E.heightSeq(Object.assign({},HR,{pass:false})),["","O","XO","XXO","XXX"]);
+});
+t("girls: up 5 cm until 3 remain, then 3 cm",()=>{
+  const ids=["a","b","c","d","e"];
+  let p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,{});eq(p.cur,110);eq(p.heights.slice(0,3),[110,115,120]);eq(p.left,5);
+  const m={a:{h:{110:"O"}},b:{h:{110:"O"}},c:{h:{110:"XO"}},d:{h:{110:"O"}},e:{h:{110:"XXX"}}};
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m);eq(p.cur,115);eq(p.left,4);
+  m.a.h[115]="O";m.b.h[115]="XXX";m.c.h[115]="O";m.d.h[115]="O";
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m);eq(p.cur,118);eq(p.left,3);
+});
+t("boys: 10 cm first, then 5 cm until 3 remain, then 3 cm",()=>{
+  const ids=["a","b","c","d","e"];const m={};ids.forEach(i=>m[i]={h:{120:"O"}});
+  let p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"M","17",ids,m);eq(p.cur,130);
+  ids.forEach(i=>m[i].h[130]="O");p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"M","17",ids,m);eq(p.cur,135);
+  m.a.h[135]="XXX";m.b.h[135]="XXX";m.c.h[135]="O";m.d.h[135]="XO";m.e.h[135]="O";
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"M","17",ids,m);eq(p.cur,138);eq(p.left,3);
+});
+t("the last athlete keeps jumping until 3 misses; a pass moves on with the round; all out ends it",()=>{
+  const m={a:{h:{110:"XXX"}},b:{h:{110:"-"}}};
+  let p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b"],m);eq(p.cur,113);eq(p.left,1);
+  m.b.h[113]="O";p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b"],m);eq(p.cur,116);
+  m.b.h[116]="XXX";p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b"],m);eq(p.cur,null);eq(p.left,0);
+});
+t("a box on a height that later moved keeps its column",()=>{
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a"],{a:{h:{110:"O",117:"O"}}});
+  assert(p.heights.includes(117));
+});
+t("high jump: best height cleared; ties by misses at the height, then overall, then share (decision 35)",()=>{
+  const S={students:["a","b","c","d","e","f"].map(i=>st(i,"J","F","18"))};
+  fieldDoc(S,"HJ","F","18",{a:{h:{110:"O",115:"XO",120:"XXX"}},b:{h:{110:"XO",115:"O",120:"XXX"}},c:{h:{110:"O",115:"O",120:"XXX"}},d:{h:{110:"O",115:"O",120:"XXX"}},e:{h:{110:"-",115:"O",118:"XO"}},f:{h:{110:"XXX"}}});
   const G=compute(S).groups.get(groupKey("HJ","F","18"));
-  eq(G.rows.map(r=>[r.id,r.best,r.place,r.pts]),[["b",135,1,10],["a",130,2,8],["c",0,null,0],["d",0,null,0]]);
+  eq(G.rows.map(r=>[r.id,r.best,r.place]),[["e",118,1],["c",115,2],["d",115,2],["b",115,4],["a",115,5],["f",0,null]]);
+  eq(G.rows[1].pts,7);eq(G.rows[5].pts,0);
 });
-t("high jump countback: fewer failures at the height, then fewer overall",()=>{
-  const m={a:{h:{120:"O",125:"XO"}},b:{h:{120:"XO",125:"O"}},c:{h:{120:"O",125:"O"}}};
-  const S={config:cfgWith({rules:{HJ:{ties:"countback"}}}),students:["a","b","c"].map(i=>st(i,"J","F","18"))};
-  fieldDoc(S,"HJ","F","18",m);
-  eq(compute(S).groups.get(groupKey("HJ","F","18")).rows.map(r=>r.id),["c","b","a"]);
+t("marks print to 2 decimals; 1 decimal rounds down as a setting (question 32)",()=>{
+  eq(E.fmtMark(534),"5.34");
+  const S={config:cfgWith({markDp:1}),students:[]};compute(S);eq(E.fmtMark(539),"5.3");
+  compute({students:[]});eq(E.fmtMark(539),"5.39");
 });
 t("a group with athletes but no Group finished stays provisional; final counts",()=>{
-  const S={students:[st("a","B","M","14")]};fieldDoc(S,"SP","M","14",{a:{a:{0:"700"}}});
+  const S={students:[st("a","B","M","14")]};fieldDoc(S,"SP","M","14",{a:{t:{0:"Fair"},best:"700"}});
   const R=compute(S);eq(R.groups.get(groupKey("SP","M","14")).status,"Provisional");eq(R.finalCount,0);
   S.field[E.fieldId(groupKey("SP","M","14"))].final=true;eq(compute(S).finalCount,1);
 });
@@ -240,13 +300,13 @@ t("every house total adds up by age plus relays",()=>{
 t("HRIS list has the top 2 of each individual event, track and field",()=>{
   const S={students:["a","b","c"].map(i=>st(i,"B","M","18"))};
   run(S,1,"100","M","18",1,{1:"a",2:"b",3:"c"},{1:1200,2:1300,3:1400},[1,2,3]);
-  fieldDoc(S,"SP","M","18",{a:{a:{0:"900"}},b:{a:{0:"950"}},c:{a:{0:"800"}}},true);
+  fieldDoc(S,"SP","M","18",{a:{t:{0:"Fair"},best:"900"},b:{t:{0:"Fair"},best:"950"},c:{t:{0:"Fair"},best:"800"}},true);
   const L=E.hrisList(compute(S));eq(L.length,4);eq(L.map(x=>x.val),["12.00","13.00","9.50 m","9.00 m"]);
 });
 t("records: lower wins on the track, higher in the field, equal is noted",()=>{
   const S={students:["a","b"].map(i=>st(i,"B","M","18")),records:[{key:groupKey("100","M","18"),v:1250,holders:[{n:"X"}]},{key:groupKey("SP","M","18"),v:900,holders:[{n:"Y"}]}]};
   run(S,1,"100","M","18",1,{1:"a"},{1:1200},[1]);
-  fieldDoc(S,"SP","M","18",{b:{a:{0:"900"}}},true);
+  fieldDoc(S,"SP","M","18",{b:{t:{0:"Fair"},best:"900"}},true);
   const R=compute(S);
   eq(R.groups.get(groupKey("100","M","18")).recordNote.kind,"new");
   eq(R.groups.get(groupKey("SP","M","18")).recordNote.kind,"equal");

@@ -19,9 +19,9 @@ const DEFAULT_EVENTS=[
   {k:"R",name:"4 x 100 m relay",kind:"track",run:"lanes",gk:"band",dist:400,relay:true,on:true},
   {k:"HJ",name:"High Jump",kind:"field",style:"height",gk:"age",on:true},
   {k:"LJ",name:"Long Jump",kind:"field",style:"distance",gk:"age",on:true},
-  {k:"SP",name:"Shot Put",kind:"field",style:"distance",gk:"age",on:true},
-  {k:"D",name:"Discus",kind:"field",style:"distance",gk:"age",on:true},
-  {k:"J",name:"Javelin",kind:"field",style:"distance",gk:"age",on:false}
+  {k:"SP",name:"Shot Put",kind:"field",style:"throw",gk:"age",on:true},
+  {k:"D",name:"Discus",kind:"field",style:"throw",gk:"age",on:true},
+  {k:"J",name:"Javelin",kind:"field",style:"throw",gk:"age",on:false}
 ];
 /* the 2026 timetable. f lists the station for each age, oldest first */
 const DEFAULT_TIMETABLE=[
@@ -36,13 +36,26 @@ const DEFAULT_TIMETABLE=[
   {at:"1:10 pm",k:"400",x:"F",fx:"M",f:["D2","HJ1","HJ2","LJ2","D1","SP"]},
   {at:"1:35 pm",k:"R",x:"FM"}
 ];
-/* question 8: Jordan has not set these yet, so they are organiser settings with the values drawn on the boards */
-const RULE_DIST={attempts:3,ties:"share"};
-const RULE_HIGH={tries:3,start:120,step:5,ties:"share"};
+/* the 2027 instruction sheets (decisions 32 to 35), held as organiser settings */
+const RULE_DIST={attempts:3,ties:"share",shortTop:4};         /* long jump: every jump measured */
+const RULE_THROW={attempts:3,ties:"share"};                   /* throws: fair, foul or pass; the best is measured once */
+const RULE_HIGH={tries:3,raise:{F:[5],M:[10,5]},lastRaise:3,lastLeft:3,pass:true,ties:"countback"};
+/* each cell holds girls / boys, as on the sheets */
+const DEFAULT_SHEET=[
+  {a:"12",hj:"1.05 / 1.15 m",SP:"3 / 3 kg",D:"0.75 / 0.75 kg",J:"400 / 600 g"},
+  {a:"13",hj:"1.05 / 1.15 m",SP:"3 / 3 kg",D:"1 / 1 kg",J:"400 / 600 g"},
+  {a:"14",hj:"1.10 / 1.15 m",SP:"3 / 4 kg",D:"1 / 1 kg",J:"500 / 700 g"},
+  {a:"15",hj:"1.10 / 1.20 m",SP:"3 / 4 kg",D:"1 / 1 kg",J:"500 / 700 g"},
+  {a:"16",hj:"1.10 / 1.20 m",SP:"3 / 5 kg",D:"1 / 1.5 kg",J:"500 / 700 g"},
+  {a:"17",hj:"1.10 / 1.20 m",SP:"3 / 5 kg",D:"1 / 1.5 kg",J:"500 / 700 g"},
+  {a:"18+",hj:"1.10 / 1.20 m",SP:"4 / 6 kg",D:"1 / 1.75 kg",J:"600 / 800 g"}
+];
 const DEFAULT_CONFIG={
   name:"CCAS Athletics Carnival 2027",date:"2027-06-18",ageDate:"2027-12-31",venue:"Mingara Athletics Track",lanes:8,chief:"Jordan Dennis",
   points:{p1:10,p2:8,p3:6,rest:4},relayPoints:{p1:20,p2:16,p3:12,rest:8},
-  events:DEFAULT_EVENTS,timetable:DEFAULT_TIMETABLE,locs:{HJ:2,LJ:2,SP:1,D:2,J:1},rules:{},
+  events:DEFAULT_EVENTS,timetable:DEFAULT_TIMETABLE,locs:{HJ:2,LJ:2,SP:1,D:2,J:1},rules:{},sheet:DEFAULT_SHEET,
+  /* question 32: marks to the nearest centimetre. Assumed until Jordan decides */
+  markDp:2,
   /* question 14: how the Open 1500 m counts. Assumed until Jordan decides */
   open:{house:true,champ:false},
   limits:{},locked:false,lockedAt:null,notRun:[]
@@ -134,8 +147,11 @@ function oddTime(k,cs,limits){
   return null;
 }
 /* ---- marks are whole centimetres, typed as digits: 534 is 5.34 m. x is a foul, - a pass ---- */
+let MARK_DP=2;
 function markCm(v){return /^[0-9]+$/.test(String(v==null?"":v))&&+v>0?+v:0}
-function fmtMark(cm){return cm?(cm/100).toFixed(2):""}
+/* a tape reading rounds down, never up */
+function fmtMark(cm){if(!cm)return "";return MARK_DP===1?(Math.floor(cm/10)/10).toFixed(1):(cm/100).toFixed(2)}
+function fmtHeight(cm){return cm?(cm/100).toFixed(2):""}
 function fmtCell(v){if(v==null||v==="")return "";if(v==="x")return "X";if(v==="-")return "Pass";const c=markCm(v);return c?fmtMark(c):String(v)}
 function cleanMark(raw){
   const v=String(raw==null?"":raw).trim().toLowerCase();
@@ -190,19 +206,52 @@ function finishOrderFromTaps(order){
 }
 
 /* ---- field events ---- */
-function fieldRule(cfg,ev){const base=ev.style==="height"?RULE_HIGH:RULE_DIST;return Object.assign({},base,(cfg.rules||{})[ev.k]||{})}
-function heightList(rule,marks){
-  /* 6 heights drawn, then always one spare above the highest with an entry */
-  let top=5;
-  for(const m of Object.values(marks||{})){for(const h in (m.h||{})){if(m.h[h]){const i=Math.round((+h-rule.start)/rule.step);if(i+1>top)top=i+1}}}
-  return Array.from({length:top+1},(_,i)=>rule.start+i*rule.step);
+function fieldRule(cfg,ev){const base=ev.style==="height"?RULE_HIGH:ev.style==="throw"?RULE_THROW:RULE_DIST;return Object.assign({},base,(cfg.rules||{})[ev.k]||{})}
+/* the girls / boys value from one sheet cell: "3 / 5 kg" gives "3 kg" and "5 kg" */
+function sheetPair(cell){
+  const m=String(cell||"").match(/^\s*([\d.]+)\s*\/\s*([\d.]+)\s*(\S*)\s*$/);
+  return m?{F:m[1]+(m[3]?" "+m[3]:""),M:m[2]+(m[3]?" "+m[3]:"")}:{F:String(cell||""),M:String(cell||"")};
 }
-/* the tap order for a high jump box: O, XO, XXO, XXX, -, then empty */
-function heightSeq(rule){const s=[""];for(let f=0;f<rule.tries;f++)s.push("X".repeat(f)+"O");s.push("X".repeat(rule.tries));s.push("-");return s}
+function sheetOf(cfg){return (cfg&&cfg.sheet)||DEFAULT_SHEET}
+function sheetRows(cfg,g){return sheetOf(cfg).filter(r=>g==="13"?r.a==="12"||r.a==="13":g==="18"?r.a==="18+":r.a===g)}
+/* the weight for a group; the 12 & 13 group can differ by age (decision 34) */
+function weightFor(cfg,k,x,g){
+  const rows=sheetRows(cfg,g).filter(r=>r[k]);if(!rows.length)return "";
+  const v=rows.map(r=>sheetPair(r[k])[x]);
+  return v.every(a=>a===v[0])?v[0]:rows.map((r,i)=>r.a+" years "+v[i]).join(", ");
+}
+function hjStart(cfg,x,g){const r=sheetRows(cfg,g)[0];return r?Math.round(parseFloat(sheetPair(r.hj)[x])*100)||100:100}
+/* the tap order for a high jump box */
+function heightSeq(rule){const s=[""];for(let f=0;f<rule.tries;f++)s.push("X".repeat(f)+"O");s.push("X".repeat(rule.tries));if(rule.pass)s.push("-");return s}
 function failsIn(v){return (String(v||"").match(/X/g)||[]).length}
+/* the bar: the height for each round comes from how many athletes are still in (decision 35).
+   Girls 5 cm until 3 remain, then 3 cm. Boys 10 cm first, then 5 cm until 3 remain, then 3 cm.
+   Returns the heights so far with some ahead, the current height (null when all are out), and who is left. */
+function hjPlan(cfg,ev,rule,x,g,ids,marks){
+  const start=hjStart(cfg,x,g);const cell=(id,h)=>((marks[id]||{}).h||{})[h]||"";
+  const allOut="X".repeat(rule.tries);
+  const isIn=(id,upto)=>!(marks[id]||{}).ns&&!Object.keys((marks[id]||{}).h||{}).some(h=>+h<=upto&&cell(id,h)===allOut);
+  const steps=rule.raise[x]||rule.raise.F;
+  const raiseAt=(n,left)=>left<=rule.lastLeft?rule.lastRaise:steps[Math.min(n,steps.length-1)];
+  const hs=[start];let cur=start,raises=0;
+  for(let i=0;i<80;i++){
+    const h=hs[hs.length-1];const still=ids.filter(id=>isIn(id,h-1));
+    const done=still.length>0&&still.every(id=>{const v=cell(id,h);return /O$/.test(v)||v==="-"||v===allOut});
+    if(!done){cur=still.length||!ids.length?h:null;break}
+    const left=still.filter(id=>isIn(id,h)).length;
+    if(!left){cur=null;break}
+    hs.push(h+raiseAt(raises,left));raises++;
+  }
+  const left=ids.filter(id=>isIn(id,9999)).length;
+  while(hs.length<7){hs.push(hs[hs.length-1]+raiseAt(raises,left||99));raises++}
+  /* a box typed on a height that later moved is never lost: it keeps its own column */
+  const extra=new Set(hs);
+  for(const id of ids)for(const h in ((marks[id]||{}).h||{}))if(cell(id,h))extra.add(+h);
+  return {start,heights:[...extra].sort((a,b)=>a-b),cur,left,out:ids.length-left,isIn};
+}
 function fieldRow(ev,rule,m){
-  /* one athlete's cells, best mark and what a countback needs */
-  m=m||{};const out={ns:!!m.ns,best:0,bestAt:0,tries:[],fails:0,failsAtBest:0};
+  /* one athlete's best mark and what a tie needs */
+  m=m||{};const out={ns:!!m.ns,best:0,bestAt:0,tries:[],fails:0,failsAtBest:0,noMeasure:false};
   if(m.ns)return out;
   if(ev.style==="height"){
     const hs=Object.keys(m.h||{}).map(Number).sort((a,b)=>a-b);
@@ -210,10 +259,45 @@ function fieldRow(ev,rule,m){
     for(const h of hs)if(h<=out.best)out.fails+=failsIn(m.h[h]);
     return out;
   }
+  if(ev.style==="throw"){
+    /* only the best throw is measured, once, at the end (decision 34) */
+    const fair=Object.values(m.t||{}).includes("Fair");
+    out.best=fair?markCm(m.best):0;out.noMeasure=fair&&!out.best;
+    if(out.best)out.tries=[out.best];
+    return out;
+  }
   const a=m.a||{};
   for(let i=0;i<rule.attempts;i++){const c=markCm(a[i]);if(c)out.tries.push(c);if(c>out.best){out.best=c;out.bestAt=i+1}}
   out.tries.sort((x,y)=>y-x);
   return out;
+}
+/* who is up and who is next, in arrival order (decision 32). rows are in arrival order.
+   Short long jump (decision 33): 2 jumps each, then only the top 4 get a 3rd */
+function bestOfTwo(r){const a=r.m.a||{};return Math.max(markCm(a[0]),markCm(a[1]))}
+function thirdJump(rows,rule,short){
+  if(!short)return null;
+  const two=rows.filter(r=>!r.m.ns).map(bestOfTwo).filter(Boolean).sort((a,b)=>b-a);
+  const cut=two[Math.min(rule.shortTop-1,two.length-1)]||0;
+  return new Set(rows.filter(r=>!r.m.ns&&cut&&bestOfTwo(r)>=cut).map(r=>r.id));
+}
+function fieldTurn(ev,rule,rows,short,plan){
+  if(!rows.length)return {up:-1,next:-1,third:null};
+  if(ev.style==="height"){
+    const wait=rows.map((r,i)=>i).filter(i=>{const r=rows[i];if(plan.cur==null||!plan.isIn(r.id,plan.cur-1))return false;const v=(r.m.h||{})[plan.cur]||"";return !(/O$/.test(v)||v==="-"||/^X+$/.test(v)&&failsIn(v)>=rule.tries)});
+    return {up:wait.length?wait[0]:-1,next:wait.length>1?wait[1]:-1,third:null};
+  }
+  const third=ev.style==="distance"?thirdJump(rows,rule,short):null;
+  const box=ev.style==="throw"?"t":"a";
+  const used=rows.map(r=>{
+    if(r.m.ns)return 99;
+    let n=0;for(let i=0;i<rule.attempts;i++)if((r.m[box]||{})[i])n++;
+    if(third&&!third.has(r.id)&&!(r.m.a||{})[2])n++;
+    return n});
+  const round=Math.min(...used);
+  if(round>=rule.attempts)return {up:-1,next:-1,third};
+  const up=used.indexOf(round);let next=used.indexOf(round,up+1);
+  if(next<0)next=used.findIndex((n,i)=>i!==up&&n<rule.attempts);
+  return {up,next,third};
 }
 function fieldCompare(ev,rule,a,b){
   /* negative when a is ahead of b; 0 is a tie */
@@ -239,6 +323,7 @@ function rankField(ev,rule,rows,P){
 /* ---- everything worked out from the stored records ---- */
 function compute(S){
   const cfg=Object.assign({},DEFAULT_CONFIG,S.config||{});
+  MARK_DP=cfg.markDp===1?1:2;
   const P=Object.assign({},DEFAULT_CONFIG.points,cfg.points||{});
   const PR=Object.assign({},DEFAULT_CONFIG.relayPoints,cfg.relayPoints||{});
   const open=Object.assign({},DEFAULT_CONFIG.open,cfg.open||{});
@@ -343,8 +428,10 @@ function compute(S){
     const rule=fieldRule(cfg,ev);const marks=doc.marks||{};
     const ids=Object.keys(doc.ath||{}).filter(id=>doc.ath[id]).sort((a,b)=>doc.ath[a]-doc.ath[b]||a.localeCompare(b));
     if(!ids.length&&!doc.final)continue;
-    const rows=ids.map(id=>Object.assign({id,p:who(id),m:marks[id]||{},place:null,pts:0,st:(marks[id]||{}).ns?"NS":"ok"},fieldRow(ev,rule,marks[id])));
+    const rows=ids.map((id,i)=>Object.assign({id,no:i+1,p:who(id),m:marks[id]||{},place:null,pts:0,st:(marks[id]||{}).ns?"NS":"ok"},fieldRow(ev,rule,marks[id])));
     const G=ensure(fg.key,ev);
+    G.arrival=rows.slice();G.plan=ev.style==="height"?hjPlan(cfg,ev,rule,fg.x,fg.g,ids,marks):null;
+    G.turn=fieldTurn(ev,rule,rows,!!doc.short,G.plan);
     G.rows=rankField(ev,rule,rows,P);G.rule=rule;G.fg=fg;G.doc=doc;
     G.final=!!doc.final;G.status=G.final?"Final":"Provisional";G.checkedAt=doc.finalAt||0;G.raceNos=[];
   }
@@ -405,7 +492,7 @@ function blockNow(R){
   return g.length?Math.min(...g.map(f=>f.block)):null;
 }
 /* the result shown for an athlete: a time or a mark */
-function resultText(G,r){if(G.field)return r.best?fmtMark(r.best)+" m":"";return fmtTime(r.eff)}
+function resultText(G,r){if(G.field)return r.best?(G.ev.style==="height"?fmtHeight(r.best):fmtMark(r.best))+" m":"";return fmtTime(r.eff)}
 function hrisList(R){
   const out=[];
   for(const e of R.events){
@@ -479,7 +566,7 @@ function parseRecordRows(text,cfg){
   });
   return {out,bad};
 }
-if(typeof module!=="undefined")module.exports={AGE_GROUPS,AGES_DOWN,HOUSES,TEAMS,DEFAULT_EVENTS,DEFAULT_TIMETABLE,DEFAULT_CONFIG,RULE_DIST,RULE_HIGH,
-  eventOf,programEvents,newEvent,stationsOf,fieldGroups,fieldId,fieldRule,heightList,heightSeq,groupKey,groupLabel,grpName,teamId,
+if(typeof module!=="undefined")module.exports={AGE_GROUPS,AGES_DOWN,HOUSES,TEAMS,DEFAULT_EVENTS,DEFAULT_TIMETABLE,DEFAULT_CONFIG,RULE_DIST,RULE_THROW,RULE_HIGH,
+  eventOf,programEvents,newEvent,stationsOf,fieldGroups,fieldId,fieldRule,heightSeq,hjPlan,hjStart,weightFor,fieldTurn,thirdJump,sheetPair,groupKey,groupLabel,grpName,teamId,
   parseTime,fmtTime,oddTime,markCm,fmtMark,fmtCell,cleanMark,heatEffective,lateSlip,pointsFor,compute,blockNow,hrisList,resultText,
   parseStudents,parseRecordRows,ageOn,ageGroup};

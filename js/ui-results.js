@@ -10,7 +10,7 @@ function trackRace(){return liveRaces().find(r=>r.multi?!r.hasSlip:(r.filled.len
 function recordLine(G){
   if(!G.record)return "Record [no list yet]";
   const h=G.record.holders||[];
-  return `Record ${G.field?fmtMark(G.record.v)+" m":fmtTime(G.record.v)}, ${esc(h.map(x=>x.n).join(" and "))}${h[0]&&h[0].y?" "+esc(h[0].y):""}`;
+  return `Record ${G.field?(G.ev.style==="height"?fmtHeight(G.record.v):fmtMark(G.record.v))+" m":fmtTime(G.record.v)}, ${esc(h.map(x=>x.n).join(" and "))}${h[0]&&h[0].y?" "+esc(h[0].y):""}`;
 }
 function statusChip(){const R=A.R;const n=R.events.length;const k=R.finalCount;return k>=n&&n?`<span class="chip final">Final, all ${n} events in</span>`:`<span class="chip prov">Provisional, ${k} of ${n} events in</span>`}
 function stand(){
@@ -67,11 +67,11 @@ function resultGroups(){
 }
 function groupCard(G){
   const stn=G.field?(A.R.stations.find(s=>s.id===G.fg.station)||{}).name:"";
-  const meta=G.field?`${esc(stn)} · best of the attempts · ${recordLine(G)}`:`${raceRange(G.raceNos)} · ${plural(G.heats.length,"heat")}, timed final · ${recordLine(G)}`;
+  const meta=G.field?`${esc(stn)} · ${G.ev.style==="height"?"best height cleared":"best mark"} · ${recordLine(G)}`:`${raceRange(G.raceNos)} · ${plural(G.heats.length,"heat")}, timed final · ${recordLine(G)}`;
   const note=G.recordNote?`<div class="recbox"><b>${G.recordNote.kind==="new"?"New record":"Record equalled"}:</b> ${G.recordNote.rows.map(r=>`${esc(pname(r.p))} (${esc(houseName(r.p.h))}) ${esc(resultText(G,r))}`).join(", ")}.${G.final?"":" Provisional until all heats are in."}</div>`:"";
   const tags=r=>`${r.tag?`<span class="tag ${r.tag==="NEW RECORD"?"rec":"eq"}">${r.tag}</span> `:""}${r.hris?`<span class="tag hris">HRIS</span>`:""}`;
   const head=G.field?`<th>Place</th><th>Athlete</th><th>House</th><th class="num">Best mark</th><th class="num">Set on</th><th class="num">Points</th><th></th>`:`<th>Place</th><th>Runner</th><th>House</th><th class="num">Time</th><th class="num">Heat</th><th class="num">Points</th><th></th>`;
-  const rows=G.rows.map(r=>G.field?`<tr><td>${placeCell(r.place)}</td><td>${esc(pname(r.p))}</td><td>${hdot(r.p.h)}</td><td class="num">${r.best?fmtMark(r.best)+" m":r.m.ns?"NS":"No mark"}</td><td class="num">${r.bestAt?"Attempt "+r.bestAt:""}</td><td class="num">${fmtPts(r.pts||0)}</td><td>${tags(r)}</td></tr>`
+  const rows=G.rows.map(r=>G.field?`<tr><td>${placeCell(r.place,r.tie)}</td><td>${esc(pname(r.p))}</td><td>${hdot(r.p.h)}</td><td class="num">${r.best?esc(resultText(G,r)):r.m.ns?"NS":"No mark"}</td><td class="num">${r.bestAt?"Jump "+r.bestAt:""}</td><td class="num">${fmtPts(r.pts||0)}</td><td>${tags(r)}</td></tr>`
     :`<tr><td>${placeCell(r.place)}</td><td>${esc(pname(r.p))}</td><td>${hdot(r.p&&r.p.h)}</td><td class="num">${noTimeSt(r.st)?r.st:r.eff!=null?fmtTime(r.eff)+(r.auto?" (+1 s)":""):`<span class="muted">waiting</span>`}</td><td class="num">${r.heat}</td><td class="num">${fmtPts(r.pts||0)}</td><td>${tags(r)}</td></tr>`).join("");
   return `<article class="gcard"><div class="ghead"><h3>${esc(G.label)}</h3><span class="meta">${meta}</span><span class="chip ${G.final?"final":"prov"}">${G.status}</span></div>${note}<div class="tablewrap"><table><thead><tr>${head}</tr></thead><tbody>${rows}</tbody></table></div></article>`;
 }
@@ -116,7 +116,7 @@ async function exportCsv(){
   const R=A.R;
   const lines=[["Race","Heat","Lane","Event","Sex","Group","Surname","First name","House","Recorded","Result","Status","Place","Points","HRIS","Record"].join(",")];
   for(const G of R.groups.values())for(const r of G.rows){
-    if(G.field)lines.push(["","","",G.ev.name,sexName(G.x),grpName(G.g),r.p.s,r.p.f,houseName(r.p.h),"",r.best?fmtMark(r.best):"",r.m.ns?"NS":r.best?"ok":"No mark",r.place||"",r.pts||0,r.hris?"Yes":"",r.tag||""].map(csvCell).join(","));
+    if(G.field)lines.push(["","","",G.ev.name,sexName(G.x),grpName(G.g),r.p.s,r.p.f,houseName(r.p.h),"",resultText(G,r).replace(" m",""),r.m.ns?"NS":r.best?"ok":"No mark",r.place||"",r.pts||0,r.hris?"Yes":"",r.tag||""].map(csvCell).join(","));
     else lines.push([r.race,r.heat,r.lane,G.ev.name,sexName(G.x),grpName(G.g),r.p.team?r.p.name:r.p.s,r.p.team?"":r.p.f,houseName(r.p.h),fmtTime(r.rec),fmtTime(r.eff),r.auto?"+1 s":r.st,r.place||"",r.pts||0,r.hris?"Yes":"",r.tag||""].map(csvCell).join(","));
   }
   lines.push("");lines.push("House,Track,Field,Relays,Total");

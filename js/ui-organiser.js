@@ -5,7 +5,7 @@ function secStatus(k){
   if(k==="details")return {t:longDate(c.date)};
   if(k==="students"){const n=students().length;return n?{t:n+(A.roster.F.concat(A.roster.M).some(s=>s.test)?" test students":" students")}:{t:"No list loaded yet",a:1}}
   if(k==="program")return {t:A.R.events.length+" events"};
-  if(k==="field")return {t:"Not set yet",a:1};
+  if(k==="field")return {t:"From the 2027 sheets"};
   if(k==="points"){const P=Object.assign({},DEFAULT_CONFIG.points,c.points||{});return {t:[P.p1,P.p2,P.p3,P.rest].join(", ")}}
   if(k==="limits")return {t:"By distance"};
   if(k==="records")return A.records.length?{t:plural(A.records.length,"record")}:{t:"No list yet"};
@@ -81,16 +81,22 @@ function notRunPanel(){
   ${marked.length?`<div class="stack" style="gap:6px">${marked.map(k=>`<div class="row" style="justify-content:space-between"><span>${esc(lab(k))} <span class="chip">Not run</span></span><button type="button" class="btn small" data-act="onotrunundo" data-k="${esc(k)}">Undo</button></div>`).join("")}</div>`:""}`;
 }
 OSEC.field=()=>{const c=A.cfg;const on=fieldEvents(c);
-  const order=[...on.filter(e=>e.style==="distance"),...on.filter(e=>e.style==="height")];
-  const sel=(k,f,opts,v)=>`<select aria-label="${esc(k)} ${f}" data-rule="${esc(k)}" data-f="${f}">${opts.map(([a,b])=>`<option value="${a}" ${String(v)===String(a)?"selected":""}>${esc(b)}</option>`).join("")}</select>`;
-  const rows=order.map(e=>{const r=fieldRule(c,e);const high=e.style==="height";
-    const ties=sel(e.k,"ties",[["share","Shared"],["countback","Countback"]],r.ties);
-    return `<tr><td><b>${esc(e.name)}</b></td><td class="todoh">${high?sel(e.k,"tries",[[1,"1 try"],[2,"2 tries"],[3,"3 tries"]],r.tries):sel(e.k,"attempts",[1,2,3,4,5,6].map(n=>[n,plural(n,"attempt")]),r.attempts)}</td><td>${high?"Highest cleared":"Longest"}</td>
-      ${high?`<td class="todoh"><span class="row" style="gap:6px;flex-wrap:nowrap"><input aria-label="High jump start in metres" data-rule="${esc(e.k)}" data-f="start" value="${fmtMark(r.start)}" style="width:5em"><input aria-label="High jump steps in centimetres" data-rule="${esc(e.k)}" data-f="step" value="${r.step}" style="width:4em"></span></td>`:`<td class="muted">Not needed</td>`}
-      <td class="todoh">${ties}</td></tr>`}).join("");
+  const order=[...on.filter(e=>e.style==="distance"),...on.filter(e=>e.style==="throw"),...on.filter(e=>e.style==="height")];
+  const sel=(k,f,opts,v,lab)=>`<select aria-label="${esc(lab)}" data-rule="${esc(k)}" data-f="${f}" style="min-width:72px">${opts.map(([a,b])=>`<option value="${a}" ${String(v)===String(a)?"selected":""}>${esc(b)}</option>`).join("")}</select>`;
+  const nums=[1,2,3,4,5,6].map(n=>[n,n]);
+  const rows=order.map(e=>{const r=fieldRule(c,e);
+    if(e.style==="height")return `<tr><td><b>${esc(e.name)}</b></td><td><span class="row" style="gap:6px">${sel(e.k,"tries",[[1,1],[2,2],[3,3]],r.tries,"Tries at each height")} tries at each height, out after 3 misses in a row</span></td><td>Highest height cleared</td><td>Fewer misses at that height, then overall, then share</td></tr>`;
+    if(e.style==="throw")return `<tr><td><b>${esc(e.name)}</b></td><td><span class="row" style="gap:6px">${sel(e.k,"attempts",nums,r.attempts,e.name+" throws")} throws</span></td><td>The best throw only</td><td class="todoh">[SHARE THE PLACE? Q30]</td></tr>`;
+    return `<tr><td><b>${esc(e.name)}</b></td><td><span class="row" style="gap:6px">${sel(e.k,"attempts",nums,r.attempts,e.name+" jumps")} jumps. If too many athletes, 2 jumps, then the top ${r.shortTop} get a 3rd</span></td><td>Every jump</td><td class="todoh">${sel(e.k,"ties",[["share","Share the place"],["countback","Next best jump"]],r.ties,e.name+" ties")} Q30</td></tr>`}).join("");
+  const hj=on.find(e=>e.style==="height");const jav=on.some(e=>e.k==="J");
+  const cell=(a,f,v)=>`<input data-sheet="${esc(a)}" data-f="${f}" aria-label="${esc(a)} ${f}, girls and boys" value="${esc(v||"")}" style="width:9em;min-height:48px">`;
   const locs=on.map(e=>{const n=(c.locs||{})[e.k]||1;const box=v=>`<label style="display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer"><input type="checkbox" style="width:24px;height:24px" aria-label="${esc(e.name)}, ${plural(v,"location")}" ${n===v?"checked":""} data-loc="${esc(e.k)}" data-n="${v}">${v}</label>`;return `<tr><td><b>${esc(e.name)}</b></td><td>${box(1)}</td><td>${box(2)}</td></tr>`}).join("");
-  return `<h2>Field event rules</h2><div class="todo">All of this waits for Jordan's rules. The values here are the ones drawn on the boards, and the app follows them until they change. ${qchip(8)}</div>
-  <div class="tablewrap"><table><thead><tr><th>Event</th><th>Attempts</th><th>Best mark</th><th>Start and steps</th><th>Ties</th></tr></thead><tbody>${rows}</tbody></table></div>
+  return `<h2>Field event rules</h2><p class="muted" style="margin:0">From the 2027 CCAS instruction sheets. Change them here to suit your school.</p>
+  <div class="tablewrap"><table><thead><tr><th>Event</th><th>Attempts</th><th>What is measured</th><th>Ties</th></tr></thead><tbody>${rows}</tbody></table></div>
+  ${hj?`<div class="row"><span class="chip">High jump raises</span><span class="muted">Girls: 5 cm until 3 remain, then 3 cm. Boys: 10 cm first, then 5 cm until 3 remain, then 3 cm.</span></div>
+  <div class="row"><label style="display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer"><input type="checkbox" style="width:24px;height:24px" data-pass="${esc(hj.k)}" aria-label="High jump passes allowed" ${fieldRule(c,hj).pass?"checked":""}>An athlete can pass a height</label>${qchip(31)}</div>`:""}
+  <div class="row"><label style="display:flex;align-items:center;gap:10px;min-height:48px">Marks to <select id="cDp" aria-label="Decimals for marks"><option value="2" ${c.markDp!==1?"selected":""}>2 decimals (5.34 m)</option><option value="1" ${c.markDp===1?"selected":""}>1 decimal (5.3 m)</option></select></label>${qchip(32)}</div>
+  <h3>Heights and weights</h3><div class="tablewrap"><table><thead><tr><th>Age</th><th>High jump start, G / B</th><th>Shot, G / B</th><th>Discus, G / B</th>${jav?"<th>Javelin, G / B</th>":""}</tr></thead><tbody>${sheetOf(c).map(w=>`<tr><td><b>${esc(w.a)}</b></td><td>${cell(w.a,"hj",w.hj)}</td><td>${cell(w.a,"SP",w.SP)}</td><td>${cell(w.a,"D",w.D)}</td>${jav?`<td>${cell(w.a,"J",w.J)}</td>`:""}</tr>`).join("")}</tbody></table></div>
   <h3>Locations for each sport</h3><p class="muted" style="margin:0">Tick 1 or 2 locations for each field event that is on your program. With 1 location, groups on at the same time share it.</p>
   <table style="max-width:640px"><thead><tr><th>Sport</th><th>1 location</th><th>2 locations</th></tr></thead><tbody>${locs}</tbody></table>
   <h3>Stations</h3><div class="row">${stationsOf(c).map(s=>`<span class="chip">${esc(s.name)}</span>`).join("")}</div>`};
@@ -103,7 +109,7 @@ OSEC.limits=()=>{const L=A.cfg.limits||{};
 OSEC.records=()=>{
   const rows=A.records.slice().sort((a,b)=>a.key.localeCompare(b.key));
   const lab=k=>{const {k:t,x,g}=splitKey(k);const e=eventOf(A.cfg,t);return e?groupLabel(e,x,g):k};
-  const val=rc=>{const e=eventOf(A.cfg,splitKey(rc.key).k);return e&&e.kind==="field"?fmtMark(rc.v)+" m":fmtTime(rc.v)};
+  const val=rc=>{const e=eventOf(A.cfg,splitKey(rc.key).k);return e&&e.kind==="field"?(e.style==="height"?fmtHeight(rc.v):fmtMark(rc.v))+" m":fmtTime(rc.v)};
   return `<h2>Records</h2>${A.records.length?"":`<div class="todo">No CCAS athletics records list yet. ${qchip(10)}</div>`}
   <button type="button" class="btn" style="align-self:flex-start" data-act="orecload">Load a records list</button>
   ${rows.length?`<div class="tablewrap"><table><thead><tr><th>Event</th><th class="num">Record</th><th>Holder</th><th>Year</th><th></th></tr></thead><tbody>${rows.map(rc=>`<tr><td><b>${esc(lab(rc.key))}</b></td><td class="num">${esc(val(rc))}</td><td>${esc((rc.holders||[]).map(h=>h.n).join(" and "))}</td><td>${esc((rc.holders||[]).map(h=>h.y).join(", "))}</td><td><button type="button" class="btn small danger" data-act="orecdel" data-k="${esc(rc.key)}">Remove</button></td></tr>`).join("")}</tbody></table></div>`:""}`};

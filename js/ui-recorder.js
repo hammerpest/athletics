@@ -183,19 +183,22 @@ function renderRecField(){
     <div class="racebar" style="margin:0"><span class="racebadge"><small>FIELD</small><b>${esc(sel.station)}</b></span><div class="info"><b>${esc(groupLabel(ev,sel.x,sel.g))}</b><span>${esc(stn(sel.station))} · ${esc(when)}<span class="chip ${G&&G.final?"final":""}">${G?G.status:"Not started"}</span></span></div></div>
     <div class="panel" style="padding:0;overflow:hidden"><div class="tablewrap">${recFieldTable(sel,G,ev,ovr)}</div></div>
     ${ovr?`<div class="msg warn">Override is on. Changes show on every device at once.</div>`:""}
-    <p class="muted" style="font-size:.86rem;margin:0">Results are final at the station. The event coordinator can overrule any result at any time. Attempts and ties wait for the rules ${qchip(8)}</p>
+    <p class="muted" style="font-size:.86rem;margin:0">Results are final at the station. The event coordinator can overrule any result at any time.</p>
     <button type="button" class="btn big" data-act="rovr">${ovr?"Finish override":"Override (event coordinator)"}</button>
   </div>`;
   return `${lockBar()}<div class="recgrid" style="grid-template-columns:minmax(0,1fr) minmax(0,1.5fr)">${left}${right}</div>`;
 }
 function recFieldTable(f,G,ev,ovr){
-  const rows=G?G.rows:[];
-  const rule=fieldRule(A.cfg,ev);
-  const hts=ev.style==="height"?heightList(rule,(G&&G.doc.marks)||{}):null;
-  const heads=hts?hts.map(h=>`<th class="todoh">${fmtMark(h)}</th>`).join(""):Array.from({length:rule.attempts},(_,i)=>`<th class="todoh">${i+1}</th>`).join("");
-  const cells=(r,ri)=>hts?hts.map(h=>{const v=(r.m.h||{})[h]||"";return `<td>${ovr?hjCell(f,r,h,v):esc(v)}</td>`}).join("")
-    :Array.from({length:rule.attempts},(_,a)=>{const v=(r.m.a||{})[a];return `<td>${ovr?markCell(f,r,ri,a,v):esc(fmtCell(v)||(r.m.ns&&a===0?"NS":""))}</td>`}).join("");
+  const v=fieldView(f);const rule=v.rule;const rows=G?G.rows:[];const dis=!ovr||locked();
+  const n=rule.attempts;const hts=ev.style==="height"?v.plan.heights.filter(h=>rows.some(r=>(r.m.h||{})[h])||h===v.plan.cur):null;
+  const heads=hts?hts.map(h=>`<th>${fmtHeight(h)}</th>`).join(""):Array.from({length:n},(_,i)=>`<th>${i+1}</th>`).join("");
+  const box=(r,ri)=>{
+    if(hts)return hts.map(h=>{const c=(r.m.h||{})[h]||"";return `<td>${ovr?hjCell(f,r,h,c,dis):esc(c)}</td>`}).join("");
+    if(ev.style==="throw")return Array.from({length:n},(_,a)=>{const c=(r.m.t||{})[a]||"";return `<td>${ovr?throwCell(f,r,a,c,dis):esc(c||(r.m.ns&&a===0?"NS":""))}</td>`}).join("");
+    return Array.from({length:n},(_,a)=>{const c=(r.m.a||{})[a];return `<td>${ovr?markCell(f,r,ri,a,c,dis):esc(fmtCell(c)||(r.m.ns&&a===0?"NS":""))}</td>`}).join("");
+  };
+  const best=(r,ri)=>ev.style==="throw"&&ovr?bestCell(f,r,ri,dis):`<span class="bestm">${r.best?(hts?fmtHeight(r.best):fmtMark(r.best)):"&ndash;"}</span>`;
   return `<table><thead><tr><th>Place</th><th>Athlete</th>${heads}<th class="num">Best</th><th class="num">Points</th><th></th></tr></thead><tbody>
-    ${rows.map((r,ri)=>`<tr><td>${placeCell(r.place)}</td><td class="nmcell"><span class="htag">${hdot(r.p.h)}${esc(pname(r.p))}</span></td>${cells(r,ri)}<td class="num"><span class="bestm">${r.best?fmtMark(r.best):"&ndash;"}</span></td><td class="num">${fmtPts(r.pts||0)}</td><td>${r.tag?`<span class="tag ${r.tag==="NEW RECORD"?"rec":"eq"}">${r.tag}</span> `:""}${r.hris?`<span class="tag hris">HRIS</span>`:""}</td></tr>`).join("")||`<tr><td colspan="${5+(hts?hts.length:rule.attempts)}" class="muted">No athletes entered yet.</td></tr>`}
+    ${rows.map((r,ri)=>`<tr><td>${placeCell(r.place,r.tie)}</td><td class="nmcell"><span class="htag">${hdot(r.p.h)}${esc(pname(r.p))}</span></td>${box(r,ri)}<td class="num">${best(r,ri)}</td><td class="num">${fmtPts(r.pts||0)}</td><td>${r.tag?`<span class="tag ${r.tag==="NEW RECORD"?"rec":"eq"}">${r.tag}</span> `:""}${r.hris?`<span class="tag hris">HRIS</span>`:""}</td></tr>`).join("")||`<tr><td colspan="${5+(hts?hts.length:n)}" class="muted">No athletes entered yet.</td></tr>`}
   </tbody></table>`;
 }

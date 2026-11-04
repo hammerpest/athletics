@@ -35,8 +35,8 @@ if(!PIN_ROLES.some(x=>x[0]===A.role)){A.role=null;A.job=null}
 function hdot(h){return `<span class="hdot h${esc(h||"")}">${esc(h||"?")}</span>`}
 function htag(h){return `<span class="htag">${hdot(h)}${esc(houseName(h))}</span>`}
 function badge(n,cls){return `<span class="racebadge ${cls||""}"><small>RACE</small><b>${n==null?"-":n}</b></span>`}
-function medal(p){return `<span class="medal m${Math.min(p,4)}">${p}</span>`}
-function placeCell(p){return !p?"&ndash;":p<=3?medal(p):String(p)}
+function medal(p,tie){return `<span class="medal m${Math.min(p,4)}">${tie?"=":""}${p}</span>`}
+function placeCell(p,tie){return !p?"&ndash;":p<=3?medal(p,tie):(tie?"=":"")+p}
 function pname(p){return p?(p.team?p.name:(p.f+" "+p.s)):"Empty"}
 function listName(st){return st.team?st.name:st.s+", "+st.f}
 function locked(){if(A.past)return true;return !!A.cfg.locked&&A.job!=="organiser"}

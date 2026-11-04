@@ -30,7 +30,24 @@ function renderInner(){
   if(fid){const el=document.getElementById(fid);if(el&&el.focus){el.focus();if(el.setSelectionRange&&el.type!=="number"&&el.type!=="date")try{el.setSelectionRange(el.value.length,el.value.length)}catch(e){}}}
   window.scrollTo(sx,sy);
   wireInputs();
+  fitPicklist();
 }
+/* the name list: on a phone a full-screen panel, sized to the space above the keyboard. On anything larger it
+   stays beside its lane and opens upwards when there is more room above, so the names are never off screen */
+function fitPicklist(){
+  const vv=window.visualViewport;const h=vv?vv.height:innerHeight;
+  document.documentElement.style.setProperty("--vvh",h+"px");
+  const e=document.querySelector(".lane .picklist");if(!e||innerWidth<700)return;
+  e.classList.remove("up");e.style.maxHeight="";
+  const L=e.parentElement.getBoundingClientRect();
+  const bar=document.querySelector("#main .racebar");const roof=Math.max(document.getElementById("hdr").getBoundingClientRect().bottom,bar?bar.getBoundingClientRect().bottom:0);
+  const below=(vv?vv.offsetTop:0)+h-L.bottom-8,above=L.top-roof-8;
+  if(e.offsetHeight<=below)return;
+  if(above>below){e.classList.add("up");e.style.maxHeight=Math.min(380,above)+"px"}
+  else e.style.maxHeight=Math.max(200,below)+"px";
+}
+if(window.visualViewport)visualViewport.addEventListener("resize",fitPicklist);
+window.addEventListener("resize",fitPicklist);window.addEventListener("scroll",fitPicklist,{passive:true});
 function fieldGroupById(id){return A.R.fgroups.find(f=>f.id===id)||null}
 function wireInputs(){
   const f=document.getElementById("mfilter");if(f)f.oninput=()=>{A.m.filter=f.value;render()};
@@ -51,12 +68,20 @@ function wireInputs(){
     inp.onchange=()=>{if(!A.rendering)save()};
     inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const all=[...document.querySelectorAll("[data-mark]:not(:disabled)")];const nx=all[all.indexOf(inp)+1];inp.onchange=null;save();if(nx)nx.focus();else inp.blur()}};
   });
+  document.querySelectorAll("[data-best]").forEach(inp=>{
+    const save=()=>{const fg=fieldGroupById(inp.dataset.g);if(!fg)return;const v=cleanMark(inp.value).replace(/[^0-9]/g,"");setBest(fg,inp.dataset.best,v)};
+    inp.onfocus=()=>{const v=cleanMark(inp.value);if(v)inp.value=v;inp.select()};
+    inp.onchange=()=>{if(!A.rendering)save()};
+    inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();inp.onchange=null;save();inp.blur()}};
+  });
   document.querySelectorAll("[data-rule]").forEach(el=>{el.onchange=()=>{
-    const k=el.dataset.rule,fld=el.dataset.f;let v=el.value;
-    if(fld==="start"){v=markCm(cleanMark(v));if(!v){toast("Type the start height in metres, for example 1.20.");return}}
-    else if(fld==="step"){v=parseInt(v,10);if(!(v>0)){toast("Type the step in centimetres, for example 5.");return}}
-    else if(fld!=="ties")v=+v;
+    const k=el.dataset.rule,fld=el.dataset.f;const v=fld==="ties"?el.value:+el.value;
     saveCfg({rules:Object.assign({},A.cfg.rules||{},{[k]:Object.assign({},(A.cfg.rules||{})[k]||{},{[fld]:v})})},"Rule saved");
+  }});
+  document.querySelectorAll("[data-pass]").forEach(el=>{el.onchange=()=>{const k=el.dataset.pass;saveCfg({rules:Object.assign({},A.cfg.rules||{},{[k]:Object.assign({},(A.cfg.rules||{})[k]||{},{pass:el.checked})})},"Rule saved")}});
+  const dp=document.getElementById("cDp");if(dp)dp.onchange=()=>saveCfg({markDp:+dp.value},"Saved");
+  document.querySelectorAll("[data-sheet]").forEach(el=>{el.onchange=()=>{
+    saveCfg({sheet:sheetOf(A.cfg).map(r=>r.a===el.dataset.sheet?Object.assign({},r,{[el.dataset.f]:el.value.trim()}):r)},"Saved");
   }});
   document.querySelectorAll("[data-loc]").forEach(el=>{el.onchange=()=>{saveCfg({locs:Object.assign({},A.cfg.locs||{},{[el.dataset.loc]:+el.dataset.n})},"Locations saved")}});
   document.querySelectorAll("[data-limit]").forEach(el=>{el.onchange=()=>{
@@ -73,7 +98,8 @@ function wireInputs(){
     fr.readAsText(file)};
   const of=document.getElementById("oFile");if(of)of.onchange=e=>{const file=e.target.files[0];if(!file)return;const fr=new FileReader();fr.onload=()=>{A.o.text=String(fr.result);A.o.preview=parseStudents(A.o.text,A.cfg.ageDate);render()};fr.readAsText(file)};
 }
-function fOpen(id){A.f.gid=id;A.f.i=0;A.f.typed="";const f=fieldGroupById(id);if(f){const G=A.R.groups.get(f.key);if(G)A.f.i=0}fSave();render();window.scrollTo(0,0)}
+/* a device opens where the group is up to */
+function fOpen(id){A.f.gid=id;A.f.typed="";const f=fieldGroupById(id);const G=f&&A.R.groups.get(f.key);A.f.i=G&&G.turn.up>=0?G.turn.up:0;fSave();render();window.scrollTo(0,0)}
 const ACT={
   key:el=>pressKey(el.dataset.k),
   pinstart:()=>pinStart(),
@@ -167,13 +193,16 @@ const ACT={
   faddnew:()=>{const f=fieldGroupOpen();if(!f)return;A.modal={t:"addStudent",x:f.x,ages:[f.g],then:async st=>{await fieldAdd(f,st.id)}};render()},
   fns:el=>{const f=fieldGroupById(el.dataset.g);if(!f)return;const on=!!((fieldDocOf(f).marks||{})[el.dataset.id]||{}).ns;setNs(f,el.dataset.id,!on)},
   hjtap:el=>{const f=fieldGroupById(el.dataset.g);if(f)hjStep(f,el.dataset.id,+el.dataset.h)},
-  hjset:el=>{const f=fieldGroupOpen();if(!f)return;const G=A.R.groups.get(f.key);const r=G&&fieldRowsInOrder(G)[A.f.i];if(r)setHeight(f,r.id,+el.dataset.h,el.dataset.v)},
+  ttap:el=>{const f=fieldGroupById(el.dataset.g);if(f)throwStep(f,el.dataset.id,+el.dataset.a)},
+  fshort:()=>{const f=fieldGroupOpen();if(f)fieldWrite(f,{short:!fieldView(f).short})},
+  hjset:el=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);const r=v.rows[A.f.i];if(r)setHeight(f,r.id,+el.dataset.h,el.dataset.v)},
+  fthrow:el=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);const r=v.rows[A.f.i];if(!r)return;const m=r.m.t||{};for(let i=0;i<v.rule.attempts;i++)if(!m[i]){setThrow(f,r.id,i,el.dataset.v);return}},
   fkey:el=>fieldPhoneAct("key",el.dataset.k),
   fpass:()=>fieldPhoneAct("pass"),
   fsave:()=>fieldPhoneAct("save"),
-  fnext:()=>{const f=fieldGroupOpen();const G=f&&A.R.groups.get(f.key);if(!G)return;A.f.i=(A.f.i+1)%Math.max(1,G.rows.length);fSave();render();window.scrollTo(0,0)},
+  fnext:()=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);if(!v.rows.length)return;A.f.i=v.turn.up>=0&&v.turn.up!==A.f.i?v.turn.up:nextAfter(v.rows,A.f.i);fSave();render();window.scrollTo(0,0)},
   fundo:()=>fieldUndo(),
-  ffinish:()=>{const f=fieldGroupOpen();if(!f)return;A.modal={t:"fieldFinish",label:groupLabel(eventOf(A.cfg,f.k),f.x,f.g)};render()},
+  ffinish:()=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);A.modal={t:"fieldFinish",label:groupLabel(v.ev,f.x,f.g),unmeasured:v.rows.filter(r=>r.noMeasure).length};render()},
   ffinishok:()=>fieldFinish(),
   aprev:()=>{const f=finalsInOrder();const i=Math.max(0,A.a.idx-1);A.a.key=f[i]?f[i].key:null;render()},
   aread:()=>{const f=finalsInOrder();if(f[A.a.idx])markRead(f[A.a.idx].key);const i=Math.min(f.length-1,A.a.idx+1);A.a.key=f[i]?f[i].key:null;render()},
