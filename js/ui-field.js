@@ -2,7 +2,7 @@
    The rules are the 2027 instruction sheets (decisions 32 to 35), held as organiser settings. Athletes are
    numbered as they arrive, which is their order for the event. Results are final at the station; the event
    coordinator can overrule (decision 23). Each box saves on its own, so two teachers can work one group. */
-function fSave(){ssSet("aths_field",JSON.stringify({station:A.f.station,gid:A.f.gid,i:A.f.i,typed:A.f.typed,a:A.f.a}))}
+function fSave(){ssSet("aths_field",JSON.stringify({station:A.f.station,gid:A.f.gid,i:A.f.i,id:A.f.id,typed:A.f.typed,a:A.f.a}))}
 function fieldGroupOpen(){return A.R?A.R.fgroups.find(f=>f.id===A.f.gid)||null:null}
 function fieldDocOf(f){return A.field[f.id]||{ath:{},marks:{}}}
 function deepMerge(a,b){const o=Object.assign({},a||{});for(const k in b){if(b[k]&&typeof b[k]==="object"&&!Array.isArray(b[k])&&o[k]&&typeof o[k]==="object")o[k]=deepMerge(o[k],b[k]);else o[k]=b[k]}return o}
@@ -13,6 +13,18 @@ function fieldView(f){
   const plan=ev.style==="height"?(G?G.plan:hjPlan(A.cfg,ev,rule,f.x,f.g,[],{})):null;
   const turn=G?G.turn:{up:-1,next:-1,third:null};
   return {ev,G,rule,rows,plan,turn,fin:!!(G&&G.final),short:!!(G&&G.doc.short)};
+}
+/* the phone stays on an athlete, not a place in the list: someone taken off on another device must never move
+   typed work onto the next person. With no rows yet (the first draw after a reload) nothing changes */
+function fieldCur(v){
+  const rows=v.rows;if(!rows.length)return null;
+  let i=A.f.id?rows.findIndex(r=>r.id===A.f.id):-1;
+  if(i<0){
+    if(A.f.id&&(A.f.typed||A.f.a!=null)){A.f.typed="";A.f.a=null;toast("That athlete was taken off the list. The typed mark was not saved.")}
+    i=Math.min(A.f.i,rows.length-1);
+  }
+  if(A.f.i!==i||A.f.id!==rows[i].id){A.f.i=i;A.f.id=rows[i].id;fSave()}
+  return rows[i];
 }
 function stationGroups(id){return A.R.fgroups.filter(f=>f.station===id).sort((a,b)=>(a.block==null?99:a.block)-(b.block==null?99:b.block))}
 /* the group a station is up to: the first one not final */
@@ -109,9 +121,12 @@ async function fieldWrite(f,patch){
   setTimeout(()=>render(),0);
   await w(()=>A.store.update("field/"+f.id,Object.assign({k:f.k,x:f.x,g:f.g},patch)));
 }
+/* final at the station: only the event coordinator can change it, from the Recorder (decision 23) */
+function stationFinal(f){if(A.job!=="field"||!fieldView(f).fin)return false;toast("Final. Only the event coordinator can change it.");render();return true}
 function curMark(f,id){return (fieldDocOf(f).marks||{})[id]||{}}
 /* the one way a box changes: kind a (jump), t (throw), h (high jump), best or ns */
 function setField(f,id,kind,key,val,noUndo){
+  if(stationFinal(f))return;
   const m=curMark(f,id);const prev=kind==="best"?(m.best||""):kind==="ns"?!!m.ns:(m[kind]||{})[key]||"";
   if(prev===val)return;
   if(!noUndo)fieldUndoPush(f,id,kind,key,prev);
@@ -141,8 +156,10 @@ function fieldUndo(){
 }
 /* an athlete added by mistake, or who left before their first turn, comes off the list */
 async function fieldToggle(f,id){
+  if(stationFinal(f))return;
+  /* the sign says on or off the list; the size keeps their number, so coming back gives them the same one */
   const at=(fieldDocOf(f).ath||{})[id]||0;
-  if(at<=0)return fieldAdd(f,id);
+  if(!at)return fieldAdd(f,id);
   await fieldWrite(f,{ath:{[id]:-at}});
 }
 async function fieldAdd(f,id){
@@ -150,8 +167,9 @@ async function fieldAdd(f,id){
   const at=Math.max(Date.now(),...Object.values(fieldDocOf(f).ath||{}).map(n=>Math.abs(n)+1));
   await fieldWrite(f,{ath:{[id]:at}});
 }
+function modalGroup(){return (A.modal&&A.modal.gid&&fieldGroupById(A.modal.gid))||fieldGroupOpen()}
 MODALS.fieldAdd=M=>{
-  const f=fieldGroupOpen();if(!f)return "";const ev=eventOf(A.cfg,f.k);const on=Object.fromEntries(Object.entries(fieldDocOf(f).ath||{}).filter(e=>e[1]>0));
+  const f=modalGroup();if(!f)return "";const ev=eventOf(A.cfg,f.k);const on=Object.fromEntries(Object.entries(fieldDocOf(f).ath||{}).filter(e=>e[1]>0));
   const q=(A.f.filter||"").toLowerCase();
   const list=eligible(ev,f.x,f.g).filter(s=>!q||listName(s).toLowerCase().includes(q));
   return `<h2>Add an athlete</h2><p class="muted" style="margin:0">${esc(groupLabel(ev,f.x,f.g))}. Tap each athlete as they arrive: this is their number and their order.</p>
@@ -177,9 +195,10 @@ function jumpBox(v,r){
 }
 function renderFieldPhone(f){
   const v=fieldView(f);const {ev,rule,rows}=v;const edit=fieldEditable(v);
-  if(A.f.i>=rows.length)A.f.i=0;
+  /* a mark still being typed when the group goes final is not saved, and says so */
+  if(!edit&&(A.f.typed||A.f.a!=null)){if(A.f.typed)toast("Final. The typed mark was not saved.");A.f.typed="";A.f.a=null;fSave()}
   const undoBtn=`<button type="button" class="btn" data-act="fundo" ${v.fin?"disabled":""}>Undo last</button>`;
-  const r=rows[A.f.i];const dis=edit?"":"disabled";const nx=r?rows[v.turn.next>=0&&A.f.i===v.turn.up?v.turn.next:nextAfter(rows,A.f.i)]:null;
+  const r=fieldCur(v);const dis=edit?"":"disabled";const nx=r?rows[v.turn.next>=0&&A.f.i===v.turn.up?v.turn.next:nextAfter(rows,A.f.i)]:null;
   const w=ev.style==="throw"?weightFor(A.cfg,ev.k,f.x,f.g):"";
   const sub=!r?"No athletes yet":ev.style==="throw"?`No. ${r.no} of ${rows.length}${w?" · "+esc(ev.k==="SP"?"Shot":ev.name)+" "+esc(w):""}`:`Athlete ${r.no} of ${rows.length}`;
   const head=`<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>FIELD</small><b>${esc(f.station)}</b></span><div class="info"><b>${esc(groupLabel(ev,f.x,f.g))}</b><span>${sub}</span></div></div>`;
@@ -187,7 +206,7 @@ function renderFieldPhone(f){
   if(!r)return `${lockBar()}<div class="stack" style="gap:8px">${head}<div class="msg info">Add the athletes as they arrive.</div>${tools}</div>`;
   const name=`<span class="htag bigath"><span class="hdot h${esc(r.p.h)}" style="width:30px;height:30px;font-size:.9rem">${esc(r.p.h)}</span>${esc(pname(r.p))}</span>
     <span class="muted" style="font-size:.9rem">Next: ${nx&&nx!==r?esc(pname(nx.p)):"No one"}</span>`;
-  const pad=keys=>`<div class="keypad fp">${keys.map(l=>`<button type="button" class="${/^[0-9]$/.test(l)?"":"w"}" data-act="fkey" data-k="${l}" aria-label="${l}" ${dis}>${l}</button>`).join("")}</div>`;
+  const pad=(keys,off)=>`<div class="keypad fp">${keys.map(l=>`<button type="button" class="${/^[0-9]$/.test(l)?"":"w"}" data-act="fkey" data-k="${l}" aria-label="${l}" ${!edit||(off&&off(l))?"disabled":""}>${l}</button>`).join("")}</div>`;
   const t=A.f.typed;const show=t.length?(t.length>2?t.slice(0,-2)+"."+t.slice(-2):"0."+t.padStart(2,"0"))+" m":"0.00 m";
   let main,bar;
   if(ev.style==="height"){
@@ -209,7 +228,7 @@ function renderFieldPhone(f){
     const a=r.m.a||{};const third=!v.turn.third||v.turn.third.has(r.id);const n=rule.attempts;
     const cur=jumpBox(v,r);const pdis=cur<0?"disabled":dis;
     main=`<div class="attrow" style="grid-template-columns:repeat(${Math.min(n,4)},minmax(0,1fr))">${Array.from({length:n},(_,i)=>`<div class="attcell ${i===cur?"cur":""} ${a[i]==="x"?"foul":""}" ${edit&&a[i]?`data-act="fcell" data-a="${i}"`:""}><span>Jump ${i+1}</span><b>${esc(a[i]==="x"?"Foul":fmtCell(a[i]))||(i===2&&!third?"–":" ")}</b></div>`).join("")}</div>
-      <div class="markshow" aria-live="polite">${cur<0?"All jumps done":show}</div>${pad(["1","2","3","4","5","6","7","8","9","Foul","0","Back"]).replace(/ ?>(\d|Foul|Back)<\/button>/g,cur<0?" disabled>$1</button>":">$1</button>")}`;
+      <div class="markshow" aria-live="polite">${cur<0&&!t?"All jumps done":show}</div>${pad(["1","2","3","4","5","6","7","8","9","Foul","0","Back"],l=>cur<0&&!(l==="Back"&&t))}`;
     bar=`${undoBtn}<button type="button" class="btn" data-act="fpass" ${pdis}>Pass</button><button type="button" class="btn navy" data-act="fsave">${t?"Save mark":"Next athlete"}</button>`;
   }
   return `${lockBar()}<div class="stack" style="gap:8px">${head}${name}${main}${tools}
@@ -218,8 +237,9 @@ function renderFieldPhone(f){
 }
 function fieldPhoneAct(kind,val){
   const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);if(!v.G)return;
-  const {ev,rule,rows}=v;const r=rows[A.f.i];if(!r)return;
-  const nextUp=()=>{A.f.typed="";A.f.i=A.f.i===v.turn.up&&v.turn.next>=0?v.turn.next:nextAfter(rows,A.f.i);fSave();render();window.scrollTo(0,0)};
+  const {ev,rule,rows}=v;const r=fieldCur(v);if(!r)return;
+  const nextUp=()=>{A.f.typed="";A.f.a=null;A.f.i=A.f.i===v.turn.up&&v.turn.next>=0?v.turn.next:nextAfter(rows,A.f.i);A.f.id=null;fSave();render();window.scrollTo(0,0)};
+  if(!fieldEditable(v)){if(kind==="save")nextUp();return}
   if(ev.style==="throw"){
     if(kind==="key"){
       if(/^[0-9]$/.test(val)){if(A.f.typed.length<4&&(A.f.typed||val!=="0"))A.f.typed+=val}
@@ -244,7 +264,7 @@ function fieldPhoneAct(kind,val){
       if(A.f.typed.length<2){toast("Type the whole mark: 534 is 5.34 m.");return}
       const m=A.f.typed;A.f.typed="";A.f.a=null;fSave();setMark(f,r.id,cur,m);return}
     /* typed digits are never dropped: with no box to take them, they stay on screen until one is picked */
-    if(A.f.typed){toast("No box left. Tap a jump to change it.");return}
+    if(A.f.typed){toast("No box left. Tap a jump to change it, or Back to clear.");return}
     A.f.a=null;nextUp();
   }
 }

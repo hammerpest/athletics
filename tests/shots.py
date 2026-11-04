@@ -158,14 +158,14 @@ async def run(pw,dev,theme):
         assert await F.evaluate("A.R.groups.get('LJ|M|17').rows[1].best")==545
     else:
         await F.click('[data-act=fsave]'); await F.wait_for_timeout(100)
-        await F.evaluate("A.f.i=3;render()"); await F.wait_for_timeout(100)
+        await F.evaluate("A.f.i=3;A.f.id=null;render()"); await F.wait_for_timeout(100)
         await F.click('.keypad.fp [data-k="5"]'); await shot(F,"field-phone-short")
         await F.click('[data-act=fsave]'); await F.wait_for_timeout(100); assert await F.evaluate("A.f.typed")=="5"   # 1 digit refused, kept
         await F.click('.keypad.fp [data-k="1"]'); await F.click('.keypad.fp [data-k="2"]'); await shot(F,"field-phone-typed")
         await F.click('[data-act=fsave]'); await F.wait_for_timeout(150); await shot(F,"field-phone-saved")
         await F.click('[data-act=fundo]'); await F.wait_for_timeout(150); await shot(F,"field-phone-undo")
         await F.click('.attcell[data-act=fcell] >> nth=0'); await F.wait_for_timeout(100); await shot(F,"field-phone-change")
-        await F.evaluate("A.f.a=null;render()"); await F.evaluate("A.f.i=0;render()"); await F.wait_for_timeout(100); await shot(F,"field-phone-alldone")
+        await F.evaluate("A.f.a=null;render()"); await F.evaluate("A.f.i=0;A.f.id=null;render()"); await F.wait_for_timeout(100); await shot(F,"field-phone-alldone")
     await F.click('[data-act=ffinish]'); await shot(F,"field-finishmodal"); await F.click('[data-act=ffinishok]'); await tick(); await F.wait_for_timeout(250); await shot(F,"field-final")
     await F.click('[data-act=fall]')
     # throws: fair, foul or pass, the best measured once
@@ -182,8 +182,8 @@ async def run(pw,dev,theme):
         await F.click('.hjc[data-act=ttap] >> nth=14'); await F.wait_for_timeout(120); await shot(F,"field-throws-tap")
         await F.fill('#bs-4','980'); await F.press('#bs-4','Enter'); await F.wait_for_timeout(200)
     else:
-        await F.evaluate("A.f.i=3;render()"); await F.wait_for_timeout(100); await shot(F,"field-phone-measure")
-        await F.evaluate("A.f.i=4;render()"); await F.wait_for_timeout(100); await F.click('[data-act=fthrow][data-v=Fair]'); await F.wait_for_timeout(120)
+        await F.evaluate("A.f.i=3;A.f.id=null;render()"); await F.wait_for_timeout(100); await shot(F,"field-phone-measure")
+        await F.evaluate("A.f.i=4;A.f.id=null;render()"); await F.wait_for_timeout(100); await F.click('[data-act=fthrow][data-v=Fair]'); await F.wait_for_timeout(120)
         await F.click('.keypad.fp [data-k="9"]'); await F.click('.keypad.fp [data-k="8"]'); await F.click('.keypad.fp [data-k="0"]'); await F.click('[data-act=fsave]'); await F.wait_for_timeout(200)
         await shot(F,"field-phone-throw")
     await F.click('[data-act=ffinish]'); await shot(F,"field-throws-finishmodal"); await F.click('[data-act=ffinishok]'); await tick(); await F.wait_for_timeout(250)
@@ -203,7 +203,7 @@ async def run(pw,dev,theme):
     if not phone:
         await F.click('.hjc:not([disabled]) >> nth=5'); await F.wait_for_timeout(100)
     else:
-        await F.evaluate("A.f.i=2;render()"); await F.wait_for_timeout(100); await F.click('.hjset .btn >> nth=0'); await F.wait_for_timeout(100); await shot(F,"field-phone-high"); await F.click('[data-act=fundo]'); await F.wait_for_timeout(100)
+        await F.evaluate("A.f.i=2;A.f.id=null;render()"); await F.wait_for_timeout(100); await F.click('.hjset .btn >> nth=0'); await F.wait_for_timeout(100); await shot(F,"field-phone-high"); await F.click('[data-act=fundo]'); await F.wait_for_timeout(100)
     await F.click('[data-act=ffinish]'); await F.click('[data-act=ffinishok]'); await tick(); await F.wait_for_timeout(250)
     # ---- recorder, field, override ----
     await R.click('[data-act=rtabrec][data-v=field]'); await R.wait_for_timeout(200)

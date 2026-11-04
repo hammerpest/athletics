@@ -153,13 +153,19 @@ function markCm(v){return /^[0-9]+$/.test(String(v==null?"":v))&&+v>0?+v:0}
 function fmtMark(cm){if(!cm)return "";return MARK_DP===1?(Math.floor(cm/10)/10).toFixed(1):(cm/100).toFixed(2)}
 function fmtHeight(cm){return cm?(cm/100).toFixed(2):""}
 /* a typed box needs 3 digits or the point: 53 is more likely a slip than 0.53 m, and 0.53 says what it means */
-function markOk(raw){const v=String(raw==null?"":raw).trim().toLowerCase();return !v||/^(x|foul|-|p|pass)$/.test(v)||/^\d{3,}$/.test(v)||/^\d*\.\d+$/.test(v)}
+function markOk(raw){
+  const v=String(raw==null?"":raw).trim().toLowerCase();
+  if(!v||/^(x|foul|-|p|pass)$/.test(v))return true;
+  if(!/^\d{3,}$/.test(v)&&!/^\d*\.\d+$/.test(v))return false;
+  /* between 0.01 m and 99.99 m */
+  const cm=v.includes(".")?parseFloat(v)*100:+v;return cm>=1&&cm<10000;
+}
 function fmtCell(v){if(v==null||v==="")return "";if(v==="x")return "X";if(v==="-")return "Pass";const c=markCm(v);return c?fmtMark(c):String(v)}
 function cleanMark(raw){
   const v=String(raw==null?"":raw).trim().toLowerCase();
   if(v==="x"||v==="foul")return "x";if(v==="-"||v==="p"||v==="pass")return "-";
   /* 5.3 typed with the point is 5.30 m */
-  if(/^\d*\.\d*$/.test(v)&&v!=="."){return String(Math.round(parseFloat(v)*100))}
+  if(/^\d*\.\d*$/.test(v)&&v!=="."){return String(Math.floor(parseFloat(v)*100+1e-6))}
   return v.replace(/[^0-9]/g,"").replace(/^0+/,"").slice(0,4);
 }
 

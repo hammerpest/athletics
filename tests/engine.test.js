@@ -283,6 +283,8 @@ t("a late athlete does not move the bar; the bar stays where the boxes show",()=
 });
 t("a mark typed with the point is metres; too few digits is refused",()=>{
   eq(E.cleanMark("5.3"),"530");eq(E.cleanMark("5.34"),"534");eq(E.cleanMark("534"),"534");eq(E.markOk("53"),false);eq(E.markOk("534"),true);eq(E.markOk("x"),true);eq(E.markOk(""),true);eq(E.markOk("0.95"),true);eq(E.cleanMark("0.95"),"95");eq(E.markCm("95"),95);eq(E.markOk("5.3m"),false);
+  eq(E.markOk("0.0"),false);eq(E.markOk(".0"),false);eq(E.markOk("0.004"),false);eq(E.markOk("000"),false);eq(E.markOk("12345"),false);eq(E.markOk("100.00"),false);eq(E.markOk("00095"),true);
+  eq(E.cleanMark("5.345"),"534");eq(E.cleanMark("5.29"),"529");
 });
 t("equal multitimer splits keep the tap order inside a heat",()=>{
   const S={students:["a","b"].map(i=>st(i,"B","F","16"))};

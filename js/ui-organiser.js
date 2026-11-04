@@ -144,7 +144,7 @@ function carnivalPaths(){
   for(const e of A.extras)jobs.push("extras/"+e.id);
   return [...new Set(jobs)];
 }
-function clearLocal(){A.heats=[];A.times={};A.finish={};A.slips={};A.field={};A.extras=[];A.counter=1;A.mt=mtBlank(null);mtSave();A.f.undo=[];A.j.race=null;A.r.race=null;A.s.race=null;A.a.key=null;A.a.idx=null}
+function clearLocal(){A.heats=[];A.times={};A.finish={};A.slips={};A.field={};A.extras=[];A.counter=1;A.mt=mtBlank(null);mtSave();A.f.undo=[];A.f.gid=null;A.f.typed="";A.f.a=null;A.f.id=null;fSave();A.j.race=null;A.r.race=null;A.s.race=null;A.a.key=null;A.a.idx=null}
 /* clear the practice run; students and settings stay, nothing is kept as a year */
 async function clearPractice(){
   if(A.past){toast("Past years are look only.");return}

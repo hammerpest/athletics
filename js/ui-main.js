@@ -65,13 +65,17 @@ function wireInputs(){
       if(!markOk(inp.value)){toast("Type 534 for 5.34 m, or 0.95 with the point.");render();return}
       const cur=((fieldDocOf(fg).marks||{})[inp.dataset.mark]||{}).a||{};
       if((cur[inp.dataset.a]||"")!==v)setMark(fg,inp.dataset.mark,+inp.dataset.a,v)};
-    inp.onfocus=()=>{const v=cleanMark(inp.value);if(v&&v!=="x"&&v!=="-")inp.value=v;inp.select()};
+    /* under 1.00 m stays as 0.95: on its own, 95 would be refused */
+    inp.onfocus=()=>{const v=cleanMark(inp.value);if(v.length>=3)inp.value=v;inp.select()};
     inp.onchange=()=>{if(!A.rendering)save()};
     inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();const all=[...document.querySelectorAll("[data-mark]:not(:disabled)")];const nx=all[all.indexOf(inp)+1];inp.onchange=null;save();if(nx)nx.focus();else inp.blur()}};
   });
   document.querySelectorAll("[data-best]").forEach(inp=>{
-    const save=()=>{const fg=fieldGroupById(inp.dataset.g);if(!fg)return;const v=cleanMark(inp.value).replace(/[^0-9]/g,"");if(!markOk(inp.value)){toast("Type 1124 for 11.24 m, or 0.95 with the point.");render();return}setBest(fg,inp.dataset.best,v)};
-    inp.onfocus=()=>{const v=cleanMark(inp.value);if(v)inp.value=v;inp.select()};
+    const save=()=>{const fg=fieldGroupById(inp.dataset.g);if(!fg)return;const v=cleanMark(inp.value);
+      /* this box is a measured mark only: x or pass would wipe the result */
+      if(!markOk(inp.value)||/[^0-9]/.test(v)){toast("Type 1124 for 11.24 m, or 0.95 with the point.");render();return}
+      setBest(fg,inp.dataset.best,v)};
+    inp.onfocus=()=>{const v=cleanMark(inp.value);if(v.length>=3)inp.value=v;inp.select()};
     inp.onchange=()=>{if(!A.rendering)save()};
     inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();inp.onchange=null;save();inp.blur()}};
   });
@@ -98,7 +102,7 @@ function wireInputs(){
   const of=document.getElementById("oFile");if(of)of.onchange=e=>{const file=e.target.files[0];if(!file)return;const fr=new FileReader();fr.onload=()=>{A.o.text=String(fr.result);A.o.preview=parseStudents(A.o.text,A.cfg.ageDate);render()};fr.readAsText(file)};
 }
 /* a device opens where the group is up to */
-function fOpen(id){A.f.gid=id;A.f.typed="";A.f.a=null;const f=fieldGroupById(id);const G=f&&A.R.groups.get(f.key);A.f.i=G&&G.turn.up>=0?G.turn.up:0;fSave();render();window.scrollTo(0,0)}
+function fOpen(id){A.f.gid=id;A.f.typed="";A.f.a=null;A.f.id=null;const f=fieldGroupById(id);const G=f&&A.R.groups.get(f.key);A.f.i=G&&G.turn.up>=0?G.turn.up:0;fSave();render();window.scrollTo(0,0)}
 const ACT={
   key:el=>pressKey(el.dataset.k),
   pinstart:()=>pinStart(),
@@ -186,23 +190,23 @@ const ACT={
   mtnext:()=>{const n=nextRaceAfter(A.s.race);if(n!=null)A.s.race=n;A.s.err=null;render();window.scrollTo(0,0)},
   fstation:el=>{A.f.station=el.dataset.v;fSave();render()},
   fopen:el=>fOpen(el.dataset.v),
-  fall:()=>{A.f.gid=null;A.f.typed="";A.f.a=null;fSave();render();window.scrollTo(0,0)},
+  fall:()=>{A.f.gid=null;A.f.typed="";A.f.a=null;A.f.id=null;fSave();render();window.scrollTo(0,0)},
   faddopen:()=>{A.f.filter="";A.modal={t:"fieldAdd"};render()},
-  fadd:async el=>{const f=fieldGroupOpen();if(f)await fieldToggle(f,el.dataset.id)},
-  fcell:el=>{A.f.a=+el.dataset.a;A.f.typed="";fSave();render()},
-  rfadd:()=>{const f=A.R.fgroups.find(x=>x.key===A.r.fkey);if(!f)return;A.f.gid=f.id;A.f.filter="";A.modal={t:"fieldAdd"};render()},
+  fadd:async el=>{const f=modalGroup();if(f)await fieldToggle(f,el.dataset.id)},
+  fcell:el=>{A.f.a=+el.dataset.a;fSave();render()},
+  rfadd:()=>{const f=A.R.fgroups.find(x=>x.key===A.r.fkey);if(!f)return;A.f.filter="";A.modal={t:"fieldAdd",gid:f.id};render()},
   rfreopen:()=>{const f=A.R.fgroups.find(x=>x.key===A.r.fkey);if(f)fieldWrite(f,{final:false})},
-  faddnew:()=>{const f=fieldGroupOpen();if(!f)return;A.modal={t:"addStudent",x:f.x,ages:[f.g],then:async st=>{await fieldAdd(f,st.id)}};render()},
+  faddnew:()=>{const f=modalGroup();if(!f)return;A.modal={t:"addStudent",x:f.x,ages:[f.g],then:async st=>{await fieldAdd(f,st.id)}};render()},
   fns:el=>{const f=fieldGroupById(el.dataset.g);if(!f)return;const on=!!((fieldDocOf(f).marks||{})[el.dataset.id]||{}).ns;setNs(f,el.dataset.id,!on)},
   hjtap:el=>{const f=fieldGroupById(el.dataset.g);if(f)hjStep(f,el.dataset.id,+el.dataset.h)},
   ttap:el=>{const f=fieldGroupById(el.dataset.g);if(f)throwStep(f,el.dataset.id,+el.dataset.a)},
   fshort:()=>{const f=fieldGroupOpen();if(f)fieldWrite(f,{short:!fieldView(f).short})},
-  hjset:el=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);const r=v.rows[A.f.i];if(r)setHeight(f,r.id,+el.dataset.h,el.dataset.v)},
-  fthrow:el=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);const r=v.rows[A.f.i];if(!r)return;const m=r.m.t||{};for(let i=0;i<v.rule.attempts;i++)if(!m[i]){setThrow(f,r.id,i,el.dataset.v);return}},
+  hjset:el=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);const r=fieldCur(v);if(r)setHeight(f,r.id,+el.dataset.h,el.dataset.v)},
+  fthrow:el=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);const r=fieldCur(v);if(!r)return;const m=r.m.t||{};for(let i=0;i<v.rule.attempts;i++)if(!m[i]){setThrow(f,r.id,i,el.dataset.v);return}},
   fkey:el=>fieldPhoneAct("key",el.dataset.k),
   fpass:()=>fieldPhoneAct("pass"),
   fsave:()=>fieldPhoneAct("save"),
-  fnext:()=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);if(!v.rows.length)return;A.f.i=v.turn.up>=0&&v.turn.up!==A.f.i?v.turn.up:nextAfter(v.rows,A.f.i);fSave();render();window.scrollTo(0,0)},
+  fnext:()=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);if(!v.rows.length)return;A.f.i=v.turn.up>=0&&v.turn.up!==A.f.i?v.turn.up:nextAfter(v.rows,A.f.i);A.f.id=null;fSave();render();window.scrollTo(0,0)},
   fundo:()=>fieldUndo(),
   ffinish:()=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);A.modal={t:"fieldFinish",label:groupLabel(v.ev,f.x,f.g),unmeasured:v.rows.filter(r=>r.noMeasure).length};render()},
   ffinishok:()=>fieldFinish(),
