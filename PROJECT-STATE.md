@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version p. Replaces 4 November version o.
+Date: 4 November 2026, version q. Replaces 4 November version p.
+
+Changes on 4 November 2026 (version q): The MacBook walk-through ran in Jordan's Chrome at 1512 wide, on commit 17ebf62, with buttons pressed by script. Passed: PINs, 620 test students, Marshal, Place Judge, typed times, slip photo (a late slip did not overwrite typed times), multitimer with 12 runners and 4 times (the other 8 got +1 s each), long jump to Final, shot put weights and fair or foul, high jump opens, Announcer, Results, HRIS list, newsletter, Houses, all 9 Organiser sections, reload opens where the job is up to, no sideways scroll, no console errors, all app files loaded. Not covered in Chrome: Chrome screenshots time out (the same fault as swimming), so no screen was compared by eye with a baseline there; the download buttons were not pressed (flow tests cover them). Ask now: 33 to 38.
 
 Changes on 4 November 2026 (version p): Third fresh-eyes review of the last five fixes is done. It found 3 must-fix and 6 should-fix faults; all 9 are fixed. The main ones: a phone now stays on an athlete, not a place in the list, so a reload or someone taken off on another device cannot put a mark on the wrong person. A station can no longer write to a final group. An athlete taken off and added back keeps their number. Marks of 0 and marks over 99.99 m are refused, and a tape reading rounds down. Engine tests 56 of 56. Flow tests 26 of 26 (6 new). Check 1: 742 screenshots against the previous commit, 0 different, so no approved screen moved. These nine fixes were proven by tests, not by a fourth review. Check 2 in Chrome is still open. Jordan needs to refresh the page to get these fixes. Ask now: 33 to 38.
 
@@ -39,7 +41,7 @@ Owner: Jordan (PDHPE Head of Department, Central Coast Adventist School, Erina N
 ## 0. Where things stand (read first)
 
 - Project is ONLY the athletics carnival app. The swimming app (SWIM 2027- App/ccas-swimming) and cross country are separate projects, used for reference only.
-- All 19 boards, A1.1 to A1.19, are approved (decision 39). Aths Opt 1.0 is built in test mode on the local staging branch (section 2.3), waiting for the Chrome part of check 2 and Jordan's look. Nothing is pushed, and main has no app yet.
+- All 19 boards, A1.1 to A1.19, are approved (decision 39). Aths Opt 1.0 is built in test mode on the local staging branch (section 2.3), waiting for Jordan's look and questions 33 to 38. Nothing is pushed, and main has no app yet.
 - How it will be built, and the lessons from the swimming app, are in CLAUDE.md.
 - Made-up data only: the 620 test students ("CCAS XC test students 620.xlsx").
 - No GitHub repo or Supabase project yet.
@@ -214,7 +216,7 @@ See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
 
 ## 5. Current problems
 
-- Check 2 is not finished: Claude in Chrome was not connected, so the MacBook walk-through in Chrome is still to do.
+- Claude in Chrome cannot take screenshots here (script injection times out), so check 2 in Chrome reads the screens as text and cannot compare them by eye with a baseline.
 - The Place Judge's "By time" text is 4.4 to 1 on the approved blue lanes, just under 4.5. The organiser switch is drawn 30 px tall, with a 48 px tap area. Both are as approved, so left unchanged.
 
 ## 6. Unresolved questions (ask Jordan)
@@ -245,8 +247,8 @@ Ask now: 33 to 38.
 2. (Done as a first draft 4 November 2026) The design canvas, A1.1 to A1.16 (section 2.2).
    Done: Jordan approved all boards (decision 29).
 3. (Done) Field rules from the sheets and Jordan's answers (decisions 32 to 38).
-4. (Done, apart from check 2 in Chrome) Build Aths Opt 1.0 in test mode, with engine tests. Checks 1 to 3.
-   Done: the third review of the last fixes (version p). Still to do: connect Claude in Chrome, then run the MacBook walk-through and read the console and network logs.
+4. (Done) Build Aths Opt 1.0 in test mode, with engine tests. Checks 1 to 3 (version q).
+   Done: the third review of the last fixes (version p) and the MacBook walk-through in Chrome (version q).
 5. Jordan answers 33 to 38 and tries the build. Once approved, save the screenshots to baseline/.
 6. Jordan makes the GitHub repo and the Supabase project (Sydney) from click-by-click steps. Aths Opt 1.1 goes live on staging with made-up data.
 
