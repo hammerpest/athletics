@@ -4,14 +4,7 @@ Date: 4 November 2026, version o. Replaces 4 November version n.
 
 Changes on 4 November 2026 (version o): Aths Opt 1.0 is built in test mode on the staging branch, committed locally, nothing pushed. Engine tests 56 of 56. Flow tests 20 of 20. Check 1: 742 screenshots, 2 runs, 0 different. Check 2 is only part done: the Claude in Chrome extension was not connected, so the MacBook walk-through in Chrome still has to be done; phone and iPad sizes passed in the built-in browser. Check 3: a fresh-eyes agent found 6 must-fix and 9 should-fix items; a recheck found 1 more must-fix and 4 more should-fix. All are fixed or are questions for Jordan below; the last round of fixes has not had a third review. New questions 33 to 38. Ask now: 33 to 38, then try the build.
 
-Changes on 4 November 2026 (version n): Jordan approved the redrawn field boards (A1.8 to A1.10, A1.12, A1.18, A1.19), so all 19 boards are approved (decision 39). Ask now: 33 to 38.
-
-- (Ask now) 33. Decision 32 says the app shows who is up and next. The iPad high jump board (A1.9) has no Now up or Next, though the phone screen has them. Add them to A1.9?
-- (Ask now) 34. High jump: a miss, then passing the rest of that height. The box steps through O, XO, XXO, XXX and pass only, so X then pass cannot be recorded, and misses do not carry to the next height. Is that fine for CCAS?
-- (Ask now) 35. One PIN per job (CLAUDE.md) and A1.1 (6 jobs after the PIN) differ. Built: a job PIN goes straight to its job, and the organiser PIN shows all the jobs. Correct?
-- (Ask now) 36. Are the items in 2.3 that are not drawn on the boards OK?
-- (Ask now) 37. Field groups start empty and athletes are added as they arrive, so No. is their order. Correct, or should the age group's list load first?
-- (Ask now) 38. 800 m and 1500 m: the Marshal presses Go to give the race its number, then the multitimer phone enters the names. Correct, or should the phone start a race on its own?
+Changes on 4 November 2026 (version n): Jordan approved the redrawn field boards (A1.8 to A1.10, A1.12, A1.18, A1.19), so all 19 boards are approved (decision 39). Ask now: none.
 
 Changes on 4 November 2026 (version m): Jordan approved the changed A1.16 and answered yes to questions 30 to 32 (decisions 36 to 38). Ties placeholder removed from A1.16. Ask now: Jordan's OK on the redrawn field boards.
 
@@ -224,8 +217,14 @@ See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: none.
+Ask now: 33 to 38.
 
+- (Ask now) 33. Decision 32 says the app shows who is up and next. The iPad high jump board (A1.9) has no Now up or Next, though the phone screen has them. Add them to A1.9?
+- (Ask now) 34. High jump: a miss, then passing the rest of that height. The box steps through O, XO, XXO, XXX and pass only, so X then pass cannot be recorded, and misses do not carry to the next height. Is that fine for CCAS?
+- (Ask now) 35. One PIN per job (CLAUDE.md) and A1.1 (6 jobs after the PIN) differ. Built: a job PIN goes straight to its job, and the organiser PIN shows all the jobs. Correct?
+- (Ask now) 36. Are the items in 2.3 that are not drawn on the boards OK?
+- (Ask now) 37. Field groups start empty and athletes are added as they arrive, so No. is their order. Correct, or should the age group's list load first?
+- (Ask now) 38. 800 m and 1500 m: the Marshal presses Go to give the race its number, then the multitimer phone enters the names. Correct, or should the phone start a race on its own?
 - (Closed by 36 to 38) Questions 30 to 32.
 - (Closed by 20 to 24, 26 to 28, 31) Questions 21 to 29.
 - (Later) 20. A sample of the athletics file HRIS takes (for example a Hy-Tek Track & Field Meet Manager export), with the student details removed, as was done for swimming. The writer is built to match it.
