@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version q. Replaces 4 November version p.
+Date: 4 November 2026, version r. Replaces 4 November version q.
+
+Changes on 4 November 2026 (version r): Jordan tried the questions 33 to 38 (decisions 40 to 45). Boards changed: A1.1 (a job PIN goes to its job), A1.5 (a button next to each name; everyone is placed), A1.9 (Now up and Next, with Clear, Miss and Pass), and new A1.20 (Take Names). The app does not have these yet: they go in once Jordan OKs the boards. Now 20 boards. New question 39. Ask now: 39, and Jordan's OK on A1.1, A1.5, A1.9 and A1.20.
 
 Changes on 4 November 2026 (version q): The MacBook walk-through ran in Jordan's Chrome at 1512 wide, on commit 17ebf62, with buttons pressed by script. Passed: PINs, 620 test students, Marshal, Place Judge, typed times, slip photo (a late slip did not overwrite typed times), multitimer with 12 runners and 4 times (the other 8 got +1 s each), long jump to Final, shot put weights and fair or foul, high jump opens, Announcer, Results, HRIS list, newsletter, Houses, all 9 Organiser sections, reload opens where the job is up to, no sideways scroll, no console errors, all app files loaded. Not covered in Chrome: Chrome screenshots time out (the same fault as swimming), so no screen was compared by eye with a baseline there; the download buttons were not pressed (flow tests cover them). Ask now: 33 to 38.
 
@@ -121,19 +123,19 @@ A competitor may not move up an age in any event.
 
 ### 2.2 The design canvas (all 19 boards approved 4 November 2026)
 
-First published 4 November 2026, redrawn the same day with decisions 20 to 28: https://claude.ai/artifact/VaZiJKE2cce41ykKbkD1tg (private to Jordan until shared). Page "Boards" is the light theme and page "Dark theme" repeats all 19 boards. Boards can be tried with Play. Made from the swimming styles.css with made-up test students. The source is in design/ (make_boards.py, make_css.py, aths-extra.css, aths.css).
+First published 4 November 2026, redrawn the same day with decisions 20 to 28: https://claude.ai/artifact/VaZiJKE2cce41ykKbkD1tg (private to Jordan until shared). Page "Boards" is the light theme and page "Dark theme" repeats all 20 boards. Boards can be tried with Play. Made from the swimming styles.css with made-up test students. The source is in design/ (make_boards.py, make_css.py, aths-extra.css, aths.css).
 
 | Board | Screen | Size |
 |---|---|---|
-| A1.1 | Home: PIN, then 6 jobs; organiser PIN adds Carnival Organiser | iPad landscape |
+| A1.1 | Home: a job PIN goes to its job; only the organiser PIN shows all jobs (changed, waiting for Jordan's OK) | iPad landscape |
 | A1.2 | Track Marshal (a): pick race, boys or girls, age | iPad landscape |
 | A1.3 | Track Marshal (b): names into lanes | iPad landscape |
 | A1.4 | Track Place Judge: tap the top 4 at the finish line | Phone |
-| A1.5 | Multitimer (800 m, 1500 m): one person enters names, START, SPLIT, STOP, tap names in order, send | Phone |
+| A1.5 | Multitimer (800 m, 1500 m): names, START, a split for each runner, STOP, a button next to each name in finish order, send (changed, waiting for Jordan's OK) | Phone |
 | A1.6 | Time Slips | Phone |
 | A1.7 | Field Station (a): pick the station, its day from the timetable | iPad landscape |
 | A1.8 | Field Station (b): long jump, every jump measured | iPad landscape |
-| A1.9 | Field Station (c): high jump, heights worked out from the sheet | iPad landscape |
+| A1.9 | Field Station (c): high jump, Now up and Next, Clear, Miss or Pass (changed, waiting for Jordan's OK) | iPad landscape |
 | A1.10 | Field Station (d): long jump, one athlete at a time | Phone |
 | A1.11 | Recorder, track: slip times, pink swaps, race overall | MacBook |
 | A1.12 | Recorder, field: stations, final results, override | MacBook |
@@ -143,7 +145,8 @@ First published 4 November 2026, redrawn the same day with decisions 20 to 28: h
 | A1.16 | Carnival Organiser: 9 sections, with field event rules, add or remove events, and 1 or 2 locations for each sport (approved) | MacBook |
 | A1.17 | Track Marshal (c): relay, a house in each lane, no names | iPad landscape |
 | A1.18 | Field Station (e): throws, fair or foul, best throw measured once (new) | iPad landscape |
-| A1.19 | Field Station (f): throws, one athlete at a time (new) | Phone |
+| A1.19 | Field Station (f): throws, one athlete at a time | Phone |
+| A1.20 | Field Station: Take Names, tap each athlete as they arrive, then start (new, waiting for Jordan's OK) | iPad landscape |
 
 New looks to approve: bright blue lanes with white lines, as at Mingara, with a chequered finish line, and dashed orange boxes for anything not settled (placeholders; they go when the answer is in). Bronze is #cd7f32 as in CLAUDE.md (the swimming app uses a darker bronze), with dark text on it.
 
@@ -209,6 +212,12 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 37. (4 November 2026, answers question 31) High jump: an athlete can pass a height.
 38. (4 November 2026, answers question 32) Marks are to the nearest centimetre (5.34 m).
 39. (4 November 2026) Jordan approved the redrawn field boards, so all 19 boards are approved, with no placeholders left in the field rules. Any visual change from here needs Jordan's OK.
+40. (4 November 2026, answers question 33) The iPad high jump board shows Now up and Next.
+41. (4 November 2026, answers question 34) High jump: each try is a clear, a miss or a pass. A pass can follow a miss (shown as X-). 3 misses in a row is out, and a pass does not reset the count. The screen uses Clear, Miss and Pass buttons for the athlete who is up.
+42. (4 November 2026, answers question 35) A job PIN goes straight to its job. Only the organiser PIN shows all the jobs.
+43. (4 November 2026, answers question 36) The items in 2.3 that are not drawn on the boards are OK.
+44. (4 November 2026, answers question 37) Each field group starts with a Take Names screen: tap all the athletes for that event, in arrival order, then start jumping or throwing. Add an athlete stays for late arrivals. Jordan said "maybe", so this is drawn on A1.20 for his OK.
+45. (4 November 2026, answers question 38; adds to decision 20) 800 m and 1500 m: all names are marshalled. The time slip person starts the race, takes a split as each runner crosses the line, and stops after the last one. Runners stand in line in finishing order. The person then sees the names down the side, like swimming, and presses the button next to each name once, in finishing order. Each place gets its split time. Past the last split, each place gets 1 second more than the place before. Next race gets ready for the next heat.
 
 ## 4. Rules and constraints
 
@@ -221,14 +230,10 @@ See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: 33 to 38.
+Ask now: 39, and Jordan's OK on A1.1, A1.5, A1.9 and A1.20.
 
-- (Ask now) 33. Decision 32 says the app shows who is up and next. The iPad high jump board (A1.9) has no Now up or Next, though the phone screen has them. Add them to A1.9?
-- (Ask now) 34. High jump: a miss, then passing the rest of that height. The box steps through O, XO, XXO, XXX and pass only, so X then pass cannot be recorded, and misses do not carry to the next height. Is that fine for CCAS?
-- (Ask now) 35. One PIN per job (CLAUDE.md) and A1.1 (6 jobs after the PIN) differ. Built: a job PIN goes straight to its job, and the organiser PIN shows all the jobs. Correct?
-- (Ask now) 36. Are the items in 2.3 that are not drawn on the boards OK?
-- (Ask now) 37. Field groups start empty and athletes are added as they arrive, so No. is their order. Correct, or should the age group's list load first?
-- (Ask now) 38. 800 m and 1500 m: the Marshal presses Go to give the race its number, then the multitimer phone enters the names. Correct, or should the phone start a race on its own?
+- (Ask now) 39. 800 m and 1500 m: who enters the names? Drawn: the person with the multitimer, on the phone (decision 20). Or the Track Marshal on the iPad?
+- (Closed by 40 to 45) Questions 33 to 38.
 - (Closed by 36 to 38) Questions 30 to 32.
 - (Closed by 20 to 24, 26 to 28, 31) Questions 21 to 29.
 - (Later) 20. A sample of the athletics file HRIS takes (for example a Hy-Tek Track & Field Meet Manager export), with the student details removed, as was done for swimming. The writer is built to match it.
@@ -249,7 +254,7 @@ Ask now: 33 to 38.
 3. (Done) Field rules from the sheets and Jordan's answers (decisions 32 to 38).
 4. (Done) Build Aths Opt 1.0 in test mode, with engine tests. Checks 1 to 3 (version q).
    Done: the third review of the last fixes (version p) and the MacBook walk-through in Chrome (version q).
-5. Jordan answers 33 to 38 and tries the build. Once approved, save the screenshots to baseline/.
+5. Jordan OKs A1.1, A1.5, A1.9 and A1.20 and answers 39. Those changes go into the build, with checks 1 to 3 again. Once Jordan approves the build, save the screenshots to baseline/.
 6. Jordan makes the GitHub repo and the Supabase project (Sydney) from click-by-click steps. Aths Opt 1.1 goes live on staging with made-up data.
 
 ## 8. Files and links
