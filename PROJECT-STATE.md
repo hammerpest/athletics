@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version r. Replaces 4 November version q.
+Date: 4 November 2026, version s. Replaces 4 November version r.
+
+Changes on 4 November 2026 (version s): Jordan approved A1.1, A1.5, A1.9 and A1.20, so all 20 boards are approved (decision 46), and said to build them. Question 39 is still open; the build follows the board (the multitimer phone enters the names). Ask now: 39.
 
 Changes on 4 November 2026 (version r): Jordan answered questions 33 to 38 (decisions 40 to 45). Boards changed: A1.1 (a job PIN goes to its job), A1.5 (a button next to each name; everyone is placed), A1.9 (Now up and Next, with Clear, Miss and Pass), and new A1.20 (Take Names). The app does not have these yet: they go in once Jordan OKs the boards. Now 20 boards. New question 39. Ask now: 39, and Jordan's OK on A1.1, A1.5, A1.9 and A1.20.
 
@@ -127,15 +129,15 @@ First published 4 November 2026, redrawn the same day with decisions 20 to 28: h
 
 | Board | Screen | Size |
 |---|---|---|
-| A1.1 | Home: a job PIN goes to its job; only the organiser PIN shows all jobs (changed, waiting for Jordan's OK) | iPad landscape |
+| A1.1 | Home: a job PIN goes to its job; only the organiser PIN shows all jobs | iPad landscape |
 | A1.2 | Track Marshal (a): pick race, boys or girls, age | iPad landscape |
 | A1.3 | Track Marshal (b): names into lanes | iPad landscape |
 | A1.4 | Track Place Judge: tap the top 4 at the finish line | Phone |
-| A1.5 | Multitimer (800 m, 1500 m): names, START, a split for each runner, STOP, a button next to each name in finish order, send (changed, waiting for Jordan's OK) | Phone |
+| A1.5 | Multitimer (800 m, 1500 m): names, START, a split for each runner, STOP, a button next to each name in finish order, send | Phone |
 | A1.6 | Time Slips | Phone |
 | A1.7 | Field Station (a): pick the station, its day from the timetable | iPad landscape |
 | A1.8 | Field Station (b): long jump, every jump measured | iPad landscape |
-| A1.9 | Field Station (c): high jump, Now up and Next, Clear, Miss or Pass (changed, waiting for Jordan's OK) | iPad landscape |
+| A1.9 | Field Station (c): high jump, Now up and Next, Clear, Miss or Pass | iPad landscape |
 | A1.10 | Field Station (d): long jump, one athlete at a time | Phone |
 | A1.11 | Recorder, track: slip times, pink swaps, race overall | MacBook |
 | A1.12 | Recorder, field: stations, final results, override | MacBook |
@@ -146,7 +148,7 @@ First published 4 November 2026, redrawn the same day with decisions 20 to 28: h
 | A1.17 | Track Marshal (c): relay, a house in each lane, no names | iPad landscape |
 | A1.18 | Field Station (e): throws, fair or foul, best throw measured once (new) | iPad landscape |
 | A1.19 | Field Station (f): throws, one athlete at a time | Phone |
-| A1.20 | Field Station: Take Names, tap each athlete as they arrive, then start (new, waiting for Jordan's OK) | iPad landscape |
+| A1.20 | Field Station: Take Names, tap each athlete as they arrive, then start | iPad landscape |
 
 New looks to approve: bright blue lanes with white lines, as at Mingara, with a chequered finish line, and dashed orange boxes for anything not settled (placeholders; they go when the answer is in). Bronze is #cd7f32 as in CLAUDE.md (the swimming app uses a darker bronze), with dark text on it.
 
@@ -218,6 +220,7 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 43. (4 November 2026, answers question 36) The items in 2.3 that are not drawn on the boards are OK.
 44. (4 November 2026, answers question 37) Each field group starts with a Take Names screen: tap all the athletes for that event, in arrival order, then start jumping or throwing. Add an athlete stays for late arrivals. Jordan said "maybe", so this is drawn on A1.20 for his OK.
 45. (4 November 2026, answers question 38; adds to decision 20) 800 m and 1500 m: all names are marshalled. The time slip person starts the race, takes a split as each runner crosses the line, and stops after the last one. Runners stand in line in finishing order. The person then sees the names down the side, like swimming, and presses the button next to each name once, in finishing order. Each place gets its split time. Past the last split, each place gets 1 second more than the place before. Next race gets ready for the next heat.
+46. (4 November 2026) Jordan approved A1.1, A1.5, A1.9 and A1.20, so all 20 boards are approved. This confirms Take Names (decision 44).
 
 ## 4. Rules and constraints
 
@@ -230,7 +233,7 @@ See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: 39, and Jordan's OK on A1.1, A1.5, A1.9 and A1.20.
+Ask now: 39.
 
 - (Ask now) 39. 800 m and 1500 m: who enters the names? Drawn: the person with the multitimer, on the phone (decision 20). Or the Track Marshal on the iPad?
 - (Closed by 40 to 45) Questions 33 to 38.
@@ -254,7 +257,7 @@ Ask now: 39, and Jordan's OK on A1.1, A1.5, A1.9 and A1.20.
 3. (Done) Field rules from the sheets and Jordan's answers (decisions 32 to 38).
 4. (Done) Build Aths Opt 1.0 in test mode, with engine tests. Checks 1 to 3 (version q).
    Done: the third review of the last fixes (version p) and the MacBook walk-through in Chrome (version q).
-5. Jordan OKs A1.1, A1.5, A1.9 and A1.20 and answers 39. Those changes go into the build, with checks 1 to 3 again. Once Jordan approves the build, save the screenshots to baseline/.
+5. NOW: build decisions 40 to 46 into the app, with checks 1 to 3 again. Jordan answers 39. Once Jordan approves the build, save the screenshots to baseline/.
 6. Jordan makes the GitHub repo and the Supabase project (Sydney) from click-by-click steps. Aths Opt 1.1 goes live on staging with made-up data.
 
 ## 8. Files and links
