@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 4 November 2026, version o. Replaces 4 November version n.
+Date: 4 November 2026, version p. Replaces 4 November version o.
+
+Changes on 4 November 2026 (version p): Third fresh-eyes review of the last five fixes is done. It found 3 must-fix and 6 should-fix faults; all 9 are fixed. The main ones: a phone now stays on an athlete, not a place in the list, so a reload or someone taken off on another device cannot put a mark on the wrong person. A station can no longer write to a final group. An athlete taken off and added back keeps their number. Marks of 0 and marks over 99.99 m are refused, and a tape reading rounds down. Engine tests 56 of 56. Flow tests 26 of 26 (6 new). Check 1: 742 screenshots against the previous commit, 0 different, so no approved screen moved. These nine fixes were proven by tests, not by a fourth review. Check 2 in Chrome is still open. Jordan needs to refresh the page to get these fixes. Ask now: 33 to 38.
 
 Changes on 4 November 2026 (version o): Aths Opt 1.0 is built in test mode on the staging branch, committed locally, nothing pushed. Engine tests 56 of 56. Flow tests 20 of 20. Check 1: 742 screenshots, 2 runs, 0 different. Check 2 is only part done: the Claude in Chrome extension was not connected, so the MacBook walk-through in Chrome still has to be done; phone and iPad sizes passed in the built-in browser. Check 3: a fresh-eyes agent found 6 must-fix and 9 should-fix items; a recheck found 1 more must-fix and 4 more should-fix. All are fixed or are questions for Jordan below; the last round of fixes has not had a third review. New questions 33 to 38. Ask now: 33 to 38, then try the build.
 
@@ -244,7 +246,7 @@ Ask now: 33 to 38.
    Done: Jordan approved all boards (decision 29).
 3. (Done) Field rules from the sheets and Jordan's answers (decisions 32 to 38).
 4. (Done, apart from check 2 in Chrome) Build Aths Opt 1.0 in test mode, with engine tests. Checks 1 to 3.
-   Still to do: connect Claude in Chrome, then run the MacBook walk-through and read the console and network logs. A short third review of the last fixes.
+   Done: the third review of the last fixes (version p). Still to do: connect Claude in Chrome, then run the MacBook walk-through and read the console and network logs.
 5. Jordan answers 33 to 38 and tries the build. Once approved, save the screenshots to baseline/.
 6. Jordan makes the GitHub repo and the Supabase project (Sydney) from click-by-click steps. Aths Opt 1.1 goes live on staging with made-up data.
 
