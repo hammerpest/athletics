@@ -1,4 +1,4 @@
-"""Aths Opt 1.3: long jump, shot put and discus, and the group results screens, tried end to end in test mode.
+"""Aths Opt 1.3 to 1.5: long jump, shot put and discus, and the group results screens, tried end to end in test mode.
 Usage: python3 tests/flow_field.py <page url>"""
 import asyncio, sys
 from playwright.async_api import async_playwright
@@ -13,7 +13,7 @@ async def main():
     async def page(pin,w=1180,h=820):
         p=await ctx.new_page(); p.on("pageerror",lambda e:errs.append(str(e)))
         await p.set_viewport_size({"width":w,"height":h})
-        await p.goto(URL); await p.wait_for_function("!!A.store"); await p.wait_for_timeout(200)
+        await p.goto(URL); await p.wait_for_function("typeof A!=='undefined'&&!!A.store"); await p.wait_for_timeout(200)
         for k in pin: await p.click(f'.keypad [data-k="{k}"]')
         await p.click('[data-act=pinstart]'); await p.wait_for_timeout(100); return p
     O=await page("9999")
@@ -171,8 +171,13 @@ async def main():
     ok("athletes still needing a weight are counted",await T.locator('.msg.warn:has-text("need a weight")').count()==1)
     await T.click('[data-act=wtset][data-v="1"] >> nth=0'); await T.wait_for_timeout(150)
     ok("a weight is saved for the athlete",await T.evaluate("Object.values(Object.values(A.field).find(d=>d.k==='D').wt||{})")==[1])
-    await T.evaluate("(()=>{const f=A.R.fgroups.find(f=>f.key==='SP|M|17');A.f.station=f.station;fOpen(f.id)})()"); await T.wait_for_timeout(200)
+    await T.evaluate("(()=>{const f=A.R.fgroups.find(f=>f.key==='SP|M|13');A.f.station=f.station;fOpen(f.id)})()"); await T.wait_for_timeout(200)
     ok("shot put has no weight buttons: the weight is the same for 12 and 13",await T.locator('[data-act=wtset]').count()==0)
+    ok("Aths Opt 1.5: shot put Take Names shows the safety line",await T.locator('#safetyline').count()==1 and "behind the safety area" in await T.inner_text('#safetyline'))
+    await T.evaluate("(()=>{const f=A.R.fgroups.find(f=>f.key==='D|M|13');A.f.station=f.station;fOpen(f.id)})()"); await T.wait_for_timeout(200)
+    ok("Aths Opt 1.5: discus 12 and 13 Take Names shows the safety line once",await T.locator('#safetyline').count()==1)
+    await T.evaluate("(()=>{const f=A.R.fgroups.find(f=>f.key==='LJ|M|17');A.f.station=f.station;fOpen(f.id)})()"); await T.wait_for_timeout(200)
+    ok("Aths Opt 1.5: long jump Take Names has no safety line (A1.20 unchanged)",await T.locator('#safetyline').count()==0)
     print("page errors:",errs)
     print(len(fails),"failed"); await b.close()
 asyncio.run(main())

@@ -353,7 +353,7 @@ function renderTakeNames(f){
   const needW=opts.length?v.rows.filter(r=>!wt[r.id]).length:0;
   return `${lockBar()}<div class="stack" style="gap:${ph?8:10}px">${head}
     <div class="prompt" style="margin:0">Tap each athlete as they arrive. This is their number and their ${word} order.</div>
-    ${opts.length?`<div class="prompt" style="margin:0">Then pick the ${esc(v.ev.name.toLowerCase())} weight for each athlete: ${opts.map(o=>o.age+" years is "+esc(o.w)).join(", ")}.</div>`:""}${needW?`<div class="msg warn">${plural(needW,"athlete still needs","athletes still need")} a weight.</div>`:""}
+    ${opts.length?`<div class="prompt" style="margin:0">Then pick the ${esc(v.ev.name.toLowerCase())} weight for each athlete: ${opts.map(o=>o.age+" years is "+esc(o.w)).join(", ")}.</div>`:""}${v.ev.style==="throw"?`<div class="msg warn" id="safetyline"><b>Safety.</b> Athletes stay behind the safety area. The person returning the implement watches every throw.</div>`:""}${needW?`<div class="msg warn">${plural(needW,"athlete still needs","athletes still need")} a weight.</div>`:""}
     <label class="label" style="display:flex;flex-direction:column;gap:4px">Find an athlete<input type="search" id="tnfilter" placeholder="Type part of a name" value="${esc(A.f.q||"")}" autocomplete="off"></label>
     <div class="namegrid ${opts.length?"names2":"names4"}">${grid||`<span class="muted">No names match.</span>`}</div></div>
     ${ph?`<div class="pbar"><div class="wrap">${all}${notOn}${start}</div></div>`:""}`;

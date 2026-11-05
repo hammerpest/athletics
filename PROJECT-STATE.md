@@ -1,6 +1,10 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 6 November 2026, version az. Replaces 6 November version ay.
+Date: 6 November 2026, version bb. Replaces 6 November version ba.
+
+Changes on 6 November 2026 (version bb): Aths Opt 1.5 is built in test mode on local staging: the A1.28 safety line (decision 94) shows on Take Names for every shot put and discus group, and not on long jump or high jump. Engine tests 77 of 77; flow tests 0 failed (3 new safety checks). Check 1 (pixel diff against the 1.4 commit) was still running when this was written, and checks 2 and 3 are not done. I also made the test scripts wait for the page to load (some screenshot runs stopped early). Jordan asked to put it on GitHub: committed locally; the repo must be created by Jordan (no GitHub login or gh tool here), then I push. Ask now: the new repo address.
+
+Changes on 6 November 2026 (version ba): Jordan tried Aths Opt 1.4 and said all good, and asked for the steps to put it on GitHub. I added .github/workflows/pages.yml (from the swimming one: main at the site root, staging at /staging/, files version-stamped; a branch with no app is skipped). It is not committed or pushed. Jordan makes the GitHub repo and turns on Pages from click-by-click steps. Still to decide: build the A1.28 safety line as Aths Opt 1.5 before going live or after. Baseline screenshots are to be saved to baseline/ now that 1.4 is approved. Ask now: safety line before or after going live.
 
 Changes on 6 November 2026 (version az): Jordan approved the A1.28 safety line (decision 94). All 28 boards are approved. The safety line is not built; it waits for Jordan to try Aths Opt 1.4, then goes in the next build with anything found. Ask now: Jordan tries Aths Opt 1.4.
 

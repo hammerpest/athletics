@@ -21,7 +21,7 @@ async def run(pw,dev,theme):
         p=await ctx.new_page(); pages.append(p)
         p.on("pageerror",lambda e:errs.append((dev,theme,str(e))))
         p.on("console",lambda m:errs.append((dev,theme,m.text)) if m.type=="error" and "fonts.g" not in m.text and "ERR_" not in m.text else None)
-        await p.goto(URL); await p.wait_for_function("!!A.store"); await p.wait_for_timeout(250)
+        await p.goto(URL); await p.wait_for_function("typeof A!=='undefined'&&!!A.store"); await p.wait_for_timeout(250)
         if pin: await dopin(p,pin)
         return p
     async def dopin(p,c):
@@ -77,7 +77,7 @@ async def run(pw,dev,theme):
     await M.click('[data-act=mgo]'); await shot(M,"marshal-lanes-listopen")
     for i in range(8): await pick(M)
     await shot(M,"marshal-lanes-full")
-    await M.reload(); await M.wait_for_function("!!A.store"); await M.wait_for_timeout(250)
+    await M.reload(); await M.wait_for_function("typeof A!=='undefined'&&!!A.store"); await M.wait_for_timeout(250)
     assert await M.evaluate("Object.keys(A.m.lanes).length")==8   # a half-filled lane list survives a reload
     await M.click('[data-act=mnext]'); await M.wait_for_timeout(200)
     for i in range(3): await pick(M)
