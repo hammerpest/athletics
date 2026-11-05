@@ -2,18 +2,29 @@
    Used when js/config.js has the project URL and key. Add ?mode=local to the address for one-device test mode.
    Extra calls: role (the job the server has for this device), claimRole(hash), releaseRole(), setYear(y), checkPin(job,hash) =====
    Each browser tab signs in anonymously on its own (sessionStorage), so each tab is its own device, like test mode. */
+/* Which errors mean "the server said no" (the write is dropped) and which mean "try again later" (it stays queued).
+   Only known refusals are dropped; a network, token, timeout or server-busy error always waits. */
+function sbErrClass(e){
+  const c=String((e&&(e.code||e.statusCode))||"");const msg=String((e&&e.message)||"");
+  if(/exp|jwt|token|expired|fetch|network|timeout|failed to/i.test(msg))return "offline";
+  if(/^(42501|23\d{3}|22\d{3}|42\d{3}|P0001)$/.test(c)||/^PGRST[12]\d\d$/.test(c)||/^(400|403|404|409|413|422)$/.test(c))return "refused";
+  return "offline";
+}
 const SB_TABLES=["config","roster","extras","heats","times","finish","slips","field","records","counter","years"];
 async function supabaseStore(onQueue){
   const C=window.ATHS_CONFIG||{};
   if(!C.url||!C.key)return null;
   if(new URLSearchParams(location.search).get("mode")==="local")return null;
   /* the Supabase library loads only when it is used, so test mode runs exactly as before */
-  if(!window.supabase)await new Promise((ok,no)=>{const s=document.createElement("script");s.src="js/vendor/supabase.js";s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+  while(!window.supabase){
+    try{await new Promise((ok,no)=>{const s=document.createElement("script");s.src="js/vendor/supabase.js";s.onload=ok;s.onerror=()=>{s.remove();no(new Error("load"))};document.head.appendChild(s)})}
+    catch(e){const m=document.getElementById("main");if(m)m.innerHTML='<div class="msg warn" style="margin:16px">Connecting. No signal yet? This page keeps trying.</div>';await sleep(4000)}
+  }
   /* the key is per tab: with one shared key, the library passes a new sign-in to every open tab */
   const sb=window.supabase.createClient(C.url,C.key,{auth:{storage:window.sessionStorage,storageKey:"aths_auth_"+DEV,persistSession:true,autoRefreshToken:true}});
   const split=p=>{const i=p.indexOf("/");return [p.slice(0,i),p.slice(i+1)]};
   /* a refused write (no job, locked, bad data) is dropped; a network failure waits in the queue */
-  const err=e=>{const c=String((e&&(e.code||e.statusCode))||"");const net=!c||c==="PGRST301"||c==="401"||/fetch|network/i.test((e&&e.message)||"");return {code:net?"offline":"invalid_argument",message:e&&e.message}};
+  const err=e=>({code:sbErrClass(e)==="refused"?"invalid_argument":"offline",message:e&&e.message});
   const merge=(a,b)=>{const o=Object.assign({},a||{});for(const k in b){if(b[k]&&typeof b[k]==="object"&&!Array.isArray(b[k])&&o[k]&&typeof o[k]==="object")o[k]=merge(o[k],b[k]);else o[k]=b[k]}return o};
 
   /* sign in once per tab; keep trying if there is no signal */
@@ -50,7 +61,8 @@ async function supabaseStore(onQueue){
     if(r.error)throw err(r.error);
     return {ok:true};
   }
-  const queue=makeQueue(write,onQueue,()=>{try{return !!role}catch(e){return false}});
+  const queue=makeQueue(write,onQueue,()=>{try{return !!role}catch(e){return false}},()=>{try{return role}catch(e){return null}},
+    w=>{try{window.dispatchEvent(new CustomEvent("aths-dropped",{detail:w.path}))}catch(e){}});
 
   /* local copy of each table, kept live by Realtime; writes show straight away, even offline */
   const cache=new Map(),docSubs=new Map(),colSubs=new Map();
@@ -71,6 +83,7 @@ async function supabaseStore(onQueue){
      are ignored; once the last save lands, the record is read again */
   const inflight=new Map();
   async function load(t){
+    await signIn();
     const {data,error}=await sb.from(t).select("id,doc");
     if(error)return;
     const old=cache.get(t)||new Map();
@@ -120,13 +133,30 @@ async function supabaseStore(onQueue){
     ch.subscribe(st=>{if(st==="SUBSCRIBED"){ch.track(Object.assign({dev:DEV},myPres)).catch(()=>{});loadAll()}});
   }
 
-  await signIn();
-  try{const r=await sb.rpc("my_role");role=r.error?null:r.data||null}catch(e){}
-  if(role){join();queue.flush()}
+  /* Start at once, even with no signal: keep the job this tab already had and ask the server again when it can.
+     Only an answer from the server that says "no job" clears the job. */
+  let unconfirmed=false;
+  try{const sv=sessionStorage.getItem("aths_role");if(sv){role=sv;unconfirmed=true}}catch(e){}
+  async function confirmRole(){
+    try{
+      await signIn();
+      const r=await sb.rpc("my_role");
+      if(r.error)throw r.error;
+      const was=role;role=r.data||null;unconfirmed=false;
+      if(role){join();queue.flush()}
+      else if(was){try{window.dispatchEvent(new Event("aths-role-lost"))}catch(e){}}
+      return true;
+    }catch(e){return false}
+  }
+  confirmRole();
+  setInterval(()=>{if(unconfirmed)confirmRole()},5000);
+  if(typeof window!=="undefined")window.addEventListener("online",()=>{if(unconfirmed)confirmRole()});
+  let releasing=Promise.resolve();
 
   return {
     mode:"supabase",
     get role(){return role},
+    get unconfirmed(){return unconfirmed},
     onDoc(path,cb){(docSubs.get(path)||docSubs.set(path,[]).get(path)).push(cb);const [t,id]=split(path);
       if(cache.has(t)){const m=cache.get(t);setTimeout(()=>cb(m.has(id)?m.get(id):null))}else if(role)load(t);else setTimeout(()=>cb(null));return()=>{}},
     onCol(col,cb){(colSubs.get(col)||colSubs.set(col,[]).get(col)).push(cb);
@@ -153,13 +183,13 @@ async function supabaseStore(onQueue){
     pending:()=>queue.size(),queued:pre=>queue.count(pre),flush:()=>queue.flush(),
     /* PINs are checked on the server; the page never sees the PIN table */
     async claimRole(hash){
-      await signIn();const r=await sb.rpc("claim_role",{pin_hash:hash});
+      await releasing;await signIn();const r=await sb.rpc("claim_role",{pin_hash:hash});
       if(r.error)throw err(r.error);
-      role=r.data||null;
+      role=r.data||null;unconfirmed=false;
       if(role){await join();await loadAll();queue.flush()}
       return role;
     },
-    async releaseRole(){role=null;await join();try{await sb.rpc("release_role")}catch(e){}},
+    async releaseRole(){role=null;unconfirmed=false;await join();releasing=(async()=>{try{await sb.rpc("release_role")}catch(e){}})();return releasing},
     async setYear(y){const r=await sb.rpc("set_year",{y:String(y||"current")});if(r.error)throw err(r.error)},
     async checkPin(job,hash){const r=await sb.rpc("check_pin",{job,pin_hash:hash});if(r.error)throw err(r.error);return !!r.data}
   };

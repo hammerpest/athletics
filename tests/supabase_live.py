@@ -70,6 +70,8 @@ async def main():
     check(req("/rest/v1/rpc/doc_update", {"tbl": "field", "doc_id": "f1", "patch": {"final": True}}, fd)[0] < 300, "field station finishes a group")
     check(req("/rest/v1/rpc/doc_update", {"tbl": "field", "doc_id": "f1", "patch": {"marks": {"s1": 1}}}, fd)[0] >= 400, "a finished group: the field station cannot change it")
     check(req("/rest/v1/rpc/doc_update", {"tbl": "field", "doc_id": "f1", "patch": {"marks": {"s1": 1}}}, rc)[0] < 300, "a finished group: the Recorder can")
+    req("/rest/v1/field?id=eq.f1", tok=fd, method="DELETE")
+    check(any(x["id"] == "f1" for x in rows("field", org)), "a finished group: the field station cannot delete it")
     got, lock = [], threading.Lock()
     def send(tok, n):
         for _ in range(n):
@@ -110,7 +112,8 @@ async def main():
         # wrong PIN on a third device
         wc, W = await page(390, 844)
         await login(W, "0000")
-        check(await W.evaluate("A.role") is None and await W.evaluate("A.pinErr"), "a wrong PIN is refused on the page")
+        wp = [await W.evaluate("A.role"), await W.evaluate("A.pinErr")]
+        check(wp[0] is None and bool(wp[1]), "a wrong PIN is refused on the page " + str(wp))
         # a field group opens, a mark is saved on one device and appears on the other
         gk = "LJ|M|17"
         await F.evaluate(f"(async()=>{{const f=A.R.fgroups.find(f=>f.key==='{gk}');A.f.station=f.station;fOpen(f.id);const l=eligible(eventOf(A.cfg,f.k),f.x,f.g);for(let i=0;i<3;i++)await fieldAdd(f,l[i].id);await fieldStart()}})()")

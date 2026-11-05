@@ -19,7 +19,7 @@ const IDB=(()=>{let dbp=null;
    canFlush: the queue waits until this device has a job again (after a flat phone or a closed tab the
    page signs in as a new device, and the server would refuse the writes), so a queued slip is never
    dropped for that */
-function makeQueue(write,onChange,canFlush){
+function makeQueue(write,onChange,canFlush,jobOf,onDrop){
   let q=lsGet("aths_queue",[]);let busy=false;
   const save=()=>{lsSet("aths_queue",q);onChange&&onChange(q.length)};
   async function load(w){
@@ -34,10 +34,14 @@ function makeQueue(write,onChange,canFlush){
   }
   async function flush(){
     if(busy||!q.length||(canFlush&&!canFlush()))return;busy=true;
-    while(q.length){
-      const w=q[0];const full=await load(w);
-      try{if(full)await withTimeout(write(full),8000);q.shift();save();if(w.data&&w.data.idb)IDB.del(w.data.idb).catch(()=>{})}
-      catch(e){if(e&&e.code==="invalid_argument"){q.shift();save();continue}break}
+    /* only this device's current job sends its items: what another job queued waits for that job */
+    const job=jobOf&&jobOf();
+    for(;;){
+      const i=q.findIndex(x=>!jobOf||!x.job||x.job===job);
+      if(i<0)break;
+      const w=q[i];const full=await load(w);
+      try{if(full)await withTimeout(write(full),8000);q.splice(i,1);save();if(w.data&&w.data.idb)IDB.del(w.data.idb).catch(()=>{})}
+      catch(e){if(e&&e.code==="invalid_argument"){q.splice(i,1);save();onDrop&&onDrop(w);continue}break}
     }
     busy=false;
   }
@@ -45,7 +49,9 @@ function makeQueue(write,onChange,canFlush){
   if(typeof window!=="undefined")window.addEventListener("online",flush);
   return {
     async run(w){
-      if(q.length){q.push(await hold(w));save();flush();return {queued:true}}
+      if(jobOf)w=Object.assign({},w,{job:jobOf()});
+      const mine=x=>!jobOf||!x.job||x.job===w.job;
+      if(q.some(mine)){q.push(await hold(w));save();flush();return {queued:true}}
       try{await withTimeout(write(w),8000);return {ok:true}}
       catch(e){if(e&&e.code==="invalid_argument")throw e;q.push(await hold(w));save();return {queued:true}}
     },

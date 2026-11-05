@@ -77,8 +77,17 @@ async function connect(){
   /* Supabase when js/config.js has the project address and key (and the address has no ?mode=local); if not, one-device test mode */
   const onQueue=()=>{if(A.job==="slips")schedule();else renderHeader()};
   let st=null;
-  try{if(typeof supabaseStore==="function")st=await supabaseStore(onQueue)}catch(e){}
+  const useSb=!!(window.ATHS_CONFIG&&ATHS_CONFIG.url)&&new URLSearchParams(location.search).get("mode")!=="local";
+  /* with a project set up, never fall back to one-device test mode quietly: keep trying and say so */
+  for(;;){
+    try{if(typeof supabaseStore==="function")st=await supabaseStore(onQueue)}catch(e){st=null}
+    if(st||!useSb)break;
+    const m=document.getElementById("main");if(m)m.innerHTML='<div class="msg warn" style="margin:16px">Connecting. No signal yet? This page keeps trying.</div>';
+    await sleep(4000);
+  }
   if(!st)st=localStore(onQueue);
+  window.addEventListener("aths-role-lost",()=>{A.role=null;A.job=null;A.yearPicked=null;ssSet("aths_role",null);ssSet("aths_job",null);ssSet("aths_year",null);toast("The server has no job for this device. Enter your PIN again.");render()});
+  window.addEventListener("aths-dropped",()=>toast("A change was refused by the server and not saved. Check the job and whether results are locked."));
   A.store=st;
   /* Supabase: the server decides the job; forget a job it does not know about */
   if(st.claimRole&&st.role!==A.role){A.role=null;A.job=null;A.yearPicked=null;ssSet("aths_role",null);ssSet("aths_job",null);ssSet("aths_year",null);render()}
@@ -185,20 +194,22 @@ function renderYearPick(){
 }
 async function enterYear(y){
   A.r.race=null;A.j.race=null;A.s.race=null;A.a.idx=null;A.a.key=null;A.modal=null;
+  /* Supabase: the server must switch year first; if it cannot, nothing changes on screen */
+  const toCurrent=()=>{if(A.store&&A.store.setYear)A.store.setYear("current").catch(()=>{})};
+  if(A.store&&A.store.setYear){try{await A.store.setYear(y&&y!=="current"?String(y):"current")}catch(e){toast("No connection. Try again.");return}}
   if(y==="current"||!y){
     A.past=null;for(const k of ["cfg","roster","extras","heats","times","finish","slips","field","records","counter"])if(A.L[k]!==undefined)A[k]=A.L[k];
   }else{
     try{
       const [c,r,d]=await Promise.all(["config","roster","data"].map(n=>A.store.get("archive/"+y+"-"+n)));
-      if(!c||!d){toast("The "+y+" carnival could not be loaded.");return}
+      if(!c||!d){toast("The "+y+" carnival could not be loaded.");toCurrent();return}
       A.past=String(y);
       A.cfg=Object.assign({},DEFAULT_CONFIG,c.cfg||{});A.records=c.records||[];
       A.roster={F:(r&&r.F)||[],M:(r&&r.M)||[]};A.extras=(r&&r.extras)||[];
       A.heats=d.heats||[];A.times=d.times||{};A.finish=d.finish||{};A.slips=d.slips||{};A.field=d.field||{};A.counter=d.counter||1;
-    }catch(e){toast("The "+y+" carnival could not be loaded. Check the connection.");return}
+    }catch(e){toast("The "+y+" carnival could not be loaded. Check the connection.");toCurrent();return}
   }
   A.yearPicked=y||"current";ssSet("aths_year",A.yearPicked);
-  if(A.store&&A.store.setYear)A.store.setYear(A.yearPicked).catch(()=>{});
   recompute();render();
 }
 function pressKey(k){
@@ -216,7 +227,7 @@ function pinStart(){
       if(!r){A.pinErr=true;render();return}
       A.pinErr=false;A.role=r;ssSet("aths_role",r);
       if(r!=="org"){goJob(homeJob());return}
-      if(!A.years.length){A.yearPicked="current";ssSet("aths_year","current");if(A.store.setYear)A.store.setYear("current").catch(()=>{})}
+      if(!A.years.length){A.yearPicked="current";ssSet("aths_year","current")}
       render();
     },()=>{toast("No connection. Try again.");render()});
     return;
@@ -240,7 +251,7 @@ function goJob(k){
   if(k==="recorder")A.r.since=Date.now();
   announce();render();window.scrollTo(0,0);
 }
-function signOut(){if(A.past)enterYear("current");clearReadLists();if(A.store&&A.store.releaseRole)A.store.releaseRole().catch(()=>{});A.yearPicked=null;ssSet("aths_year",null);A.role=null;A.job=null;ssSet("aths_role",null);ssSet("aths_job",null);A.menu=false;A.m.phase="start";A.f.gid=null;A.f.station=null;A.f.a=null;fSave();A.r.ovr=false;announce();render()}
+function signOut(){const waiting=A.store&&A.store.pending?A.store.pending():0;if(waiting)toast(plural(waiting,"change")+" still waiting to send. Sign in again as the same job to send "+(waiting===1?"it":"them")+".");if(A.past)enterYear("current");clearReadLists();if(A.store&&A.store.releaseRole)A.store.releaseRole().catch(()=>{});A.yearPicked=null;ssSet("aths_year",null);A.role=null;A.job=null;ssSet("aths_role",null);ssSet("aths_job",null);A.menu=false;A.m.phase="start";A.f.gid=null;A.f.station=null;A.f.a=null;fSave();A.r.ovr=false;announce();render()}
 
 /* ---------- modal ---------- */
 function modalHtml(){

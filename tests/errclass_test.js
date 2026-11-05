@@ -1,0 +1,25 @@
+/* Tests sbErrClass in js/store-supabase.js: which errors drop a queued write and which keep it waiting. Run with Node. */
+const fs = require("fs");
+const src = fs.readFileSync(__dirname + "/../js/store-supabase.js", "utf8");
+const m = src.match(/function sbErrClass[\s\S]*?\n}\n/);
+const sbErrClass = new Function(m[0] + "; return sbErrClass;")();
+let fail = 0;
+const t = (e, want, name) => { const got = sbErrClass(e); if (got !== want) { fail++; console.log("FAIL", name, "got", got); } else console.log("ok  ", name); };
+t({ code: "42501", message: "new row violates row-level security policy" }, "refused", "row-level security refusal is dropped");
+t({ code: "23505", message: "Every PIN must be different" }, "refused", "duplicate PIN is dropped");
+t({ code: "22023" }, "refused", "unknown collection is dropped");
+t({ code: "PGRST116" }, "refused", "bad request is dropped");
+t({ statusCode: "403", message: "new row violates row-level security policy" }, "refused", "storage 403 is dropped");
+t({ code: "PGRST301", message: "JWT expired" }, "offline", "expired token waits");
+t({ code: "PGRST303", message: "JWT expired" }, "offline", "expired token (303) waits");
+t({ code: "PGRST002" }, "offline", "database busy waits");
+t({ code: "08006" }, "offline", "connection failure waits");
+t({ code: "53300" }, "offline", "too many connections waits");
+t({ code: "57014" }, "offline", "timeout waits");
+t({ statusCode: "503" }, "offline", "503 waits");
+t({ statusCode: "429" }, "offline", "429 waits");
+t({ statusCode: "400", message: "exp claim timestamp check failed" }, "offline", "storage expired token waits");
+t({ message: "Failed to fetch" }, "offline", "no network waits");
+t({}, "offline", "unknown error waits");
+console.log(fail ? fail + " failed" : "0 failed");
+process.exit(fail ? 1 : 0);

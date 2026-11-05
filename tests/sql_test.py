@@ -130,6 +130,8 @@ check(f.ok("select doc_update('field', 'f1', '{\"final\":true}')"), "field stati
 check(not f.ok("select doc_update('field', 'f1', '{\"marks\":{\"s3\":{}}}')"), "a finished group: the field station cannot change it")
 check(r.ok("select doc_update('field', 'f1', '{\"marks\":{\"s1\":{\"a\":{\"1\":\"4.90\"}}}}')"), "a finished group: the Recorder can fix a mark")
 check(not m.ok("insert into field values ('f2', '{}')"), "marshal cannot write field")
+check(not f.ok("delete from field where id = 'f1'"), "a finished group: the field station cannot delete it")
+check(f.ok("insert into field values ('f3', '{}')") and f.ok("delete from field where id = 'f3'"), "an unfinished group: the field station can delete its own")
 
 # judge, announcer
 j = Dev(); j.pin("judge")

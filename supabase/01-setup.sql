@@ -208,6 +208,17 @@ end $$;
 drop trigger if exists field_final_lock on public.field;
 create trigger field_final_lock before update on public.field
   for each row execute function private.field_final_lock();
+create or replace function private.field_final_lock_del() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  if private.my_role() = 'field' and coalesce((old.doc->>'final')::boolean, false) then
+    raise exception 'This group is finished' using errcode = '42501';
+  end if;
+  return old;
+end $$;
+drop trigger if exists field_final_lock_del on public.field;
+create trigger field_final_lock_del before delete on public.field
+  for each row execute function private.field_final_lock_del();
 
 -- ---------- PINs ----------
 -- Every wrong PIN is counted. More than 5 wrong in 5 minutes on one device,
