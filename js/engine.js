@@ -37,7 +37,7 @@ const DEFAULT_TIMETABLE=[
   {at:"1:35 pm",k:"R",x:"FM"}
 ];
 /* the 2027 instruction sheets (decisions 32 to 35), held as organiser settings */
-const RULE_DIST={attempts:3,ties:"share",shortTop:4};         /* long jump: every jump measured */
+const RULE_DIST={attempts:3,ties:"share"};                    /* long jump: every jump measured; up to 3 jumps, the official can finish an athlete (decisions 72, 73) */
 const RULE_THROW={attempts:3,ties:"share"};                   /* throws: fair, foul or pass; the best is measured once */
 const RULE_HIGH={tries:3,raise:{F:[5],M:[10,5]},lastRaise:3,lastLeft:3,pass:true,ties:"countback"};
 /* each cell holds girls / boys, as on the sheets */
@@ -264,8 +264,8 @@ function hjOutAt(mh,tries){
 /* the bar: the height for each round comes from how many athletes are still in (decision 35).
    Girls 5 cm until 3 remain, then 3 cm. Boys 10 cm first, then 5 cm until 3 remain, then 3 cm.
    Returns the heights so far with some ahead, the current height (null when all are out), and who is left. */
-function hjPlan(cfg,ev,rule,x,g,ids,marks){
-  const start=hjStart(cfg,x,g);const cell=(id,h)=>((marks[id]||{}).h||{})[h]||"";
+function hjPlan(cfg,ev,rule,x,g,ids,marks,opt){
+  opt=opt||{};const sheetStart=hjStart(cfg,x,g);const start=opt.hs>0?opt.hs:sheetStart;const hn=opt.hn||{};const cell=(id,h)=>((marks[id]||{}).h||{})[h]||"";
   const isIn=(id,upto)=>!(marks[id]||{}).ns&&!hjOutBy((marks[id]||{}).h,rule.tries,upto);
   const steps=rule.raise[x]||rule.raise.F;
   const raiseAt=(n,left)=>left<=rule.lastLeft?rule.lastRaise:steps[Math.min(n,steps.length-1)];
@@ -282,18 +282,24 @@ function hjPlan(cfg,ev,rule,x,g,ids,marks){
     if(!done){cur=still.length||!ids.length?h:null;break}
     const left=still.filter(id=>isIn(id,h)).length;
     if(!left){cur=null;break}
-    hs.push(h+raiseAt(raises,left));raises++;
+    /* the person running the event can type the next height (decision 58); the sheet's raise is the suggestion */
+    hs.push(hn[hs.length]>h?hn[hs.length]:h+raiseAt(raises,left));raises++;
   }
   const left=ids.filter(id=>isIn(id,9999)).length;
-  while(hs.length<7){hs.push(hs[hs.length-1]+raiseAt(raises,left||99));raises++}
+  /* no limit on rounds (decision 67): always 2 heights ahead of the bar, and at least 7 */
+  const at=cur==null?hs.length-1:hs.indexOf(cur);
+  while(hs.length<7||hs.length<at+3){const nxt=hn[hs.length]>hs[hs.length-1]?hn[hs.length]:hs[hs.length-1]+raiseAt(raises,left||99);hs.push(nxt);raises++}
+  const nowIn=cur==null?0:ids.filter(id=>isIn(id,cur)).length;
+  const nextSheet=cur==null?null:cur+raiseAt(at,nowIn);
+  const used=ids.some(id=>Object.values(((marks[id]||{}).h)||{}).some(Boolean));
   /* a box typed on a height that later moved is never lost: it keeps its own column */
   const extra=new Set(hs);
   for(const id of ids)for(const h in ((marks[id]||{}).h||{}))if(cell(id,h))extra.add(+h);
-  return {start,heights:[...extra].sort((a,b)=>a-b),cur,left,out:ids.length-left,isIn};
+  return {start,sheetStart,heights:[...extra].sort((a,b)=>a-b),cur,left,out:ids.length-left,isIn,locked:used,at,hs:hs.slice(),nextSheet,nextTyped:cur!=null&&hn[at+1]>cur};
 }
 function fieldRow(ev,rule,m){
   /* one athlete's best mark and what a tie needs */
-  m=m||{};const out={ns:!!m.ns,best:0,bestAt:0,tries:[],fails:0,failsAtBest:0,noMeasure:false};
+  m=m||{};const out={ns:!!m.ns,best:0,bestAt:0,tries:[],fails:0,failsAtBest:0};
   if(m.ns)return out;
   if(ev.style==="height"){
     const hs=Object.keys(m.h||{}).map(Number).sort((a,b)=>a-b);
@@ -304,7 +310,7 @@ function fieldRow(ev,rule,m){
   if(ev.style==="throw"){
     /* only the best throw is measured, once, at the end (decision 34) */
     const fair=Object.values(m.t||{}).includes("Fair");
-    out.best=fair?markCm(m.best):0;out.noMeasure=fair&&!out.best;
+    out.best=fair?markCm(m.best):0;out.fair=fair;out.measured=!!out.best;
     if(out.best)out.tries=[out.best];
     return out;
   }
@@ -314,20 +320,24 @@ function fieldRow(ev,rule,m){
   return out;
 }
 /* a group opens on Take Names until it is started. A group with marks or a final result has started (decision 44) */
-function fieldHasMark(m){return !!m&&(!!m.ns||!!m.best||[m.a,m.t,m.h].some(b=>Object.values(b||{}).some(Boolean)))}
+function fieldHasMark(m){return !!m&&(!!m.ns||!!m.fin||!!m.best||[m.a,m.t,m.h].some(b=>Object.values(b||{}).some(Boolean)))}
 function fieldStarted(doc){return !!doc&&(!!doc.started||!!doc.final||Object.values(doc.marks||{}).some(fieldHasMark))}
-/* who is up and who is next, in arrival order (decision 32). rows are in arrival order.
-   Short long jump (decision 33): 2 jumps each, then only the top 4 get a 3rd */
-function bestOfTwo(r){const a=r.m.a||{};return Math.max(markCm(a[0]),markCm(a[1]))}
-function thirdJump(rows,rule,short){
-  if(!short)return null;
-  /* the cut comes once everyone has had their 2 jumps */
-  if(rows.some(r=>!r.m.ns&&!((r.m.a||{})[0]&&(r.m.a||{})[1])))return null;
-  const two=rows.filter(r=>!r.m.ns).map(bestOfTwo).filter(Boolean).sort((a,b)=>b-a);
-  const cut=two[Math.min(rule.shortTop-1,two.length-1)]||0;
-  return new Set(rows.filter(r=>!r.m.ns&&cut&&bestOfTwo(r)>=cut).map(r=>r.id));
+/* who is up and who is next, in arrival order (decision 32), once per round (decisions 71, 78).
+   Long jump: up to 3 jumps for everyone; the official can finish an athlete at any time (decisions 72, 73).
+   Shot put and discus: everyone throws once; the official picks who throws again (decisions 79). */
+function roundDone(rows,rule){const live=rows.filter(r=>!r.m.ns&&!r.m.fin&&attemptsUsed(r,rule)<rule.attempts);return !live.length||new Set(live.map(r=>attemptsUsed(r,rule))).size===1}
+function keepTop(rows,n,rule){
+  /* Keep top N (decision 73): finish everyone below the Nth best mark. Equal marks stay in. Nothing happens with fewer than N marks */
+  const live=rows.filter(r=>!r.m.ns&&!r.m.fin&&attemptsUsed(r,rule)<rule.attempts);
+  /* only when the round is done: everyone still jumping has the same number of jumps */
+  if(live.length&&new Set(live.map(r=>attemptsUsed(r,rule))).size>1)return [];
+  const bests=rows.filter(r=>!r.m.ns&&r.best>0).map(r=>r.best).sort((a,b)=>b-a);
+  if(bests.length<n)return [];
+  const thr=bests[n-1];
+  return rows.filter(r=>!r.m.ns&&!r.m.fin&&attemptsUsed(r,rule)<rule.attempts&&r.best<thr).map(r=>r.id);
 }
-function fieldTurn(ev,rule,rows,short,plan){
+function attemptsUsed(r,rule){let n=0;for(let i=0;i<rule.attempts;i++)if((r.m.a||{})[i]!==undefined&&(r.m.a||{})[i]!=="")n++;return n}
+function fieldTurn(ev,rule,rows,short,plan,doc){
   if(!rows.length)return {up:-1,next:-1,third:null};
   if(ev.style==="height"){
     /* everyone has their 1st try at a height, in arrival order, then their 2nd, then their 3rd */
@@ -335,18 +345,25 @@ function fieldTurn(ev,rule,rows,short,plan){
     const wait=rows.map((r,i)=>i).filter(i=>plan.cur!=null&&plan.isIn(rows[i].id,plan.cur)&&!hjClosed(box(i))).sort((a,b)=>box(a).length-box(b).length||a-b);
     return {up:wait.length?wait[0]:-1,next:wait.length>1?wait[1]:-1,third:null,tryNo:wait.length?box(wait[0]).length+1:0};
   }
-  const third=ev.style==="distance"?thirdJump(rows,rule,short):null;
-  const box=ev.style==="throw"?"t":"a";
-  const used=rows.map(r=>{
-    if(r.m.ns)return 99;
-    let n=0;for(let i=0;i<rule.attempts;i++)if((r.m[box]||{})[i])n++;
-    if(third&&!third.has(r.id)&&!(r.m.a||{})[2])n++;
-    return n});
+  const throws=ev.style==="throw";doc=doc||{};
+  const cnt=r=>{let n=0;for(let i=0;i<rule.attempts;i++)if(((throws?r.m.t:r.m.a)||{})[i])n++;return n};
+  const off=r=>!!r.m.ns||!!r.m.fin;
+  /* throws: after throw 1 for everyone, the official picks who throws again; the rest are participation */
+  let can=r=>!off(r);let pick=false;
+  if(throws){
+    const first=rows.filter(r=>!off(r)&&cnt(r)<1);
+    if(!first.length){
+      if(!doc.tgo)pick=true;
+      can=r=>!off(r)&&!!(doc.tg||{})[r.id];
+    }
+  }
+  const used=rows.map(r=>can(r)?cnt(r):99);
+  if(pick)return {up:-1,next:-1,third:null,pick:true};
   const round=Math.min(...used);
-  if(round>=rule.attempts)return {up:-1,next:-1,third};
+  if(round>=rule.attempts)return {up:-1,next:-1,third:null,over:true};
   const up=used.indexOf(round);let next=used.indexOf(round,up+1);
   if(next<0)next=used.findIndex((n,i)=>i!==up&&n<rule.attempts);
-  return {up,next,third};
+  return {up,next,third:null};
 }
 function fieldCompare(ev,rule,a,b){
   /* negative when a is ahead of b; 0 is a tie */
@@ -484,9 +501,22 @@ function compute(S){
     if(!ids.length&&!doc.final)continue;
     const rows=ids.map(id=>Object.assign({id,no:everyone.indexOf(id)+1,p:who(id),m:marks[id]||{},place:null,pts:0,st:(marks[id]||{}).ns?"NS":"ok"},fieldRow(ev,rule,marks[id])));
     const G=ensure(fg.key,ev);
-    G.arrival=rows.slice();G.plan=ev.style==="height"?hjPlan(cfg,ev,rule,fg.x,fg.g,ids,marks):null;
-    G.turn=fieldTurn(ev,rule,rows,!!doc.short,G.plan);
-    G.rows=rankField(ev,rule,rows,P);G.rule=rule;G.fg=fg;G.doc=doc;
+    G.arrival=rows.slice();G.plan=ev.style==="height"?hjPlan(cfg,ev,rule,fg.x,fg.g,ids,marks,{hs:doc.hs,hn:doc.hn}):null;
+    /* shot put and discus: only the athletes the official measured are placed. Everyone else with a fair throw is
+       participation: one set distance, typed once, lower than the lowest measured mark; they share a place and get
+       the points for 4th and below (decisions 80, 81). No fair throw, or a no show, is 0 */
+    if(ev.style==="throw"){
+      const setd=markCm(doc.setd);const meas=rows.filter(r=>r.best>0).map(r=>r.best);const low=meas.length?Math.min(...meas):Infinity;
+      G.setd={cm:setd,low:meas.length?low:0,ok:setd>0&&setd<low,n:0};
+      for(const r of rows){if(!r.m.ns&&r.fair&&!r.best){r.part=true;G.setd.n++;if(G.setd.ok){r.best=setd;r.tries=[setd]}}}
+    }
+    G.turn=fieldTurn(ev,rule,rows,false,G.plan,doc);
+    G.rows=rankField(ev,rule,rows,P);
+    if(ev.style==="throw"){
+      const nm=G.rows.filter(r=>!r.part&&r.best>0).length;
+      for(const r of G.rows)if(r.part&&r.best>0){r.place=nm+1;r.pts=P.rest;r.tie=G.rows.filter(x=>x.part&&x.best>0).length>1}
+    }
+    G.rule=rule;G.fg=fg;G.doc=doc;
     G.final=!!doc.final;G.status=G.final?"Final":"Provisional";G.checkedAt=doc.finalAt||0;G.raceNos=[];
   }
   /* records: lower wins on the track, higher in the field */
@@ -621,6 +651,6 @@ function parseRecordRows(text,cfg){
   return {out,bad};
 }
 if(typeof module!=="undefined")module.exports={AGE_GROUPS,AGES_DOWN,HOUSES,TEAMS,DEFAULT_EVENTS,DEFAULT_TIMETABLE,DEFAULT_CONFIG,RULE_DIST,RULE_THROW,RULE_HIGH,
-  eventOf,programEvents,newEvent,stationsOf,fieldGroups,fieldId,fieldRule,heightSeq,hjClosed,hjOutBy,hjOutAt,hjPlan,hjStart,weightFor,fieldTurn,fieldStarted,thirdJump,mtTimeAt,sheetPair,groupKey,groupLabel,grpName,teamId,
+  eventOf,programEvents,newEvent,stationsOf,fieldGroups,fieldId,fieldRule,heightSeq,hjClosed,hjOutBy,hjOutAt,hjPlan,hjStart,weightFor,fieldTurn,fieldStarted,keepTop,roundDone,mtTimeAt,sheetPair,groupKey,groupLabel,grpName,teamId,
   parseTime,fmtTime,oddTime,markCm,markOk,fmtMark,fmtCell,cleanMark,heatEffective,lateSlip,pointsFor,compute,blockNow,hrisList,resultText,
   parseStudents,parseRecordRows,ageOn,ageGroup};

@@ -200,13 +200,29 @@ t("equal marks share the place and points (decision 36); next best jump stays a 
   S.config=cfgWith({rules:{LJ:{ties:"countback"}}});
   eq(compute(S).groups.get(groupKey("LJ","F","15")).rows.map(r=>[r.id,r.place,r.pts]),[["a",1,10],["b",2,8],["c",3,6]]);
 });
-t("long jump short format: 2 jumps, then the top 4 get a 3rd (decision 33)",()=>{
+t("long jump: up to 3 jumps for everyone, once per round in number order (decisions 71, 72)",()=>{
   const ev=E.eventOf(DEFAULT_CONFIG,"LJ");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
-  const row=(id,x,y)=>({id,m:{a:{0:x,1:y}}});
-  const rows=[row("a","400","410"),row("b","500","x"),row("c","300","310"),row("d","450","-"),row("e","420","x"),row("f","x","x")];
-  eq([...E.thirdJump(rows,rule,true)].sort(),["a","b","d","e"]);
-  eq(E.thirdJump(rows,rule,false),null);
-  const t=E.fieldTurn(ev,rule,rows,true,null);eq(t.up,0);eq(t.next,1);
+  eq(rule.attempts,3);eq(rule.shortTop,undefined);
+  const rows=[{id:"a",m:{a:{0:"400"}}},{id:"b",m:{}},{id:"c",m:{}}];
+  let t=E.fieldTurn(ev,rule,rows,false,null);eq(t.up,1);eq(t.next,2);
+  rows[1].m.a={0:"410"};rows[2].m.a={0:"x"};t=E.fieldTurn(ev,rule,rows,false,null);eq(t.up,0);eq(t.next,1);
+});
+t("long jump: Finish ends an athlete; a finished athlete is skipped and keeps their mark (decision 73)",()=>{
+  const ev=E.eventOf(DEFAULT_CONFIG,"LJ");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
+  const rows=[{id:"a",m:{a:{0:"400"},fin:true}},{id:"b",m:{a:{0:"410"}}},{id:"c",m:{a:{0:"390"}}}];
+  const t=E.fieldTurn(ev,rule,rows,false,null);eq(t.up,1);eq(t.next,2);
+  const all=[{id:"a",m:{a:{0:"400"},fin:true}},{id:"b",m:{a:{0:"410"},fin:true}}];eq(E.fieldTurn(ev,rule,all,false,null).up,-1);
+  eq(E.fieldStarted({marks:{a:{fin:true}}}),true);
+});
+t("long jump: Keep top N finishes everyone below the Nth best; equal marks stay in; nothing with fewer than N marks",()=>{
+  const ev=E.eventOf(DEFAULT_CONFIG,"LJ");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
+  const row=(id,c)=>({id,best:c,m:{a:{0:c?String(c):"x"}}});
+  const rows=[row("a",534),row("b",498),row("c",0),row("d",561),row("e",498),row("f",515)];
+  eq(E.keepTop(rows,3,rule).sort(),["b","c","e"]);   /* top 3 are 561, 534, 515; 498 twice are below */
+  eq(E.keepTop(rows,5,rule).sort(),["c"]);            /* 5th best is 498: both 498s stay in, only no mark goes */
+  eq(E.keepTop(rows,9,rule),[]);
+  rows[1].m.fin=true;eq(E.keepTop(rows,3,rule).includes("b"),false);
+  rows[2].m.ns=true;eq(E.keepTop(rows,3,rule).includes("c"),false);
 });
 t("now up and next follow the arrival order, skipping a no show",()=>{
   const ev=E.eventOf(DEFAULT_CONFIG,"SP");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
@@ -214,12 +230,50 @@ t("now up and next follow the arrival order, skipping a no show",()=>{
   const t=E.fieldTurn(ev,rule,rows,false,null);eq(t.up,2);eq(t.next,3);
   const done=E.fieldTurn(ev,rule,[{id:"a",m:{t:{0:"Fair",1:"Foul",2:"Pass"}}}],false,null);eq(done.up,-1);
 });
-t("throws: fair, foul or pass, and only the measured best counts (decision 34)",()=>{
-  const S={students:["a","b","c","d"].map(i=>st(i,"B","M","17"))};
-  fieldDoc(S,"SP","M","17",{a:{t:{0:"Fair",1:"Foul",2:"Fair"},best:"1124"},b:{t:{0:"Foul",1:"Foul",2:"Foul"}},c:{t:{0:"Fair"},best:"1287"},d:{t:{0:"Fair"}}},true);
-  const G=compute(S).groups.get(groupKey("SP","M","17"));
-  eq(G.rows.map(r=>[r.id,r.best,r.place,r.pts]),[["c",1287,1,10],["a",1124,2,8],["b",0,null,0],["d",0,null,0]]);
-  eq(G.rows[3].noMeasure,true);eq(G.rows[2].noMeasure,false);
+t("throws: only measured athletes are placed; the rest are participation at the set distance (decisions 80, 81)",()=>{
+  const S={students:["a","b","c","d","e"].map(i=>st(i,"B","M","17"))};
+  fieldDoc(S,"SP","M","17",{a:{t:{0:"Fair",1:"Foul",2:"Fair"},best:"1124"},b:{t:{0:"Foul"}},c:{t:{0:"Fair"},best:"1287"},d:{t:{0:"Fair"}},e:{t:{0:"Fair"}}},true);
+  S.field[E.fieldId(groupKey("SP","M","17"))].setd="800";
+  let G=compute(S).groups.get(groupKey("SP","M","17"));
+  eq(G.rows.map(r=>[r.id,r.best,r.place,r.pts]),[["c",1287,1,10],["a",1124,2,8],["d",800,3,4],["e",800,3,4],["b",0,null,0]]);
+  eq(G.setd.ok,true);eq(G.setd.n,2);eq(G.rows[2].part,true);
+  /* not lower than the lowest measured mark: not accepted, so they have no mark yet */
+  S.field[E.fieldId(groupKey("SP","M","17"))].setd="1124";
+  G=compute(S).groups.get(groupKey("SP","M","17"));eq(G.setd.ok,false);eq(G.rows.filter(r=>r.part).every(r=>r.best===0),true);
+  S.field[E.fieldId(groupKey("SP","M","17"))].setd="";G=compute(S).groups.get(groupKey("SP","M","17"));eq(G.setd.ok,false);
+});
+t("participation gets a flat 4 points whatever the number measured (decision 81)",()=>{
+  for(const n of [0,1,2,3]){
+    const ids=["a","b","c","d","e","f"];const S={students:ids.map(i=>st(i,"B","M","17"))};
+    const marks={};ids.forEach((id,i)=>marks[id]={t:{0:"Fair"},best:i<n?String(1500-i*100):undefined});
+    fieldDoc(S,"SP","M","17",marks,true);S.field[E.fieldId(groupKey("SP","M","17"))].setd="400";
+    const G=compute(S).groups.get(groupKey("SP","M","17"));
+    const part=G.rows.filter(r=>r.part);eq(part.length,6-n);
+    eq(part.every(r=>r.pts===4&&r.place===n+1),true);
+    eq(G.rows.filter(r=>!r.part).map(r=>r.place),Array.from({length:n},(_,i)=>i+1));
+  }
+});
+t("Keep top N waits for the round: nobody who has not jumped yet is finished",()=>{
+  const ev=E.eventOf(DEFAULT_CONFIG,"LJ");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
+  const rows=[0,1,2,3,4,5,6,7].map(i=>({id:"p"+i,best:i<4?500-i*10:0,m:{a:i<4?{0:String(500-i*10)}:{}}}));
+  eq(E.keepTop(rows,2,rule),[]);eq(E.roundDone(rows,rule),false);
+  rows.forEach((r,i)=>{if(i>=4){r.m.a={0:"x"}}});eq(E.roundDone(rows,rule),true);
+  eq(E.keepTop(rows,2,rule).sort(),["p2","p3","p4","p5","p6","p7"]);
+});
+t("throws: 1st throw for everyone in number order, then the official picks who throws again (decisions 78, 79)",()=>{
+  const ev=E.eventOf(DEFAULT_CONFIG,"SP");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
+  const rows=[{id:"a",m:{t:{0:"Fair"}}},{id:"b",m:{}},{id:"c",m:{ns:true}},{id:"d",m:{}}];
+  let t=E.fieldTurn(ev,rule,rows,false,null,{});eq(t.up,1);eq(t.next,3);
+  rows[1].m.t={0:"Foul"};rows[3].m.t={0:"Fair"};
+  t=E.fieldTurn(ev,rule,rows,false,null,{});eq(t.pick,true);eq(t.up,-1);
+  t=E.fieldTurn(ev,rule,rows,false,null,{tg:{a:true,d:true},tgo:true});eq(t.up,0);eq(t.next,3);
+  rows[0].m.t={0:"Fair",1:"Foul"};t=E.fieldTurn(ev,rule,rows,false,null,{tg:{a:true,d:true},tgo:true});eq(t.up,3);eq(t.next,0);
+  rows[3].m.t={0:"Fair",1:"Fair"};t=E.fieldTurn(ev,rule,rows,false,null,{tg:{a:true,d:true},tgo:true});eq(t.up,0);
+  rows[0].m.t={0:"Fair",1:"Foul",2:"Pass"};rows[3].m.t={0:"Fair",1:"Fair",2:"Fair"};
+  eq(E.fieldTurn(ev,rule,rows,false,null,{tg:{a:true,d:true},tgo:true}).over,true);
+  /* Finish ends an athlete early */
+  rows[0].m.t={0:"Fair"};rows[0].m.fin=true;rows[3].m.t={0:"Fair"};
+  eq(E.fieldTurn(ev,rule,rows,false,null,{tg:{a:true,d:true},tgo:true}).up,3);
 });
 t("a typed best with no fair throw does not count",()=>{
   const S={students:[st("a","B","M","17")]};
@@ -341,11 +395,6 @@ t("blockNow moves on as groups go final",()=>{
   eq(E.blockNow(compute(S)),2);
 });
 
-t("short format: rounds run in order until everyone has 2 jumps, and nobody is locked early",()=>{
-  const ev=E.eventOf(DEFAULT_CONFIG,"LJ");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
-  const rows=[{id:"a",m:{a:{0:"400"}}},{id:"b",m:{}},{id:"c",m:{}},{id:"d",m:{}},{id:"e",m:{}},{id:"f",m:{}}];
-  const t=E.fieldTurn(ev,rule,rows,true,null);eq(t.up,1);eq(t.next,2);eq(t.third,null);
-});
 t("a late athlete does not move the bar; the bar stays where the boxes show",()=>{
   const m={a:{h:{110:"O",115:"O",120:"O"}},b:{h:{110:"O",115:"O",120:"O"}},c:{h:{110:"O",115:"O",120:"O"}},d:{h:{110:"O",115:"O",120:"O"}}};
   const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b","c","d"],m);eq(p.cur,125);
@@ -426,6 +475,37 @@ t("age group as at 31 December 2027, and no DOB in the result",()=>{
   const p=E.parseStudents("Surname,Firstname,House,Sex,DOB\nSmith,Amy,B,F,2014-12-31\nJones,Bo,J,M,1/1/2015\nLee,Cy,N,M,2009-06-01\nBad,,X,Z,\n",DEFAULT_CONFIG.ageDate);
   eq(p.ok.map(s=>s.g),["13","13","18"]);eq(p.bad.length,1);
   assert(!JSON.stringify(p.ok).includes("dob"));
+});
+t("high jump: the person running the event types the start height and each next height (decisions 53 to 58)",()=>{
+  const ids=["a","b","c","d"];const m={a:{h:{}},b:{h:{}},c:{h:{}},d:{h:{}}};
+  let p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{});eq(p.cur,110);eq(p.sheetStart,110);eq(p.locked,false);eq(p.nextSheet,115);
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{hs:105});eq(p.cur,105);eq(p.sheetStart,110);eq(p.heights[1],110);
+  ids.forEach(i=>m[i].h[110]="O");
+  /* start 1.10, then 1.20, then 1.23 */
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{hn:{1:120}});eq(p.cur,120);eq(p.locked,true);eq(p.nextTyped,false);
+  ids.forEach(i=>m[i].h[120]="O");
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{hn:{1:120,2:123}});eq(p.cur,123);
+  eq(p.heights.slice(0,3),[110,120,123]);
+  /* a typed height that is not above the bar is ignored */
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{hn:{1:120,2:118}});eq(p.cur,125);
+});
+t("high jump has no limit on rounds: heights keep coming until everyone is out (decision 67)",()=>{
+  const ids=["a","b"];const m={a:{h:{}},b:{h:{}}};
+  let h=110,n=0;
+  for(let r=0;r<25;r++){
+    const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{});
+    if(p.cur==null)break;
+    eq(p.heights.length>=Math.max(7,p.heights.indexOf(p.cur)+3),true);
+    ids.forEach(i=>{m[i].h[p.cur]="O"});n++;
+  }
+  eq(n,25);
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{});eq(p.heights.length>=27,true);
+  ids.forEach(i=>{m[i].h[p.cur]="XXX"});
+  const q=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{});eq(q.cur,null);eq(q.left,0);
+});
+t("high jump: 3 left is shown as plan.left, and the sheet's next raise drops to 3 cm",()=>{
+  const ids=["a","b","c","d"];const m={a:{h:{110:"O"}},b:{h:{110:"XXX"}},c:{h:{110:"O"}},d:{h:{110:"O"}}};
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{});eq(p.left,3);eq(p.cur,113);
 });
 console.log(`${n-fail} of ${n} engine tests passed`);
 process.exit(fail?1:0);

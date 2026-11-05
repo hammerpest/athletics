@@ -31,7 +31,21 @@ function renderInner(){
   window.scrollTo(sx,sy);
   wireInputs();
   fitPicklist();
+  hjNowScroll();
+  placePops();
 }
+/* the pop-ups (Clear, Miss, Pass; the jump keypad; Finish asks first) stay beside their box and always inside the screen */
+function placePops(){
+  document.querySelectorAll(".hjpop").forEach(p=>{
+    const td=p.parentElement;if(!td)return;const r=td.getBoundingClientRect();
+    p.style.position="fixed";p.style.transform="none";p.style.right="auto";p.style.bottom="auto";p.style.left="0px";p.style.top="0px";p.style.width="max-content";
+    const w=p.offsetWidth,h=p.offsetHeight,W=innerWidth,H=(window.visualViewport?visualViewport.height:innerHeight);
+    let top=r.bottom+4;if(top+h>H-8)top=r.top-h-4;if(top<8)top=Math.max(8,(H-h)/2);
+    p.style.top=top+"px";p.style.left=Math.max(8,Math.min(W-w-8,r.left+r.width/2-w/2))+"px";
+  });
+}
+window.addEventListener("scroll",()=>{if(document.querySelector(".hjpop"))placePops()},{passive:true});
+window.addEventListener("resize",()=>{if(document.querySelector(".hjpop"))placePops()});
 /* the name list: on a phone a full-screen panel, sized to the space above the keyboard. On anything larger it
    stays beside its lane and opens upwards when there is more room above, so the names are never off screen */
 function fitPicklist(){
@@ -80,6 +94,12 @@ function wireInputs(){
     inp.onchange=()=>{if(!A.rendering)save()};
     inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();inp.onchange=null;save();inp.blur()}};
   });
+  document.querySelectorAll("[data-hjs],[data-hjn]").forEach(inp=>{inp.onchange=()=>{if(!A.rendering)hjTyped(inp)};inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();inp.blur()}}});
+  document.querySelectorAll("[data-keepn]").forEach(inp=>{inp.onchange=()=>{A.f.keepN=Math.max(1,parseInt(inp.value,10)||4);render()}});
+  document.querySelectorAll("[data-guide]").forEach(inp=>{inp.onchange=()=>{A.f.guide=Math.max(1,parseInt(inp.value,10)||10);render()}});
+  document.querySelectorAll("[data-setd]").forEach(inp=>{inp.onchange=()=>{if(A.rendering)return;const f=fieldGroupOpen();if(!f)return;const v=cleanMark(inp.value);
+    if(inp.value.trim()&&(!markOk(inp.value)||/[^0-9]/.test(v))){toast("Type 800 or 8.00 for 8.00 m.");render();return}
+    fieldWrite(f,{setd:v})};inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();inp.blur()}}});
   document.querySelectorAll("[data-rule]").forEach(el=>{el.onchange=()=>{
     const k=el.dataset.rule,fld=el.dataset.f;const v=fld==="ties"?el.value:+el.value;
     saveCfg({rules:Object.assign({},A.cfg.rules||{},{[k]:Object.assign({},(A.cfg.rules||{})[k]||{},{[fld]:v})})},"Rule saved");
@@ -103,7 +123,7 @@ function wireInputs(){
   const of=document.getElementById("oFile");if(of)of.onchange=e=>{const file=e.target.files[0];if(!file)return;const fr=new FileReader();fr.onload=()=>{A.o.text=String(fr.result);A.o.preview=parseStudents(A.o.text,A.cfg.ageDate);render()};fr.readAsText(file)};
 }
 /* a device opens where the group is up to */
-function fOpen(id){A.f.gid=id;A.f.q="";A.f.typed="";A.f.a=null;A.f.id=null;const f=fieldGroupById(id);const G=f&&A.R.groups.get(f.key);A.f.i=G&&G.turn.up>=0?G.turn.up:0;fSave();render();window.scrollTo(0,0)}
+function fOpen(id){A.f.gid=id;A.f.q="";A.f.typed="";A.f.a=null;A.f.id=null;fReset();A.f.keepPrev=[];A.f.keepMsg="";const f=fieldGroupById(id);const G=f&&A.R.groups.get(f.key);A.f.i=G&&G.turn.up>=0?G.turn.up:0;fSave();render();window.scrollTo(0,0)}
 const ACT={
   key:el=>pressKey(el.dataset.k),
   pinstart:()=>pinStart(),
@@ -197,7 +217,7 @@ const ACT={
   mtnoheatok:()=>{A.modal=null;mtDraftDrop()},
   fstation:el=>{A.f.station=el.dataset.v;fSave();render()},
   fopen:el=>fOpen(el.dataset.v),
-  fall:()=>{A.f.gid=null;A.f.typed="";A.f.a=null;A.f.id=null;fSave();render();window.scrollTo(0,0)},
+  fall:()=>{A.f.gid=null;A.f.typed="";A.f.a=null;A.f.id=null;fReset();fSave();render();window.scrollTo(0,0)},
   faddopen:()=>{A.f.filter="";A.modal={t:"fieldAdd"};render()},
   fadd:async el=>{const f=modalGroup();if(f)await fieldToggle(f,el.dataset.id)},
   fcell:el=>{A.f.a=+el.dataset.a;fSave();render()},
@@ -206,12 +226,37 @@ const ACT={
   faddnew:()=>{const f=modalGroup();if(!f)return;A.modal={t:"addStudent",x:f.x,ages:[f.g],then:async st=>{await fieldAdd(f,st.id)}};render()},
   fns:el=>{const f=fieldGroupById(el.dataset.g);if(!f)return;const on=!!((fieldDocOf(f).marks||{})[el.dataset.id]||{}).ns;setNs(f,el.dataset.id,!on)},
   hjtap:el=>{const f=fieldGroupById(el.dataset.g);if(f)hjStep(f,el.dataset.id,+el.dataset.h)},
+  hjpop:el=>{A.f.conf=null;const same=A.f.pop&&A.f.pop.id===el.dataset.id&&+A.f.pop.h===+el.dataset.h;A.f.pop=same?null:{id:el.dataset.id,h:+el.dataset.h};render()},
+  hjadd:el=>hjAdd(el),
+  hjsreset:()=>{const f=fieldGroupOpen();if(f)fieldWrite(f,{hs:0})},
+  hjnreset:()=>{const f=fieldGroupOpen();if(!f)return;const p=fieldView(f).plan;if(p.cur!=null)fieldWrite(f,{hn:{[p.at+1]:0}})},
+  ljpop:el=>ljPopOpen(el),ljkey:el=>{if(A.f.mopen!=null||A.f.pop)ljKey(el.dataset.k)},ljput:el=>ljPut(el.dataset.v),ljcancel:()=>{A.f.pop=null;A.f.typed="";fSave();render()},
+  ffin:el=>{const f=fieldGroupOpen();if(!f)return;A.f.pop=null;A.f.typed="";const r=fieldView(f).rows.find(x=>x.id===el.dataset.id);if(!r)return;if(r.m.fin)setField(f,r.id,"fin",0,false);else{A.f.conf=r.id;render()}},
+  ffinno:()=>{A.f.conf=null;render()},
+  ffinyes:()=>{const f=fieldGroupOpen();if(!f||!A.f.conf)return;const id=A.f.conf;const v=fieldView(f);fieldFinishAth(f,id).then(()=>{if(phoneNow()){const x=fieldView(f);A.f.i=nextAfter(x.rows,A.f.i,x);A.f.id=null;fSave();render()}})},
+  ffinphone:()=>{const f=fieldGroupOpen();if(!f)return;const r=fieldCur(fieldView(f));if(r){A.f.conf=r.id;render()}},
+  ffoul:()=>fieldPhoneAct("foul"),
+  fkeep:()=>fieldKeep(),fkeepundo:()=>fieldKeepUndo(),
+  fcut:()=>{A.f.cut=!A.f.cut;render()},fedit:()=>{A.f.edit=!A.f.edit;render()},
+  tgtick:el=>{const f=fieldGroupOpen();if(!f)return;const on=!!((fieldView(f).G.doc.tg||{})[el.dataset.id]);fieldWrite(f,{tg:{[el.dataset.id]:!on}})},
+  tgstart:()=>{const f=fieldGroupOpen();if(!f)return;const n=Object.values(fieldView(f).G.doc.tg||{}).filter(Boolean).length;
+    if(!n&&!A.f.tg0){A.f.tg0=true;toast("Nobody is ticked, so nobody throws again. Tap Start again to go on, or tick the athletes.");return}
+    A.f.tg0=false;A.f.ta=false;fieldWrite(f,{tgo:true})},
+  tgchange:()=>{const f=fieldGroupOpen();if(f){A.f.ta=true;fieldWrite(f,{tgo:false})}},
+  tgopen:()=>{A.f.ta=true;render();window.scrollTo(0,0)},
+  tgmeasure:()=>{A.f.measure=true;render();window.scrollTo(0,0)},
+  tgmback:()=>{A.f.measure=false;A.f.mopen=null;A.f.typed="";render()},
+  mopen:el=>{const f=fieldGroupOpen();if(!f)return;const same=A.f.mopen===el.dataset.id;A.f.mopen=same?null:el.dataset.id;const cur=((curMark(f,el.dataset.id)).best)||"";A.f.typed=same?"":(/^[0-9]+$/.test(cur)?cur:"");render()},
+  mcancel:()=>{A.f.mopen=null;A.f.typed="";render()},
+  msave:()=>{const f=fieldGroupOpen();if(!f||!A.f.mopen)return;if(!A.f.typed){A.f.mopen=null;render();return}if(A.f.typed.length<2){toast("Type the whole mark: 1124 is 11.24 m.");return}const id=A.f.mopen,m=A.f.typed;A.f.mopen=null;A.f.typed="";setBest(f,id,m)},
+  fsumback:()=>{A.f.summary=false;render()},
+  fsend:()=>fieldFinish().then(()=>{A.f.summary=true;render()}),
+  wtset:el=>{const f=fieldGroupOpen();if(f)fieldWeight(f,el.dataset.id,+el.dataset.v)},
   ttap:el=>{const f=fieldGroupById(el.dataset.g);if(f)throwStep(f,el.dataset.id,+el.dataset.a)},
-  fshort:()=>{const f=fieldGroupOpen();if(f)fieldWrite(f,{short:!fieldView(f).short})},
   hjtry:el=>{const f=fieldGroupOpen();if(f)hjTry(f,el.dataset.id,+el.dataset.h,el.dataset.v,el.dataset.box)},
   ftake:el=>{const f=fieldGroupOpen();if(f)fieldTake(f,el.dataset.id)},
   fstart:()=>fieldStart(),
-  fthrow:el=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);const r=fieldCur(v);if(!r)return;const m=r.m.t||{};for(let i=0;i<v.rule.attempts;i++)if(!m[i]){setThrow(f,r.id,i,el.dataset.v);return}},
+  fthrow:el=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);const r=v.turn.up>=0?v.rows[v.turn.up]:fieldCur(v);if(!r)return;const m=r.m.t||{};for(let i=0;i<v.rule.attempts;i++)if(!m[i]){A.f.id=r.id;setThrow(f,r.id,i,el.dataset.v);return}},
   fkey:el=>fieldPhoneAct("key",el.dataset.k),
   fpass:()=>fieldPhoneAct("pass"),
   fsave:()=>fieldPhoneAct("save"),
@@ -219,7 +264,7 @@ const ACT={
     /* high jump: the athlete the Next line names, and on round the list, so any athlete's box can be fixed */
     A.f.i=v.ev.style==="height"?(t.up===A.f.i&&t.next>=0?t.next:nextAfter(v.rows,A.f.i)):t.up>=0&&t.up!==A.f.i?t.up:nextAfter(v.rows,A.f.i);A.f.id=null;fSave();render();window.scrollTo(0,0)},
   fundo:()=>fieldUndo(),
-  ffinish:()=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);A.modal={t:"fieldFinish",label:groupLabel(v.ev,f.x,f.g),unmeasured:v.rows.filter(r=>r.noMeasure).length};render()},
+  ffinish:()=>{const f=fieldGroupOpen();if(!f)return;const v=fieldView(f);if(phoneNow()){A.f.summary=true;A.f.mopen=null;render();window.scrollTo(0,0);return}A.modal={t:"fieldFinish",label:groupLabel(v.ev,f.x,f.g),unmeasured:v.G&&v.G.setd&&!v.G.setd.ok?v.G.setd.n:0};render()},
   ffinishok:()=>fieldFinish(),
   aprev:()=>{const f=finalsInOrder();const i=Math.max(0,A.a.idx-1);A.a.key=f[i]?f[i].key:null;render()},
   aread:()=>{const f=finalsInOrder();if(f[A.a.idx])markRead(f[A.a.idx].key);const i=Math.min(f.length-1,A.a.idx+1);A.a.key=f[i]?f[i].key:null;render()},

@@ -173,16 +173,22 @@ async def run(pw,dev,theme):
     if await has(F,'[data-act=fstart]'):
         await shot(F,"field-names-full"); await F.click('[data-act=fstart]'); await F.wait_for_timeout(150)
         await F.click('[data-act=faddopen]'); await shot(F,"field-add"); await F.click('.modal [data-act=closemodal]'); await F.wait_for_timeout(100)
-    await F.evaluate("""(()=>{const f=fieldGroupOpen();const ids=fieldView(f).rows.map(r=>r.id);
-      const m=[['534','x','541'],['498','502','x'],['x','x','x'],['561','558'],['487','-'],[],['515','x']];
-      ids.forEach((id,i)=>m[i].forEach((v,a)=>setMark(f,id,a,v,true)));setNs(f,ids[5],true,true)})()""")
+    # long jump: up to 3 jumps, Foul and Pass, Finish and Keep top N (Aths Opt 1.3, decisions 71 to 76)
+    await F.evaluate("""(async()=>{const f=fieldGroupOpen();const ids=fieldView(f).rows.map(r=>r.id);
+      const m=[['534','x'],['498','502'],['x','x'],['561','558'],['487'],[],['515']];
+      for(let i=0;i<m.length;i++)for(let a=0;a<m[i].length;a++)await setMark(f,ids[i],a,m[i][a],true);
+      await setNs(f,ids[5],true,true);await setField(f,ids[4],'fin',0,true,true)})()""")
     await F.wait_for_timeout(300); await shot(F,"field-marks")
     if not phone:
-        await F.click('[data-act=fshort]'); await F.wait_for_timeout(200); await shot(F,"field-short"); await F.click('[data-act=fshort]'); await F.wait_for_timeout(200)
-        await F.fill('#mk-4-2','5.45'); await F.press('#mk-4-2','Enter'); await F.wait_for_timeout(200)
-        assert await F.evaluate("A.R.groups.get('LJ|M|17').rows[1].best")==545
+        await F.click('.hjc.upc'); await F.wait_for_timeout(150); await shot(F,"field-marks-pop")
+        for k in "545": await F.click(f'.ljpop .keypad [data-k="{k}"]')
+        await shot(F,"field-marks-typed"); await F.click('.ljpop [data-v=save]'); await F.wait_for_timeout(250)
+        assert await F.evaluate("A.R.groups.get('LJ|M|17').rows[0].best")==561
+        await F.click('[data-act=ffin] >> nth=0'); await F.wait_for_timeout(120); await shot(F,"field-finish-ask"); await F.click('[data-act=ffinno]'); await F.wait_for_timeout(100)
+        await F.fill('[data-keepn]','3'); await F.press('[data-keepn]','Tab'); await F.wait_for_timeout(100)
+        await F.click('[data-act=fkeep]'); await F.wait_for_timeout(250); await shot(F,"field-keeptop")
+        await F.click('[data-act=fkeepundo]'); await F.wait_for_timeout(250)
     else:
-        await F.click('[data-act=fsave]'); await F.wait_for_timeout(100)
         await F.evaluate("A.f.i=3;A.f.id=null;render()"); await F.wait_for_timeout(100)
         await F.click('.keypad.fp [data-k="5"]'); await shot(F,"field-phone-short")
         await F.click('[data-act=fsave]'); await F.wait_for_timeout(100); assert await F.evaluate("A.f.typed")=="5"   # 1 digit refused, kept
@@ -190,10 +196,15 @@ async def run(pw,dev,theme):
         await F.click('[data-act=fsave]'); await F.wait_for_timeout(150); await shot(F,"field-phone-saved")
         await F.click('[data-act=fundo]'); await F.wait_for_timeout(150); await shot(F,"field-phone-undo")
         await F.click('.attcell[data-act=fcell] >> nth=0'); await F.wait_for_timeout(100); await shot(F,"field-phone-change")
-        await F.evaluate("A.f.a=null;render()"); await F.evaluate("A.f.i=0;A.f.id=null;render()"); await F.wait_for_timeout(100); await shot(F,"field-phone-alldone")
-    await F.click('[data-act=ffinish]'); await shot(F,"field-finishmodal"); await F.click('[data-act=ffinishok]'); await tick(); await F.wait_for_timeout(250); await shot(F,"field-final")
+        await F.evaluate("A.f.a=null;render()"); await F.click('[data-act=ffinphone]'); await F.wait_for_timeout(100); await shot(F,"field-phone-finishask"); await F.click('[data-act=ffinno]'); await F.wait_for_timeout(100)
+        await F.click('[data-act=fcut]'); await F.wait_for_timeout(100); await shot(F,"field-phone-cut"); await F.click('[data-act=fcut]'); await F.wait_for_timeout(100)
+    if not phone:
+        await F.click('[data-act=ffinish]'); await shot(F,"field-finishmodal"); await F.click('[data-act=ffinishok]'); await tick(); await F.wait_for_timeout(250); await shot(F,"field-final")
+    else:
+        await F.click('[data-act=ffinish]'); await F.wait_for_timeout(150); await shot(F,"field-lj-summary")
+        await F.click('[data-act=fsend]'); await tick(); await F.wait_for_timeout(300); await shot(F,"field-final")
     await F.click('[data-act=fall]')
-    # throws: fair, foul or pass, the best measured once
+    # throws: everyone throws once, the official picks who throws again, the best marks of about 5 are measured, the rest are participation
     await F.click('[data-act=fstation][data-v=SP]')
     await F.evaluate("fOpen(A.R.fgroups.find(f=>f.key==='SP|M|17').id)"); await F.wait_for_timeout(150)
     if await has(F,'[data-act=fstart]'):
@@ -202,21 +213,41 @@ async def run(pw,dev,theme):
         await F.click('[data-act=faddopen]')
         for i in range(7): await F.click('.addlist .pick:not(.on) >> nth=0')
         await F.click('.modal [data-act=closemodal]'); await F.wait_for_timeout(150)
-    await F.evaluate("""(()=>{const f=fieldGroupOpen();const ids=fieldView(f).rows.map(r=>r.id);
-      const m=[['Fair','Foul','Fair'],['Fair','Fair','Foul'],['Foul','Foul','Foul'],['Fair','Fair','Fair'],['Fair','Pass'],[],['Foul','Fair']];
-      ids.forEach((id,i)=>m[i].forEach((v,a)=>setThrow(f,id,a,v,true)));setBest(f,ids[0],'1124',true);setBest(f,ids[1],'1006',true);setBest(f,ids[3],'1287',true);setNs(f,ids[5],true,true)})()""")
-    await F.wait_for_timeout(300); await shot(F,"field-throws")
+    await F.evaluate("""(async()=>{const f=fieldGroupOpen();const ids=fieldView(f).rows.map(r=>r.id);
+      const m=[['Fair'],['Fair'],['Foul'],['Fair'],['Fair'],[],['Pass']];
+      for(let i=0;i<m.length;i++)for(let a=0;a<m[i].length;a++)await setThrow(f,ids[i],a,m[i][a],true);
+      await setNs(f,ids[5],true,true)})()""")
+    await F.wait_for_timeout(300); await shot(F,"field-throw1")
+    if phone: await F.click('[data-act=tgopen]'); await F.wait_for_timeout(150)
+    await shot(F,"field-throwagain")
+    for i in (0,1,3): await F.click(f'.namebtn >> nth={i}'); await F.wait_for_timeout(80)
+    await shot(F,"field-throwagain-ticked")
+    await F.click('[data-act=tgstart]'); await F.wait_for_timeout(250)
+    await F.evaluate("""(async()=>{const f=fieldGroupOpen();const ids=fieldView(f).rows.map(r=>r.id);
+      const m={0:['Fair','Fair','Foul'],1:['Fair','Foul','Fair'],3:['Fair','Fair','Fair']};
+      for(const i in m)for(let a=1;a<3;a++)await setThrow(f,ids[i],a,m[i][a],true);
+      await setBest(f,ids[0],'1124',true);await setBest(f,ids[1],'1006',true);await setBest(f,ids[3],'1287',true)})()""")
+    await F.wait_for_timeout(300); await shot(F,"field-throws-needset")
     if not phone:
-        await F.click('.hjc[data-act=ttap] >> nth=14'); await F.wait_for_timeout(120); await shot(F,"field-throws-tap")
-        await F.fill('#bs-4','980'); await F.press('#bs-4','Enter'); await F.wait_for_timeout(200)
+        await F.click('.hjc[data-act=ttap]:not([disabled]) >> nth=4'); await F.wait_for_timeout(120); await shot(F,"field-throws-tap")
+        for i in range(3): await F.click('.hjc[data-act=ttap]:not([disabled]) >> nth=4'); await F.wait_for_timeout(60)
+        await F.fill('[data-setd]','1100'); await F.press('[data-setd]','Enter'); await F.wait_for_timeout(200); await shot(F,"field-throws-setbad")
+        await F.fill('[data-setd]','800'); await F.press('[data-setd]','Enter'); await F.wait_for_timeout(250); await shot(F,"field-throws")
     else:
-        await F.evaluate("A.f.i=3;A.f.id=null;render()"); await F.wait_for_timeout(100); await shot(F,"field-phone-measure")
-        await F.evaluate("A.f.i=4;A.f.id=null;render()"); await F.wait_for_timeout(100); await F.click('[data-act=fthrow][data-v=Fair]'); await F.wait_for_timeout(120)
-        await F.click('.keypad.fp [data-k="9"]'); await F.click('.keypad.fp [data-k="8"]'); await F.click('.keypad.fp [data-k="0"]'); await F.click('[data-act=fsave]'); await F.wait_for_timeout(200)
-        await shot(F,"field-phone-throw")
-    await F.click('[data-act=ffinish]'); await shot(F,"field-throws-finishmodal"); await F.click('[data-act=ffinishok]'); await tick(); await F.wait_for_timeout(250)
+        await F.click('[data-act=tgmeasure]'); await F.wait_for_timeout(150); await shot(F,"field-phone-measure")
+        await F.click('[data-act=mopen]:not([disabled]) >> nth=1'); await F.wait_for_timeout(120); await shot(F,"field-phone-measure-open"); await F.click('[data-act=mcancel]'); await F.wait_for_timeout(100)
+        await F.fill('[data-setd]','800'); await F.press('[data-setd]','Enter'); await F.wait_for_timeout(250); await shot(F,"field-phone-measure-set")
+    if not phone:
+        await F.click('[data-act=ffinish]'); await shot(F,"field-throws-finishmodal"); await F.click('[data-act=ffinishok]'); await tick(); await F.wait_for_timeout(250)
+    else:
+        await F.click('[data-act=ffinish]'); await F.wait_for_timeout(150); await shot(F,"field-throws-summary"); await F.click('[data-act=fsend]'); await tick(); await F.wait_for_timeout(300)
     await F.click('[data-act=fall]')
-    # high jump: the next height is worked out
+    # discus 12 and 13: a weight for each athlete
+    await F.click('[data-act=fstation][data-v=D1]')
+    await F.evaluate("fOpen(A.R.fgroups.find(f=>f.key==='D|M|13').id)"); await F.wait_for_timeout(150)
+    await takenames(F,4,False); await F.click('[data-act=wtset][data-v="1"] >> nth=0'); await F.click('[data-act=wtset][data-v="2"] >> nth=1'); await F.wait_for_timeout(150); await shot(F,"field-names-discus")
+    await F.click('[data-act=fall]')
+    # high jump: tap the box that is up; the start height and each next height are typed; the heights go on until everyone is out
     await F.click('[data-act=fstation][data-v=HJ1]')
     await F.evaluate("fOpen(A.R.fgroups.find(f=>f.key==='HJ|F|18').id)"); await F.wait_for_timeout(150); await shot(F,"field-high-empty")
     if await has(F,'[data-act=fstart]'):
@@ -225,29 +256,37 @@ async def run(pw,dev,theme):
         await F.click('[data-act=faddopen]')
         for i in range(6): await F.click('.addlist .pick:not(.on) >> nth=0')
         await F.click('.modal [data-act=closemodal]'); await F.wait_for_timeout(150)
-    await F.evaluate("""(()=>{const f=fieldGroupOpen();const ids=fieldView(f).rows.map(r=>r.id);
-      const m=[['O','O','XO','XXO','XXX'],['O','XO','XXX'],['-','O','O','XO','XXO'],['O','XXX'],['XXX'],['O','O','XO','XXX']];
+    await shot(F,"field-high-first")
+    await F.evaluate("""(async()=>{const f=fieldGroupOpen();const ids=fieldView(f).rows.map(r=>r.id);
+      const m=[['O','O','XO','XXO','XO'],['O','XO','XXX'],['-','O','O','XO','XXO'],['O','O','XO','XXO','XXO'],['XXX'],['O','O','XO','XXX']];
       const hs=[110,115,120,123,126];
-      ids.forEach((id,i)=>m[i].forEach((v,a)=>setHeight(f,id,hs[a],v,true)))})()""")
+      for(let i=0;i<m.length;i++)for(let a=0;a<m[i].length;a++)await setHeight(f,ids[i],hs[a],m[i][a],true)})()""")
     await F.wait_for_timeout(300); await shot(F,"field-high")
-    assert await F.evaluate("fieldView(fieldGroupOpen()).plan.cur")==129
-    if await has(F,'[data-act=hjtry]'):
-        # Clear, Miss and Pass for the athlete who is up (decisions 40, 41): a pass after a miss, then out on carried misses
-        async def hj(v): await F.click(f'[data-act=hjtry][data-v="{v}"]'); await F.wait_for_timeout(350)
-        # on a phone a closed athlete has no Clear, Miss or Pass: Next athlete goes to whoever is up
-        while phone and not await has(F,'[data-act=hjtry]:not([disabled])'): await F.click('[data-act=fnext]'); await F.wait_for_timeout(100)
-        await hj("X"); await shot(F,"field-high-miss")
-        await hj("-"); await shot(F,"field-high-passed")
-        assert await F.evaluate("fieldView(fieldGroupOpen()).plan.cur")==132
-        await hj("X"); await hj("X"); await shot(F,"field-high-allout")
-        assert await F.evaluate("fieldView(fieldGroupOpen()).plan.cur")==None
-        await F.click('[data-act=fundo]'); await F.wait_for_timeout(120); await shot(F,"field-high-undo")
-        await hj("O"); await F.wait_for_timeout(100)
-    elif not phone:
-        await F.click('.hjc:not([disabled]) >> nth=5'); await F.wait_for_timeout(100)
+    assert await F.evaluate("fieldView(fieldGroupOpen()).plan.cur")!=None
+    async def hj(v):
+        if not phone: await F.click('.hjc.upc'); await F.click(f'.hjpop [data-v="{v}"]')
+        else: await F.click(f'[data-act=hjtry][data-v="{v}"]')
+        await F.wait_for_timeout(350)
+    if not phone:
+        await F.click('.hjc.upc'); await F.wait_for_timeout(150); await shot(F,"field-high-pop"); await F.click('.hjc.upc'); await F.wait_for_timeout(100)
+    await hj("X"); await shot(F,"field-high-miss")
+    await hj("-"); await shot(F,"field-high-passed")
+    if not phone:
+        await F.fill('[data-hjn]','1.40'); await F.press('[data-hjn]','Enter'); await F.wait_for_timeout(250); await shot(F,"field-high-typed")
     else:
-        await F.evaluate("A.f.i=2;A.f.id=null;render()"); await F.wait_for_timeout(100); await F.click('.hjset .btn >> nth=0'); await F.wait_for_timeout(100); await shot(F,"field-phone-high"); await F.click('[data-act=fundo]'); await F.wait_for_timeout(100)
-    await F.click('[data-act=ffinish]'); await F.click('[data-act=ffinishok]'); await tick(); await F.wait_for_timeout(250)
+        await F.click('[data-act=fedit]'); await F.wait_for_timeout(120); await shot(F,"field-phone-high")
+        await F.click('[data-act=fedit]'); await F.wait_for_timeout(100)
+    for i in range(40):
+        if await F.evaluate("fieldView(fieldGroupOpen()).plan.cur")==None: break
+        await hj("X")
+    await shot(F,"field-high-allout")
+    assert await F.evaluate("fieldView(fieldGroupOpen()).plan.cur")==None
+    await F.click('[data-act=fundo]'); await F.wait_for_timeout(120); await shot(F,"field-high-undo")
+    await hj("O"); await F.wait_for_timeout(100)
+    if phone:
+        await F.click('[data-act=ffinish]'); await F.wait_for_timeout(150); await shot(F,"field-high-summary"); await F.click('[data-act=fsend]'); await tick(); await F.wait_for_timeout(300)
+    else:
+        await F.click('[data-act=ffinish]'); await F.click('[data-act=ffinishok]'); await tick(); await F.wait_for_timeout(250)
     # ---- recorder, field, override ----
     await R.click('[data-act=rtabrec][data-v=field]'); await R.wait_for_timeout(200)
     await R.click('[data-act=rfgroup][data-v="LJ|M|17"]'); await R.wait_for_timeout(150); await shot(R,"recorder-field")

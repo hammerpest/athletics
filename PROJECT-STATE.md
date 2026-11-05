@@ -1,6 +1,44 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 5 November 2026, version x. Replaces 5 November version w.
+Date: 6 November 2026, version aq. Replaces 5 November version ap.
+
+Changes on 6 November 2026 (version aq): Aths Opt 1.3 is built in test mode on the local staging branch, nothing pushed. It builds decisions 53 to 85 (high jump, long jump, shot put and discus) as drawn on A1.8, A1.9, A1.10, A1.18, A1.19 and A1.21 to A1.28. The Supabase build moves to Aths Opt 1.4. Engine tests 76 of 76. Flow tests 103 of 103, plus 50 of 50 in the new tests/flow_field.py. Check 1: 950 screenshots of the new build against 860 of the previous commit made with its own script; 204 screens differ, all field screens or screens that show field results (houses, results, results-field, results-hris, results-locked, results-newsletter, recorder-field, recorder-field-high, recorder-field-override, recorder-field-pin, recorder-field-throw, org-field, org-field-javelin); 106 screens are new; the diff first showed shared style names clashing (Sign out, the Houses and Full results buttons), which were renamed. No phone screen is wider than 390 and no iPad portrait screen is wider than 820. Check 2: Claude in Chrome was not connected, so the walk-through was run by script (flow tests) and a short real-browser pass in the built-in browser at 1512 wide (high jump, no console errors); not repeated in Chrome. Check 3: a fresh-eyes agent found 6 must-fix and 12 should-fix faults. Fixed: participation points now a flat 4 whatever the number measured; Keep top N waits until the round is done; the Recorder can again tap a high jump box; a closed high jump box takes no more tries; the throw again screen shows names on iPad portrait; the long jump Finish column stays on screen; pop-ups measured at the right width and only one open at a time; Nobody ticked asks first and Change who throws again; the athlete's discus weight shows in the throws grid; the phone keeps its results and throw again screens through a reload; the next height box reads from the bar's own list; Foul and Pass sit above the keypad on the phone; the results screen warns when not everyone has finished. The fixes were proven by new tests and a re-shoot, not by a second review. Left for later (section 5). Ask now: Jordan tries Aths Opt 1.3, and question 63.
+
+Changes on 5 November 2026 (version ap): Jordan approved the shot put and discus boards A1.18, A1.19 and A1.24 to A1.28 (decision 85). All 28 boards are approved. The high jump, long jump, and shot put and discus changes (decisions 53 to 85) are approved but not built, and nothing is committed or pushed. They would be the next app build, Aths Opt 1.3 or later (the Supabase build was also planned for 1.3). Ask now: Jordan says when to build, and question 63 (safety reminder).
+
+Changes on 5 November 2026 (version ao): Shot put and discus changes drawn and published to the canvas (decisions 78 to 84). Changed: A1.18 (iPad grid: a Throws again or Participation tag for each athlete, a Measured mark only for athletes measured, the set distance box with its check, Finish and No show) and A1.19 (phone: Fair, Foul or Pass, once per round, Finish athlete, and Pick who throws again after throw 1). New: A1.24 (iPad, tick who throws again, with an editable guide of about 10), A1.25 (the same on the phone), A1.26 (phone: type the marks of the athletes measured, and the one set distance for everyone else), A1.27 (phone: group results with Participation rows, then Send results) and A1.28 (Take Names for discus 12 & 13 with a 0.75 kg or 1 kg weight for each athlete). Now 28 boards. The logic was run in Node (picks, rounds, Finish, measuring, the set distance check, results) and is right; the boards were not looked at as pictures. Nothing is built. Ask now: Jordan's OK on A1.18, A1.19 and A1.24 to A1.28, and question 63.
+
+Changes on 5 November 2026 (version an): Jordan answered questions 58 to 62, 64 and 65 (decisions 78 to 84). Shot put and discus run differently from the sheet: everyone throws once in number order and has a marker; the official ticks about 10 to throw again (up to 3 throws); about 5 are measured at the end; everyone not measured is participation, with one set distance typed by the official, a shared place and 4 points. Discus 1 and 2 are one device each, and Shot Put's two groups one device each. For discus 12 and 13 the teacher picks each athlete's weight. docs/throws-flow.md is updated. To draw next (not yet drawn): A1.18, A1.19 (Throw again, Participation, measured marks, set distance), A1.20 weight tag, and a throws group results screen. Nothing is built. Ask now: 63.
+
+Changes on 5 November 2026 (version am): Jordan asked for the shot put flow. Written: docs/throws-flow.md, one flow for shot put and discus (they run the same way, with different weights), from the 2027 sheets and boards A1.18, A1.19 and A1.20: arrive, Take Names, throws, Fair, Foul or Pass, measuring the best mark at the end, finish and send, next group, with draft wording for the sheets' app steps. Nothing is drawn or built. New questions 58 to 63. Ask now: 58 to 63.
+
+Changes on 5 November 2026 (version al): Jordan approved the long jump boards A1.8, A1.10 and A1.23 (decision 77). All 23 boards are approved. Approved but not built yet (decision 57, build waits for Jordan): the high jump changes (A1.9, A1.21, A1.22) and the long jump changes (A1.8, A1.10, A1.23). Next: the shot put and discus flow, then Jordan says when to build them together. Ask now: none.
+
+Changes on 5 November 2026 (version ak): Long jump changes drawn and published to the canvas (decisions 71 to 76). A1.8 (iPad): up to 3 jumps for everyone; tap the highlighted box and a pop-up keypad opens with Foul and Pass and Save mark; a Finish button on each athlete (asks first, Put back undoes it); Keep top N after a round (equal marks stay in, with Undo); No show stays. A1.10 (phone): Foul and Pass buttons under the keypad, Finish athlete in the bottom bar (asks first), and a Cut the field panel with Keep top N; after a jump it moves to the next athlete still jumping. New A1.23: long jump group results (each jump shown, finished early noted, No mark and 0 points) with Send results. Now 23 boards. The logic was run in Node (taps, fouls, finish, keep top, results) and is right; the boards were not looked at as pictures. Nothing is built. Ask now: Jordan's OK on A1.8, A1.10 and A1.23.
+
+Changes on 5 November 2026 (version aj): Jordan answered questions 51 to 57 (decisions 71 to 76). Long jump: everyone can take up to 3 jumps, once per round in the same order, and the official decides; the sheet's 2 jumps then top 4 is not used and decision 33 is replaced. The official can finish any athlete early, and use Keep top N after a round when time is short. Foul and Pass buttons beside the keypad. A late athlete: the official decides their jumps. The A1.22 group results screen is used for all field events. docs/long-jump-flow.md is updated. To draw next (not yet drawn): A1.8 and A1.10 changes, and a long jump group results screen. Nothing is built. Ask now: none.
+
+Changes on 5 November 2026 (version ai): Jordan asked for the long jump flow. Written: docs/long-jump-flow.md, from the 2027 Long Jump sheet and the built boards (A1.8, A1.10, A1.20): arrive, Take Names, 3 jumps or 2 then top 4, each round, 3rd jump for the top 4, finish and send, next group, with draft wording for the sheet's app steps. Nothing is drawn or built. New questions 51 to 56. Ask now: 51 to 56.
+
+Changes on 5 November 2026 (version ah): Jordan approved A1.22 (decision 70), saying it was a bit crowded. Cleared up and republished: each result is now on two lines (name; then best height and misses), points on the right, the long note at the bottom is gone, and the messages are shorter. Not looked at as a picture. All 22 boards are approved. Nothing is built, committed or pushed. Ask now: none.
+
+Changes on 5 November 2026 (version ag): Jordan approved A1.9 and A1.21 (decision 68) and asked for the group result summary on the iPhone. New board A1.22, drawn and published (decision 69): after the last athlete is out, the phone lists the group by place (medal, name, house, best height, misses at that height and in all, points), with ties shown = and sharing points, and an athlete with no cleared height shown as No height with 0 points. Bottom bar: Back to jumping and Send results; after Send, a Sent message and Next group. With no signal it reads Waiting to send. 22 boards. The sample places and points were run in Node and are right; the board was not looked at as a picture. Nothing is built. Ask now: Jordan's OK on A1.22.
+
+Changes on 5 November 2026 (version af): Jordan pointed out the boards stopped at 7 heights (decision 67). The high jump now goes on, one height at a time, until every athlete is out; the last athlete left keeps jumping until 3 misses in a row. A1.9 and A1.21 redrawn and republished: the grid adds a height after each round and scrolls sideways, with No. and Athlete kept in view, and opens at the height now. The old 7 was only the size of the sample grid. A test run through both boards past 13 rounds ended with nobody left and no error; it was not looked at as a picture. Nothing is built. Ask now: Jordan's OK on A1.21 and the A1.9 additions.
+
+Changes on 5 November 2026 (version ae): Drawn and published to the canvas (decisions 62, 65, 66): A1.9 now shows a '3 left' prompt and locks the start height after the first jump (the sample board shows both); new board A1.21, high jump on the phone, with Now up and Next, Clear, Miss and Pass, a Set heights panel for the typed start and next height, the same prompt and lock, and Add an athlete and Undo last in the bottom bar. Now 21 boards. The height logic was run in Node for both boards; neither was looked at as a picture. A late athlete (decision 61) and the paper sheet (64) need no screen change. Nothing is built. Ask now: Jordan's OK on A1.21 and the A1.9 additions.
+
+Changes on 5 November 2026 (version ad): Jordan answered questions 43 to 48 and 50 (decisions 60 to 66). No countdown; a late athlete joins at the current height; a prompt at 3 left (the official still decides heights); no cut-off; a paper backup sheet at each station; the start height locks after the first jump; the phone keeps Now up and Next with typed heights. To draw next (not yet drawn): the 3 left prompt and the locked start height on A1.9, and the phone high jump board. Nothing is built. Ask now: none.
+
+Changes on 5 November 2026 (version ac): Jordan approved the redrawn A1.9 with typed heights (decision 59). It waits for the other field changes, then Jordan says when to build them together. Nothing is built, committed or pushed. Ask now: 43 to 48 and 50.
+
+Changes on 5 November 2026 (version ab): Jordan asked to enter the height directly (decision 58, which changes decisions 53 and 54). A1.9 now has a typed Start height and a typed Next height (for example 1.10, then 1.20, then 1.23), with the sheet's height shown beside each and a Use sheet link; the raise in cm is shown as information, not set. Republished to the canvas (A1.9, light and dark). The board logic was run in Node and gives the right heights; it was not looked at as a picture. The app is not changed. Question 49 (step sizes) is closed, as there are no steppers. Ask now: 43 to 48, 50, and Jordan's OK on A1.9.
+
+Changes on 5 November 2026 (version aa): The redrawn A1.9 (light and dark) is published to the design canvas (https://claude.ai/artifact/VaZiJKE2cce41ykKbkD1tg, version 22), with a new stylesheet upload for the stepper and pop-up styles; only those two boards use it. It was published without being viewed as a picture. The canvas note now says A1.9 is waiting for Jordan's OK. The app is not changed. Ask now: 43 to 50, and Jordan's OK on A1.9.
+
+Changes on 5 November 2026 (version z): Jordan said nothing is built until they say so. Changes are drawn first, collected, and then I ask to build them all together. High jump changes drawn on board A1.9 in design/make_boards.py (decisions 53 to 56): the person running the event sets the start height, and the raise, with the sheet's numbers as the suggestion; no Now up bar on the iPad (tap the highlighted box); a pass is written Pass, not -. The board source builds without error, but it was not looked at as a picture and the published canvas is not updated yet, because the canvas needs its viewer. The app is not changed. New questions 48 to 50. Ask now: 43 to 50, and Jordan's OK on the redrawn A1.9.
+
+Changes on 5 November 2026 (version y): Jordan asked for field modifications specific to how each event is run on the day, starting with high jump. Written: docs/high-jump-flow.md, the high jump day from the station teacher's side (arrive, Take Names, rounds, raise the bar, finish, send, next group), with what the app does today and what might change. Jordan noted that the 2027 High Jump instruction sheet has no app recording steps (it still says paper and send to the recording room), so the doc has draft replacement wording for the sheet. Nothing is built or drawn. New questions 43 to 47. Ask now: 43 to 47.
 
 Changes on 5 November 2026 (version x): Jordan approved the Back link on the New age or event screen (decision 52). A1.5 redrawn to show it. Ask now: none.
 
@@ -55,7 +93,7 @@ Owner: Jordan (PDHPE Head of Department, Central Coast Adventist School, Erina N
 ## 0. Where things stand (read first)
 
 - Project is ONLY the athletics carnival app. The swimming app (SWIM 2027- App/ccas-swimming) and cross country are separate projects, used for reference only.
-- All 20 boards, A1.1 to A1.20, are approved (decision 46). Aths Opt 1.2 (decisions 48 to 50) is built in test mode on the local staging branch (section 2.3), waiting for Jordan's look. Nothing is pushed, and main has no app yet.
+- All 20 boards, A1.1 to A1.20, are approved (decision 46). Aths Opt 1.3 (decisions 53 to 85, the field changes) is built in test mode on the local staging branch (section 2.3), waiting for Jordan's look. Nothing is pushed, and main has no app yet.
 - How it will be built, and the lessons from the swimming app, are in CLAUDE.md.
 - Made-up data only: the 620 test students ("CCAS XC test students 620.xlsx").
 - No GitHub repo or Supabase project yet.
@@ -159,6 +197,14 @@ First published 4 November 2026, redrawn the same day with decisions 20 to 28: h
 | A1.18 | Field Station (e): throws, fair or foul, best throw measured once (new) | iPad landscape |
 | A1.19 | Field Station (f): throws, one athlete at a time | Phone |
 | A1.20 | Field Station: Take Names, tap each athlete as they arrive, then start | iPad landscape |
+| A1.21 | Field Station (g): high jump, one athlete at a time, typed heights, 3 left prompt (approved) | Phone |
+| A1.22 | Field Station (h): high jump, group results to check and send (approved) | Phone |
+| A1.23 | Field Station (i): long jump, group results to check and send (approved) | Phone |
+| A1.24 | Field Station (j): shot put and discus, tick who throws again after throw 1 (approved) | iPad landscape |
+| A1.25 | Field Station (k): who throws again (approved) | Phone |
+| A1.26 | Field Station (l): measure the best throws and set the participation distance (approved) | Phone |
+| A1.27 | Field Station (m): shot put and discus group results (approved) | Phone |
+| A1.28 | Field Station: Take Names, discus 12 & 13, a weight for each athlete (approved) | iPad landscape |
 
 New looks to approve: bright blue lanes with white lines, as at Mingara, with a chequered finish line, and dashed orange boxes for anything not settled (placeholders; they go when the answer is in). Bronze is #cd7f32 as in CLAUDE.md (the swimming app uses a darker bronze), with dark text on it.
 
@@ -173,6 +219,14 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 - Screens changed on purpose from 1.1: multi-past-splits, multi-place, multi-place-start, multi-placed, multi-sent, multi-tap-to-remove (all 8 sizes and themes), and the new multi-new-pick.
 - Also added after the review: a Back link on the pick screen (not drawn on A1.5; it returns to the sent screen).
 - Tests: tests/flow.py has new checks; tests/phone_mt.py checks at 390 wide that buttons stay put through every tap.
+
+**Aths Opt 1.3 (6 November 2026):** decisions 53 to 85 are built, matching A1.8, A1.9, A1.10, A1.18, A1.19 and A1.21 to A1.28.
+- High jump: no Now up bar on the iPad; the box that is up is yellow, and tapping any box opens Clear, Miss and Pass (and Remove last). A pass reads Pass. The start height and the next height are typed in metres (the sheet's number is shown beside each, with Use sheet); the start locks after the first jump; a 3 left prompt; heights are added until everyone is out, and the grid scrolls sideways with No. and Athlete in view and opens at the bar. Phone: Now up and Next, Clear, Miss and Pass, a Set heights panel. Phone Group finished opens the group results (place, best height, misses, points) with Back and Send results, then Next group.
+- Long jump: up to 3 jumps for everyone, once per round; tap the yellow box for a keypad pop-up with Foul, Pass and Save mark; Finish on each athlete (asks first; Put back); Keep top N (waits for the end of the round, equal marks stay in, Undo). Phone: Foul and Pass buttons above the keypad, Finish athlete, Cut the field, and the phone moves to the next athlete still jumping; the group results screen lists every jump.
+- Shot put and discus: everyone throws once in number order; after throw 1 a Who throws again screen (iPad and phone) with ticks and a guide of about 10; Participation and Throws again tags; only measured athletes are placed; one set distance for everyone else, which must be lower than the lowest measured mark; they share the place after the last measured athlete and get 4 points; Finish per athlete; Change who throws again; phone measure screen with a keypad; discus 12 and 13 Take Names has a 0.75 kg or 1 kg weight for each athlete; group results with Participation rows.
+- Organiser field rules: the long jump text no longer offers 2 jumps then the top 4.
+- Tests: tests/engine.test.js (76), tests/flow.py (high jump steps rewritten for the new screens), new tests/flow_field.py (50). tests/shots.py has the new screens.
+- Screens that are new: field-marks-pop, field-marks-typed, field-finish-ask, field-keeptop, field-high-first, field-high-pop, field-high-typed, field-high-summary, field-lj-summary, field-throw1, field-throwagain, field-throwagain-ticked, field-throws-needset, field-throws-setbad, field-throws-summary, field-names-discus, field-phone-cut, field-phone-finishask, field-phone-high, field-phone-measure-open, field-phone-measure-set. Gone: field-short, field-phone-alldone, field-phone-throw.
 
 **Aths Opt 1.1 (5 November 2026):** decisions 40 to 46 are built, matching A1.1, A1.5, A1.9 and A1.20.
 - High jump (iPad and phone): Now up, the try number and Next, with Clear, Miss, Pass and Undo last. Everyone has their 1st try at a height in arrival order, then 2nd tries, then 3rd. Boxes can still be tapped to fix them. A double tap counts once. A try another device has just saved is refused, and Undo takes off only this device's try.
@@ -239,7 +293,7 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 31. (4 November 2026, answers question 29) The program is set by the organiser, so the app is not fixed to CCAS events. Carnival Organiser, Program: any track or field event can be turned on or off, and new ones added or removed. Javelin is built in and off for CCAS, so the CCAS program stays at 104 events (decision 2). A turned-on sport joins the location ticks and the field rules. Assumed: a new event starts as each age, boys and girls (12 events), and the organiser sets its time on the timetable.
 
 32. (4 November 2026, answers most of question 8) Field rules are the 2027 CCAS instruction sheets in docs/2027 field event sheets/, held as organiser settings. Athletes are numbered in the order they arrive, which is their order for the event. The app shows who is up and who is next.
-33. (4 November 2026) Long jump: 3 jumps, every jump measured. If there are too many athletes, 2 jumps each, then the top 4 get a 3rd (the teacher turns this on; the sheet sets no number).
+33. (4 November 2026; replaced by decision 72) Long jump: 3 jumps, every jump measured. If there are too many athletes, 2 jumps each, then the top 4 get a 3rd (the teacher turns this on; the sheet sets no number).
 34. (4 November 2026) Shot put, discus and javelin: 3 throws, marked fair, foul or pass. The marker only moves for a better throw, so only the best throw is measured, once, at the end. Weights by age are shown at the station. In the 12 & 13 group, discus differs by age (12 years 0.75 kg, 13 years 1 kg).
 35. (4 November 2026) High jump: starting height by age and sex from the sheet. 3 tries at each height, out after 3 misses in a row. Raises: girls 5 cm until 3 remain, then 3 cm; boys 10 cm first, then 5 cm until 3 remain, then 3 cm. The app works out the next height. Ties: fewer misses at the tied height, then fewer overall, then they share the place.
 36. (4 November 2026, answers question 30) Equal best marks in long jump, shot put, discus and javelin share the place and points.
@@ -259,12 +313,48 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 50. (5 November 2026, answers question 42) After sending, the multitimer phone offers Next heat (1 tap) or New age or event, picked on the phone. Any other race goes through the Track Marshal.
 51. (5 November 2026) Jordan approved the redrawn A1.1 and A1.5, so all 20 boards are approved again.
 52. (5 November 2026) The New age or event screen keeps its Back link, so a helper who taps it by mistake does not lose their place. Drawn on A1.5.
+53. (5 November 2026) High jump: the person running the event sets the start height. The sheet's height for the age and sex is the suggestion and can be edited. A1.9.
+54. (5 November 2026) High jump: the raise (cm) to the next height is editable. The sheet's rule (girls 5 cm; boys 10 cm then 5 cm; 3 cm once 3 athletes remain) is the suggestion and is shown beside it. A1.9.
+55. (5 November 2026) High jump on the iPad has no Now up bar. The box for the athlete and height that is up is highlighted; tapping it opens Clear, Miss and Pass. Tapping any other box fixes it the same way. Undo last stays. A1.9.
+56. (5 November 2026) High jump boxes show a pass as the word Pass (for example X Pass), not a dash.
+57. (5 November 2026) Working order: Jordan's field changes are drawn on the canvas first, collected, and only built when Jordan says to build them all.
+58. (5 November 2026, replaces the stepper wording in 53 and 54) High jump: the start height and the next height are typed in metres (for example 1.23). The sheet's height is shown beside each as the suggestion, with Use sheet. The raise is worked out and shown, not set. Any gap between rounds is allowed (1.10, then 1.20, then 1.23). A1.9.
+59. (5 November 2026) Jordan approved the redrawn A1.9 (decisions 53 to 58). Build waits until Jordan says (decision 57).
+60. (5 November 2026, answers 43) High jump: no 60 second countdown. Teachers time it.
+61. (5 November 2026, answers 44) High jump: an athlete added after Start joins at the end of the order at the current height. Earlier heights show as not tried.
+62. (5 November 2026, answers 45) High jump: when 3 athletes are left, a prompt says the sheet raise is now 3 cm. It is a prompt only; the official decides the heights (decision 58).
+63. (5 November 2026, answers 46) High jump: no time cut-off in the app.
+64. (5 November 2026, answers 47) Each field station keeps a blank paper backup sheet in case a device fails. It goes on the instruction sheet wording.
+65. (5 November 2026, answers 48) High jump: the start height locks once the first try is recorded. Later heights can still be typed one round at a time.
+66. (5 November 2026, answers 50) High jump on the phone keeps Now up and Next with Clear, Miss and Pass, and the start and next heights are typed there too.
+67. (5 November 2026) High jump has no limit on rounds. A height is added after each round and the event goes on until every athlete is out (3 misses in a row). The grid scrolls sideways, with No. and Athlete kept in view. A1.9 and A1.21.
+68. (5 November 2026) Jordan approved A1.9 (with the 3 left prompt and locked start height) and A1.21 (phone high jump).
+69. (5 November 2026) High jump on the phone ends on a group results screen (A1.22): places, best height, misses, points, then Send results. Back to jumping goes back to fix a jump. The Recorder and Announcer get the result live.
+70. (5 November 2026) Jordan approved A1.22. It was cleared up (two lines for each result, no footnote). All 22 boards are approved.
+71. (5 November 2026, answers 51) Long jump: everyone jumps once per round in number order (jump 1 for all, then jump 2, then jump 3).
+72. (5 November 2026, answers 52 and 53; replaces decision 33) Long jump: every athlete can take up to 3 jumps, in the same order every round. The sheet's 2 jumps then the top 4 is not used. The official can decide fewer jumps.
+73. (5 November 2026, answers 57) Long jump: the official can finish any athlete at any time, and an athlete who wants only one jump finishes with one. When time is short (for example 40 athletes) the official ends athletes after a round with Finish on each athlete, or Keep top N. Finish asks first and can be undone; Keep top N can still be changed before the next round. Not yet asked for shot put and discus.
+74. (5 November 2026, answers 54) Long jump: Foul and Pass buttons beside the keypad on the phone and in the iPad grid.
+75. (5 November 2026, answers 55) Long jump: a late athlete is added by the official, who decides how many jumps they get.
+76. (5 November 2026, answers 56) The A1.22 group results screen is used for all field events, with its own columns for each.
+77. (5 November 2026) Jordan approved A1.8, A1.10 and A1.23 (decisions 71 to 76). All 23 boards are approved.
+78. (5 November 2026, answers 58) Shot put and discus: everyone throws once per round, in number order.
+79. (5 November 2026, answers 60 and 65; changes decision 34 for who throws three times) Everyone throws once and has a marker. After throw 1 the official ticks about 10 athletes (a guide, not a limit) to throw again; they take throws 2 and 3. The rest end after throw 1 and are participation.
+80. (5 November 2026, answers 60 and 65) At the end the official measures about 5 athletes (a guide) and types a mark for each. Only measured athletes are placed.
+81. (5 November 2026, answers 64) Participation: the official types one set distance for the group, lower than the lowest measured mark (the app checks). Every athlete not measured gets it, shares the place and gets 4 points (decision 17). A no-show or an athlete with no valid mark gets 0.
+82. (5 November 2026, answers 59) Throws keep a Finish button for single athletes (asks first, can be undone). Keep top N is not offered, because marks are only measured at the end.
+83. (5 November 2026, answers 61) Discus 1 and Discus 2 are at opposite ends of the grounds, one device each. Shot Put's two groups at once each get their own device.
+84. (5 November 2026, answers 62) Discus 12 and 13: the teacher picks a 0.75 kg or 1 kg tag for each athlete on Take Names. No exact age is stored.
+85. (5 November 2026) Jordan approved A1.18, A1.19 and A1.24 to A1.28 (decisions 78 to 84). All 28 boards are approved.
 
 ## 4. Rules and constraints
 
 See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
 
 ## 5. Current problems
+
+- Aths Opt 1.3 left for later, from the fresh-eyes review: the pop-ups do not follow the high jump grid when it scrolls sideways and have no tap-outside close; the Recorder cannot edit Finish, Throw again, the set distance or a discus weight, and shows raw box text such as XO and - (not the word Pass); Results shows a set distance like a measured mark and does not say Participation; Start is allowed while discus athletes still need a weight; a phone reload forgets the open Cut the field panel, the measure box and Undo Keep top; Group finished on the phone does not check that the set distance is typed before it shows the results (Send is blocked until it is); a late long jump athlete jumps at once, out of order; the long jump highlight is wrong if jump 1 is blank and jump 2 is filled (only after a manual fix).
+- Claude in Chrome was not connected on 6 November 2026, so check 2 for Aths Opt 1.3 was run by script and in the built-in browser. Repeat the Chrome walk-through when it is back.
 
 - The last 3 Aths Opt 1.1 fixes (phone Next athlete, the Final label, the bar has moved on message) were not walked in Chrome, as the extension lost its connection on 5 November 2026. Repeat that short pass when it is back.
 - Claude in Chrome cannot take screenshots here (script injection times out), so check 2 in Chrome reads the screens as text and cannot compare them by eye with a baseline.
@@ -273,8 +363,12 @@ See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: none.
+Ask now: 63.
 
+- 63. Shot put and discus: show a safety reminder on Take Names or Start (athletes stay behind the safety area, the person returning the implement watches every throw)?
+- (Closed by 78 to 84) Questions 58 to 62, 64, 65 (shot put and discus).
+- (Closed by 71 to 76) Questions 51 to 57 (long jump).
+- (Closed by 60 to 66) Questions 43 to 50 (high jump).
 - (Closed by 48 to 50) Questions 40 to 42.
 - (Closed by 47) 39. 800 m and 1500 m: who enters the names.
 - (Closed by 40 to 45) Questions 33 to 38.
@@ -300,8 +394,10 @@ Ask now: none.
    Done: the third review of the last fixes (version p) and the MacBook walk-through in Chrome (version q).
 5. (Done 5 November 2026) Decisions 40 to 46 built as Aths Opt 1.1, with checks 1 to 3.
 6. (Done 5 November 2026) Decisions 48 to 50 built as Aths Opt 1.2, with checks 1 to 3.
-6a. NOW: Jordan looks at Aths Opt 1.2. Once Jordan approves the build, save the screenshots to baseline/.
-7. Jordan makes the GitHub repo and the Supabase project (Sydney) from click-by-click steps. Aths Opt 1.3 goes live on staging with made-up data.
+6a. (Done 6 November 2026) Decisions 53 to 85 built as Aths Opt 1.3, with checks 1 to 3 (version aq).
+6b. NOW: Jordan looks at Aths Opt 1.2 and 1.3 (one local build). Once Jordan approves it, save the screenshots to baseline/.
+6b. Jordan answers 43 to 47 and edits docs/high-jump-flow.md and its sheet wording. Then the same flow is written for long jump, shot put and discus, and the changes are drawn as boards before they are built.
+7. Jordan makes the GitHub repo and the Supabase project (Sydney) from click-by-click steps. Aths Opt 1.4 (the Supabase store) goes live on staging with made-up data.
 
 ## 8. Files and links
 
