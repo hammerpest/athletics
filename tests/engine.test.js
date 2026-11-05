@@ -445,6 +445,10 @@ t("the 1500 m follows the question 14 settings",()=>{
   let R=mk({house:true,champ:false});eq(R.house.B.total,10);eq(R.house.B.byAge["15"],10);eq(R.champs["15|F"].winners.length,0);
   R=mk({house:false,champ:true});eq(R.house.B.total,0);eq(R.champs["15|F"].winners[0].pts,10);
 });
+t("the 1500 m counts for the house and the age champion by default (decision 95)",()=>{
+  const S={students:[st("a","B","F","15")]};run(S,1,"1500","F","O",1,{1:"a"},{1:{t:36000,st:"ok",src:"multi"}},[],{multi:true});
+  const R=compute(S);eq(R.house.B.total,10);eq(R.champs["15|F"].winners[0].pts,10);
+});
 t("every house total adds up by age plus relays",()=>{
   const S={students:["a","b"].map(i=>st(i,"J","M","13"))};
   run(S,1,"100","M","13",1,{1:"a",2:"b"},{1:1500,2:1600},[1,2]);

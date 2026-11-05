@@ -46,6 +46,8 @@ admin.execute(STUBS)
 setup = open(os.path.join(SQL, "01-setup.sql")).read()
 admin.execute(setup)
 admin.execute(setup)  # safe to run twice
+parents = open(os.path.join(SQL, "02-parent-results.sql")).read()
+admin.execute(parents); admin.execute(parents)  # safe to run twice
 admin.execute("insert into roster values ('F', '{\"students\":[1,2]}'), ('M', '{\"students\":[1]}')")
 
 class Dev:
@@ -200,6 +202,47 @@ b.q("select release_role()")
 check(m.q("select my_role()")[0][0] == "marshal", "my_role")
 m.q("select release_role()")
 check(m.q("select count(*) from roster")[0][0] == 0, "signed out: cannot read")
+
+# results for parents: no sign-in, off until the organiser turns it on, codes not ids, names only when allowed
+import json as _json
+pa = psycopg.connect(URI, autocommit=True); pa.execute("set role anon")
+pr = lambda have="": pa.execute("select parent_results(%s)", (have,)).fetchone()[0]
+check(pr() == {"off": True}, "parents: nothing until the parents page is turned on")
+check(pa.execute("select count(*) from information_schema.role_table_grants where grantee='anon' and table_schema='public'").fetchone()[0] == 0, "parents: no table access, only the function")
+admin.execute("delete from heats"); admin.execute("delete from field"); admin.execute("delete from times"); admin.execute("delete from extras")
+admin.execute("delete from roster")
+studs = [{"id": "Fisher-Xavier-2010", "f": "Xavier", "s": "Fisher", "h": "N", "x": "M", "g": "17"}, {"id": "Hall-Reuben-2010", "f": "Reuben", "s": "Hall", "h": "B", "x": "M", "g": "17"}]
+admin.execute("insert into roster (id, doc) values ('M', %s)", (_json.dumps({"students": studs}),))
+admin.execute("insert into extras (id, doc) values ('e1', %s)", (_json.dumps({"id": "Late-Lee-2010", "f": "Lee", "s": "Late", "h": "J", "x": "M", "g": "17"}),))
+admin.execute("insert into config (id, doc) values ('main', %s) on conflict (id) do update set doc = excluded.doc",
+              (_json.dumps({"name": "CCAS 2027", "parents": True, "chief": "Jordan Dennis", "pins": {"x": "set"}, "runId": "r1", "lanes": 8}),))
+admin.execute("insert into heats (id, doc) values ('r0001', %s)", (_json.dumps({"race": 1, "k": "100", "x": "M", "g": "17", "heat": 1, "lanes": {"1": "Fisher-Xavier-2010", "2": "Hall-Reuben-2010", "3": "B"}, "dev": "secret-device"}),))
+admin.execute("insert into times (id, doc) values ('r0001', %s)", (_json.dumps({"lanes": {"1": {"t": 1261, "st": "ok", "src": "photo"}}, "checked": True, "by": "secret-device"}),))
+admin.execute("insert into times (id, doc) values ('r0002', %s)", (_json.dumps({"lanes": {"1": {"t": 1300, "st": "ok"}}, "checked": False}),))
+admin.execute("insert into field (id, doc) values ('f1', %s)", (_json.dumps({"k": "LJ", "x": "M", "g": "17", "ath": {"Fisher-Xavier-2010": 1}, "marks": {"Fisher-Xavier-2010": {"a": {"0": "512"}}}, "final": True, "by": "secret-device"}),))
+admin.execute("insert into field (id, doc) values ('f2', %s)", (_json.dumps({"k": "SP", "x": "M", "g": "17", "ath": {"Hall-Reuben-2010": 1}, "marks": {}, "started": True, "by": "secret-device"}),))
+admin.execute("insert into records (id, doc) values ('all', %s) on conflict (id) do update set doc = excluded.doc", (_json.dumps({"list": [{"key": "100|M|17", "t": 1200, "holders": [{"n": "Test: Old Record", "h": "B", "y": "2019"}]}]}),))
+d = pr(); raw = _json.dumps(d)
+check(not d.get("off") and len(d["heats"]) == 1, "parents: on, heats come through")
+check("Fisher-Xavier-2010" not in raw and "Hall-Reuben-2010" not in raw and "Late-Lee-2010" not in raw, "parents: no student id anywhere (ids hold the full name)")
+check("secret-device" not in raw and "Jordan Dennis" not in raw and '"pins"' not in raw and "runId" not in raw, "parents: no device ids, chief name, PINs or run id")
+codes = {x["id"] for x in d["students"]}
+check(len(codes) == 3 and all(c.startswith("p") for c in codes), "parents: every student has a code, extras too")
+check(all(v.startswith("p") or v == "B" for v in d["heats"][0]["lanes"].values()) and d["heats"][0]["lanes"]["3"] == "B", "parents: lanes hold codes; a relay house letter stays")
+check(set(d["field"]["f1"]["marks"]) <= codes and set(d["field"]["f1"]["ath"]) <= codes, "parents: field marks are keyed by code")
+nm = {(x["f"], x["s"]) for x in d["students"]}
+check(("Xavier", "F.") in nm and ("Reuben", "H.") in nm, "parents: first name and surname initial only")
+check("r0002" not in d["times"] and "r0001" in d["times"], "parents: an unchecked race is held back by default")
+check("f1" in d["field"] and "f2" not in d["field"], "parents: only a final field group by default")
+check(d["records"][0]["holders"][0]["n"] == "Old R.", "parents: record holders are short names")
+check(pr(d["v"]) == {"v": d["v"], "same": True}, "parents: same version gives a tiny answer")
+admin.execute("update config set doc = doc || '{\"parentsProv\": true}' where id = 'main'")
+d2 = pr(); check("r0002" in d2["times"] and "f2" in d2["field"], "parents: provisional ticked shows unchecked races and open groups")
+admin.execute("update config set doc = doc || '{\"parentsNames\": \"none\"}' where id = 'main'")
+d3 = pr(); raw3 = _json.dumps(d3)
+check(all(x["f"] == "Student" and x["s"] == "" for x in d3["students"]) and "Xavier" not in raw3 and "Old R." not in raw3, "parents: names off means no name leaves the server")
+admin.execute("update config set doc = doc || '{\"parents\": false}' where id = 'main'")
+check(pr() == {"off": True}, "parents: turned off again, nothing is given")
 
 print("\n%d failed" % len(fails))
 for n in fails: print("  FAIL", n)

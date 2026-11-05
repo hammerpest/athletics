@@ -56,8 +56,8 @@ const DEFAULT_CONFIG={
   events:DEFAULT_EVENTS,timetable:DEFAULT_TIMETABLE,locs:{HJ:2,LJ:2,SP:1,D:2,J:1},rules:{},sheet:DEFAULT_SHEET,
   /* marks to the nearest centimetre (decision 38) */
   markDp:2,
-  /* question 14: how the Open 1500 m counts. Assumed until Jordan decides */
-  open:{house:true,champ:false},
+  /* question 14 (answered 6 November 2026, decision 95): the Open 1500 m counts for the houses and for the athlete's own age champion */
+  open:{house:true,champ:true},
   limits:{},locked:false,lockedAt:null,notRun:[]
 };
 function eventsOf(cfg){return (cfg&&cfg.events)||DEFAULT_EVENTS}

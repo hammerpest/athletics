@@ -195,6 +195,10 @@ async def main():
     await F.click('[data-act=ffin] >> nth=0'); await F.wait_for_timeout(150)
     ok("high jump END ends the athlete with no question",await F.evaluate(f"{V}.rows[0].m.fin")==True and await F.locator('.ljconf').count()==0)
     ok("an ended high jump athlete leaves the bar and the count",await F.evaluate(f"{V}.plan.left")==left0-1 and await F.evaluate(f"{V}.plan.isIn('{id0}',{V}.plan.cur)")==False)
+    ok("Aths Opt 1.7: every box of an ended high jump athlete is locked",await F.locator('tbody tr').nth(0).locator('.hjc:not([disabled])').count()==0)
+    hb=await F.evaluate(f"JSON.stringify({V}.rows[0].m.h||{{}})")
+    await F.evaluate(f"(async()=>{{const f=fieldGroupOpen();const r={V}.rows[0];await setHeight(f,r.id,{V}.plan.cur,'O')}})()"); await F.wait_for_timeout(200)
+    ok("a try cannot be added to an ended high jump athlete, even by the code",await F.evaluate(f"JSON.stringify({V}.rows[0].m.h||{{}})")==hb)
     await F.hover('[data-act=ffin] >> nth=0'); await F.mouse.down(); await F.wait_for_timeout(1100); await F.mouse.up(); await F.wait_for_timeout(150)
     ok("press and hold brings a high jump athlete back",not await F.evaluate(f"{V}.rows[0].m.fin") and await F.evaluate(f"{V}.plan.left")==left0)
     # a double tap counts once; a try saved on the other device is not added twice; undo takes only this device's try

@@ -1093,10 +1093,10 @@ def houses(dark):
     return body, logic, "{}"
 
 # ---------- A1.16 Carnival Organiser ----------
-def organiser(dark):
+def organiser(dark, start="program"):
     secs = [("details","1. Carnival details","Friday 18 June 2027"),("students","2. Students","620 test students"),("program","3. Program","104 events"),
             ("field","4. Field event rules","From the 2027 sheets"),("points","5. Points","10, 8, 6, 4"),("limits","6. Odd-time limits","By distance"),
-            ("records","7. Records","No list yet"),("export","8. Export","CSV, HRIS file, backup"),("lock","9. Lock and new carnival","Results open")]
+            ("records","7. Records","No list yet"),("export","8. Export","CSV, HRIS file, backup"),("lock","9. Lock and new carnival","Results open"),("parents","10. Parents page","Off")]
     prog = []
     prog.append(["8:30 am","1500 m, boys and girls","Open","–"])
     for b in BLOCKS:
@@ -1138,6 +1138,19 @@ def organiser(dark):
 <sc-if value="{{is.records}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Records</h2><div class="todo">No CCAS athletics records list yet. <span class="qchip">QUESTION 10</span></div><button type="button" class="btn" style="align-self:flex-start">Load a records list</button></div></sc-if>
 <sc-if value="{{is.export}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Export</h2><div class="row"><button type="button" class="btn">Download results CSV</button><button type="button" class="btn">Download HRIS file</button><button type="button" class="btn">Download full backup</button><button type="button" class="btn">Restore a backup</button></div><p class="muted" style="margin:0">No automatic backups. Export after the carnival. The HRIS file layout: <span class="qchip">QUESTION 20</span></p></div></sc-if>
 <sc-if value="{{is.lock}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Lock and new carnival</h2><div class="row"><button type="button" class="btn">Lock results</button><button type="button" class="btn danger">Clear practice data</button><button type="button" class="btn">Start a new carnival</button></div><p class="muted" style="margin:0">Clear practice data is for the staff run-through and asks first. Past years stay look only. The event coordinator (organiser PIN) can overrule any result at any time.</p></div></sc-if>
+<sc-if value="{{is.parents}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Parents page</h2>
+<p class="muted" style="margin:0">A page for parents. They need no PIN and no sign-in. It shows nothing until you turn it on, and then only what is ticked below. Parents see final results only, unless you tick provisional.</p>
+<div class="row"><button type="button" class="switch" role="switch" aria-checked="{{pOn}}" aria-label="Parents page on" onClick="{{pTog}}"></button><b>Parents page is {{pState}}</b><span class="chip">https://hammerpest.github.io/ccas-athletics/parents/</span><button type="button" class="btn">Copy link</button></div>
+<h3>What parents can see</h3>
+<table><thead><tr><th>Show</th><th>What it is</th></tr></thead><tbody><sc-for list="{{shows}}" as="s" hint-placeholder-count="7"><tr>
+<td><label style="display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer;font-weight:700"><input type="checkbox" style="width:24px;height:24px" aria-label="{{s.l}}" checked="{{s.on}}" onChange="{{s.tap}}">{{s.l}}</label></td><td>{{s.d}}</td></tr></sc-for></tbody></table>
+<h3>Names</h3>
+<div class="choices"><button type="button" class="choice" aria-pressed="{{nameShort}}" onClick="{{tapShort}}">Show first name and surname initial, for example Xavier F.</button><button type="button" class="choice" aria-pressed="{{nameNone}}" onClick="{{tapNone}}">No names: house and place only</button></div>
+<div class="todo">Check newsletter and media consent before names go on a public page. Real student names also wait for the principal and ICT.</div>
+<h3>When results show</h3>
+<label style="display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer"><input type="checkbox" style="width:24px;height:24px" aria-label="Show results before a group is final" checked="{{provOn}}" onChange="{{tapProv}}">Show results before a group is final, marked Provisional</label>
+<p class="muted" style="margin:0">Never shown to parents: PINs, devices, photos of slips, dates of birth, full surnames.</p>
+</div></sc-if>
 '''
     body = header("CARNIVAL ORGANISER","Carnival Organiser",dark,sub="CCAS Athletics Carnival 2027 · Organiser PIN only",extra=f'<a class="hlink" href="{lnk("Main",dark)}">Change year</a>') + '''
 <div class="scroll"><main class="wrap"><div class="org">
@@ -1156,7 +1169,13 @@ def organiser(dark):
     const change = (k, f) => st.ev.map((e) => e.k === k ? Object.assign({}, e, f) : e);
     const is = {}; S.forEach((s) => { is[s[0]] = st.s === s[0]; });
     const wt = [["12", "1.05 / 1.15 m", "3 / 3 kg", "0.75 / 0.75 kg", "400 / 600 g"], ["13", "1.05 / 1.15 m", "3 / 3 kg", "1 / 1 kg", "400 / 600 g"], ["14", "1.10 / 1.15 m", "3 / 4 kg", "1 / 1 kg", "500 / 700 g"], ["15", "1.10 / 1.20 m", "3 / 4 kg", "1 / 1 kg", "500 / 700 g"], ["16", "1.10 / 1.20 m", "3 / 5 kg", "1 / 1.5 kg", "500 / 700 g"], ["17", "1.10 / 1.20 m", "3 / 5 kg", "1 / 1.5 kg", "500 / 700 g"], ["18+", "1.10 / 1.20 m", "4 / 6 kg", "1 / 1.75 kg", "600 / 800 g"]];
-    out = { is, agegrid, stations, total, nTrack, nField, wts: wt.map((w) => ({ a: w[0], hj: w[1], s: w[2], d: w[3], j: w[4] })), jav: !!fieldOn.find((e) => e.k === 'J'),
+    const SHOWS = [['house','House points','The three houses and their points.'],['age','Points by age group','House points for each age group, girls and boys together.'],['events','Event results','Places and times or marks for every event, once final.'],['find','Find a student','Type a name to see that student\'s house and their results.'],['champs','Age champions','The age champion for each age group.'],['records','Records broken','Any new school records from the day.'],['program','What is on now','The program and the field events on now.']];
+    const showT = (k) => () => set({ ps: Object.assign({}, st.ps, { [k]: !st.ps[k] }) });
+    const parentsOut = { pOn: st.pp, pState: st.pp ? 'on' : 'off', pTog: () => set({ pp: !st.pp }),
+      shows: SHOWS.map((r) => ({ l: r[1], d: r[2], on: !!st.ps[r[0]], tap: showT(r[0]) })),
+      nameShort: st.pn === 'short', nameNone: st.pn === 'none', tapShort: () => set({ pn: 'short' }), tapNone: () => set({ pn: 'none' }),
+      provOn: st.pv, tapProv: () => set({ pv: !st.pv }) };
+    out = Object.assign({}, parentsOut); out = Object.assign(out, { is, agegrid, stations, total, nTrack, nField, wts: wt.map((w) => ({ a: w[0], hj: w[1], s: w[2], d: w[3], j: w[4] })), jav: !!fieldOn.find((e) => e.k === 'J'),
       locs: fieldOn.map((e) => ({ l: e.l, one: st.loc[e.k] === 1, two: st.loc[e.k] === 2, tap1: pick(e.k, 1), tap2: pick(e.k, 2) })),
       evs: st.ev.map((e) => ({ l: e.l, t: e.t, g: e.g, n: e.n, on: e.on, own: !!e.own, tog: () => set({ ev: change(e.k, { on: !e.on }) }), del: () => set({ ev: st.ev.filter((x) => x.k !== e.k) }) })),
       adding: st.adding, notAdding: !st.adding, newName: st.nm, newField: st.nt === 'Field', newTrack: st.nt === 'Track',
@@ -1165,9 +1184,65 @@ def organiser(dark):
       addEv: () => { const l = st.nm.trim(); if (!l) return; const k = 'x' + (st.ev.length + 1); set({ ev: st.ev.concat([{ k, l, t: st.nt, g: 'Each age, boys and girls', n: 12, on: true, own: true }]), loc: Object.assign({}, st.loc, { [k]: 1 }), adding: false }); },
       limits: ['100 m','200 m','400 m','800 m','1500 m','4 x 100 m relay'],
       prog: prog.map((p) => ({ a: p[0], b: p[1], c: p[2], d: p[3] })).concat(st.ev.filter((e) => e.on && (e.own || e.k === 'J')).map((e) => ({ a: 'Set a time', b: e.l, c: e.g, d: '–' }))),
-      secs: S.map((s) => ({ l: s[1], sub: s[0] === 'program' ? total + ' events' : s[2], c: '', on: st.s === s[0], tap: () => set({ s: s[0] }) })) };
+      secs: S.map((s) => ({ l: s[1], sub: s[0] === 'program' ? total + ' events' : s[0] === 'parents' ? (st.pp ? 'On' : 'Off') : s[2], c: '', on: st.s === s[0], tap: () => set({ s: s[0] }) })) });
 '''
-    return body, logic, r'''{ s: 'program', adding: false, nm: '', nt: 'Field', loc: { D: 2, LJ: 2, J: 1, SP: 1, HJ: 2 }, ev: [{"k": "100", "l": "100 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "200", "l": "200 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "400", "l": "400 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "800", "l": "800 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "1500", "l": "1500 m", "t": "Track", "g": "Open, boys and girls", "n": 2, "on": true}, {"k": "R", "l": "4 x 100 m relay", "t": "Track", "g": "Junior, Intermediate, Senior", "n": 6, "on": true}, {"k": "HJ", "l": "High Jump", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "LJ", "l": "Long Jump", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "SP", "l": "Shot Put", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "D", "l": "Discus", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "J", "l": "Javelin", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": false}] }'''
+    init = r'''{ s: 'program', adding: false, nm: '', nt: 'Field', loc: { D: 2, LJ: 2, J: 1, SP: 1, HJ: 2 }, ev: [{"k": "100", "l": "100 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "200", "l": "200 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "400", "l": "400 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "800", "l": "800 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "1500", "l": "1500 m", "t": "Track", "g": "Open, boys and girls", "n": 2, "on": true}, {"k": "R", "l": "4 x 100 m relay", "t": "Track", "g": "Junior, Intermediate, Senior", "n": 6, "on": true}, {"k": "HJ", "l": "High Jump", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "LJ", "l": "Long Jump", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "SP", "l": "Shot Put", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "D", "l": "Discus", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "J", "l": "Javelin", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": false}] }'''
+    init = init.replace("{ s: 'program',", "{ s: '" + start + "', pp: " + ('true' if start == 'parents' else 'false') + ", ps: {house: true, age: true, events: true, find: true, champs: true, records: false, program: true}, pn: 'short', pv: false,")
+    return body, logic, init
+
+
+# ---------- A1.29 Parents page (no PIN) ----------
+def short(n):
+    p = n.split(" ")
+    return p[0] + " " + p[-1][0] + "." if len(p) > 1 else n
+
+def parents_page(dark):
+    t = names("M","18",6,3); f = names("M","17",5,8); g = names("F","15",4,11)
+    t = [t[3],t[0],t[4],t[1],t[5]]
+    ev = [{"e":"100 m, Boys 18+","rows":[{"n":short(a["n"]),"h":a["h"],"v":v} for a,v in zip(t,["12.61","12.91","12.92","13.02","13.22"])]},
+          {"e":"Long jump, Boys 17","rows":[{"n":short(a["n"]),"h":a["h"],"v":v} for a,v in zip(f,["5.61 m","5.41 m","5.20 m","5.02 m","4.92 m"])]}]
+    find = {"n":short(t[0]["n"]),"h":t[0]["h"],"res":[["100 m, Boys 18+","1st","12.61"],["Long jump, Boys 18+","2nd","5.48 m"]]}
+    champs = [{"l":"12 & 13","a":short(names("F","13",1,20)[0]["n"]),"b":short(names("M","13",1,21)[0]["n"])},
+              {"l":"14","a":short(names("F","14",1,22)[0]["n"]),"b":short(names("M","14",1,23)[0]["n"])},
+              {"l":"15","a":short(g[0]["n"]),"b":short(names("M","15",1,24)[0]["n"])}]
+    ages = [["12 & 13",34,32,28],["14",38,30,32],["15",20,38,26],["16",30,30,22],["17",26,34,30],["18+",24,22,20],["Relays",0,0,0]]
+    body = f"""<header class="top"><div class="wrap"><div class="topin"><div class="ttl"><b>Athletics Carnival 2027</b><small>Results for parents</small></div><span class="chip prov">Updated 1:42 pm</span></div></div></header>
+<div class="scroll"><main class="wrap" style="padding-top:10px;padding-bottom:24px"><div class="stack">
+<div class="tabs" style="margin:0;flex-wrap:nowrap;overflow-x:auto"><sc-for list="{{{{tabs}}}}" as="t" hint-placeholder-count="6"><button type="button" style="flex:0 0 auto" aria-pressed="{{{{t.on}}}}" onClick="{{{{t.tap}}}}">{{{{t.l}}}}</button></sc-for></div>
+<div class="row"><span class="chip prov">Provisional, 14 of 104 events in</span></div>
+<sc-if value="{{{{is.house}}}}" hint-placeholder-val="{{{{true}}}}"><div class="stack">
+<div class="hcard hJ"><div class="row" style="justify-content:space-between"><span class="medal m1">1</span><span class="htag"><span class="hdot hJ">J</span><b>Jackson</b></span></div><span class="pts">186</span><div class="barw"><div class="bar" style="width:100%"></div></div></div>
+<div class="hcard hB"><div class="row" style="justify-content:space-between"><span class="medal m2">2</span><span class="htag"><span class="hdot hB">B</span><b>Bradman</b></span></div><span class="pts">172</span><div class="barw"><div class="bar" style="width:92%"></div></div></div>
+<div class="hcard hN"><div class="row" style="justify-content:space-between"><span class="medal m3">3</span><span class="htag"><span class="hdot hN">N</span><b>Newcombe</b></span></div><span class="pts">158</span><div class="barw"><div class="bar" style="width:85%"></div></div></div>
+</div></sc-if>
+<sc-if value="{{{{is.age}}}}" hint-placeholder-val="{{{{false}}}}"><div class="panel stack"><h3>Points by age group</h3><table><thead><tr><th>Age group</th><th class="num"><span class="hdot hB">B</span></th><th class="num"><span class="hdot hJ">J</span></th><th class="num"><span class="hdot hN">N</span></th></tr></thead><tbody>
+<sc-for list="{{{{ages}}}}" as="a" hint-placeholder-count="7"><tr><td>{{{{a.l}}}}</td><td class="num">{{{{a.b}}}}</td><td class="num">{{{{a.j}}}}</td><td class="num">{{{{a.n}}}}</td></tr></sc-for>
+<tr><td><b>Total</b></td><td class="num"><b>172</b></td><td class="num"><b>186</b></td><td class="num"><b>158</b></td></tr></tbody></table><span class="muted" style="font-size:.85rem">Girls and boys together. Relays count for houses only.</span></div></sc-if>
+<sc-if value="{{{{is.events}}}}" hint-placeholder-val="{{{{false}}}}"><div class="stack">
+<div class="tabs" style="margin:0"><sc-for list="{{{{evs}}}}" as="e" hint-placeholder-count="2"><button type="button" aria-pressed="{{{{e.on}}}}" onClick="{{{{e.tap}}}}">{{{{e.l}}}}</button></sc-for></div>
+<div class="panel stack"><div class="row" style="justify-content:space-between"><h3>{{{{ev.e}}}}</h3><span class="chip final">Final</span></div>
+<div class="podium"><sc-for list="{{{{ev.rows}}}}" as="r" hint-placeholder-count="5"><div class="pr"><span class="medal {{{{r.mc}}}}">{{{{r.p}}}}</span><div><b>{{{{r.n}}}}</b><span class="htag" style="font-size:.86rem"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span></span></div><span class="t">{{{{r.v}}}}</span></div></sc-for></div></div></div></sc-if>
+<sc-if value="{{{{is.find}}}}" hint-placeholder-val="{{{{false}}}}"><div class="stack"><label class="label" style="display:flex;flex-direction:column;gap:4px">Find a student<input type="search" placeholder="Type a first name" value="Xav" aria-label="Find a student"></label>
+<div class="panel stack"><div class="row" style="justify-content:space-between"><span class="htag"><span class="hdot h{find['h']}">{find['h']}</span><b>{find['n']}</b></span><span class="chip">House {find['h']}</span></div>
+<sc-for list="{{{{fres}}}}" as="r" hint-placeholder-count="2"><div class="row" style="justify-content:space-between"><span>{{{{r.e}}}}</span><b>{{{{r.p}}}} · {{{{r.v}}}}</b></div></sc-for></div></div></sc-if>
+<sc-if value="{{{{is.champs}}}}" hint-placeholder-val="{{{{false}}}}"><div class="stack"><sc-for list="{{{{champs}}}}" as="c" hint-placeholder-count="3"><div class="panel" style="padding:10px 12px"><b style="font-family:var(--font-display)">{{{{c.l}}}}</b>
+<div class="champ"><span class="medal m1" style="width:26px;height:26px">1</span><span>{{{{c.a}}}} <span class="muted">(Girls)</span></span></div><div class="champ"><span class="medal m1" style="width:26px;height:26px">1</span><span>{{{{c.b}}}} <span class="muted">(Boys)</span></span></div></div></sc-for></div></sc-if>
+<span class="muted" style="font-size:.82rem">Only what the school has turned on is shown. Times can change until a group is final.</span>
+</div></main></div>"""
+    logic = "const ev = " + J(ev) + "; const find = " + J(find) + "; const champs = " + J(champs) + "; const ages = " + J(ages) + r""";
+    const T = [['house','House points'],['age','By age'],['events','Event results'],['find','Find a student'],['champs','Age champions']];
+    const is = {}; T.forEach((x) => { is[x[0]] = st.t === x[0]; });
+    const cur = ev[st.e];
+    out = { is, tabs: T.map((x) => ({ l: x[1], on: st.t === x[0], tap: () => set({ t: x[0] }) })),
+      ages: ages.map((a) => ({ l: a[0], b: a[1], j: a[2], n: a[3] })),
+      evs: ev.map((e, i) => ({ l: e.e, on: st.e === i, tap: () => set({ e: i }) })),
+      ev: { e: cur.e, rows: cur.rows.map((r, i) => ({ p: i + 1, mc: i < 3 ? 'm' + (i + 1) : 'm4', n: r.n, h: r.h, v: r.v })) },
+      fres: find.res.map((r) => ({ e: r[0], p: r[1], v: r[2] })), champs };
+"""
+    return body, logic, "{ t: 'house', e: 0 }"
+
+def organiser_parents(dark):
+    return organiser(dark, "parents")
 
 # ---------- layout on the canvas ----------
 gap = 80; rowgap = 120
@@ -1199,7 +1274,10 @@ board("Recorder","A1.11 Recorder, track: slip times, pink swaps, race overall, M
 board("RecorderField","A1.12 Recorder, field: stations, final results, override, MacBook",*MAC,recorder_field,1592,R3,radius=0)
 board("Results","A1.14 Results: event results, HRIS Team List, newsletter draft, MacBook",*MAC,results,3184,R3,radius=0)
 board("Houses","A1.15 Houses: standings, points by age group, age champions, iPad landscape",*IPAD,houses,4776,R3)
-board("Organiser","A1.16 Carnival Organiser: 9 sections, add or remove events, field rules from the sheets, 1 or 2 locations, MacBook",*MAC,organiser,6036,R3,radius=0)
+board("Organiser","A1.16 Carnival Organiser: 10 sections, add or remove events, field rules from the sheets, 1 or 2 locations, MacBook",*MAC,organiser,6036,R3,radius=0)
+R4 = R3 + 982 + rowgap + 103
+board("Parents","A1.29 Parents page: no PIN, only what the organiser ticked, phone",*PHONE,parents_page,0,R4,radius=40)
+board("OrganiserParents","A1.30 Carnival Organiser: section 10, the parents page on or off and what parents can see, MacBook",*MAC,organiser_parents,470,R4,radius=0)
 
 index_boards, order = {}, []
 DARK_DY = 0
