@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 6 November 2026, version ay. Replaces 6 November version ax.
+Date: 6 November 2026, version az. Replaces 6 November version ay.
+
+Changes on 6 November 2026 (version az): Jordan approved the A1.28 safety line (decision 94). All 28 boards are approved. The safety line is not built; it waits for Jordan to try Aths Opt 1.4, then goes in the next build with anything found. Ask now: Jordan tries Aths Opt 1.4.
 
 Changes on 6 November 2026 (version ay): The safety line (decision 93) is drawn on A1.28 (Take Names, discus 12 and 13) and published to the canvas (version 35): an amber box under the instructions that reads Safety. Athletes stay behind the safety area. The person returning the implement watches every throw. The same line would show on Take Names for every shot put and discus group. A1.20 (long jump) is unchanged. Not looked at as a picture; not built. Ask now: Jordan's OK on A1.28.
 
@@ -375,6 +377,8 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 92. (6 November 2026, answer 67) An ended shot put or discus athlete with a fair throw stays on the measured or participation list and keeps their points.
 
 93. (6 November 2026, answer 63, left to Claude) Take Names for shot put and discus shows a safety line all the time: "Athletes stay behind the safety area. The person returning the implement watches every throw." No extra tap and no pop-up. It will be drawn on A1.20 and A1.28 before it is built.
+
+94. (6 November 2026) Jordan approved the A1.28 safety line (decision 93). Not built yet.
 
 ## 4. Rules and constraints
 
