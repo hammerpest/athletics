@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 6 November 2026, version av. Replaces 6 November version au.
+Date: 6 November 2026, version aw. Replaces 6 November version av.
+
+Changes on 6 November 2026 (version aw): Jordan answered question 67 (decisions 91 and 92). On the phone, Undo last brings back the athlete just ended. An ended shot put or discus athlete with a fair throw stays on the measured or participation list and keeps their points. Both are how Aths Opt 1.4 already works, so nothing changes in the build. Ask now: Jordan tries Aths Opt 1.4, and question 63.
 
 Changes on 6 November 2026 (version av): Aths Opt 1.4 is built in test mode on the local staging branch, nothing pushed. It builds decisions 86 to 89: every field athlete (iPad grids and phone, including high jump) has an END button; one tap ends the athlete with no question, the button reads ENDED, and press and hold for about a second brings them back; on the phone END is in the bottom bar, ends the athlete on screen and moves on, and Undo last brings them back; an ended high jump athlete leaves the bar and the left in count and keeps their best height; the No show column is gone from the long jump and throws grids. Question 67 was built with the recommended answers (Undo last on the phone; an ended athlete keeps marks and points) and is still open for Jordan. Engine tests 77 of 77; flow tests 0 failed (including END on all events, hold to bring back, phone Undo last). Check 1: 950 screenshots against the 1.3 build; only field screens differ (END column or button, no No show, no Finish question), then re-shot after the review fixes. Check 2: by script only, not repeated in Claude in Chrome. Check 3: a fresh-eyes agent found these, all fixed: the high jump END column was off screen on iPad portrait (now fixed to the right edge); long press could be taken by the browser (select, callout and menu blocked); a quick tap after a hold could end the athlete again; END on the phone with a typed mark now asks to save or clear it first; the Keep top message said Put back; a toast says Everyone has finished when the last athlete is ended. Its claim that Undo last did not bring an athlete back was wrong, and a new test shows it does. Not fixed: an ended high jump athlete's boxes can still be tapped to fix them; the phone summary has no Ended label; a keyboard cannot hold ENDED. Ask now: Jordan tries Aths Opt 1.4, question 67, question 63.
 
@@ -365,6 +367,9 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 
 90. (6 November 2026) Jordan approved the END boards A1.8, A1.9, A1.10, A1.18, A1.19 and A1.21 and the removal of No show (decisions 86 to 89). Not built yet: Jordan says when.
 
+91. (6 November 2026, answer 67) On the phone, Undo last brings back the athlete just ended.
+92. (6 November 2026, answer 67) An ended shot put or discus athlete with a fair throw stays on the measured or participation list and keeps their points.
+
 ## 4. Rules and constraints
 
 See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
@@ -401,8 +406,6 @@ Ask now: 63.
 - (Later) 10. Records: is there a CCAS athletics records list to load?
 - (Later) 11. Real student names: the same approval path as swimming (principal and ICT, swimming question 1)?
 - (Closed by 1 to 10) Questions 1 to 7.
-
-67. (6 November 2026) On the phone there is one athlete on screen at a time. Should END sit in the bottom bar beside Save mark (where Finish athlete is now), and should it end the athlete shown and move on to the next? Recommended: yes. Also: does an ENDed shot put or discus athlete with a fair throw still go to the measured or participation list? Recommended: yes.
 
 ## 7. Exact next steps
 
