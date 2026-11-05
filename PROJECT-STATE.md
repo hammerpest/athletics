@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 6 November 2026, version ar. Replaces 6 November version aq.
+Date: 6 November 2026, version as. Replaces 6 November version ar.
+
+Changes on 6 November 2026 (version as): END button (decisions 86 to 88) drawn and published to the canvas (version 33). Redrawn: A1.8 (long jump), A1.18 (shot put and discus) and A1.9 (high jump, new END column) on the iPad: one tap on END ends the athlete with no question, the button reads ENDED, and pressing and holding it for about a second brings them back; an ended high jump athlete leaves the order and the count of athletes left. A1.10, A1.19 and A1.21 (phone): END replaces Finish athlete in the bottom bar, ends the athlete on screen and moves to the next. The Finish confirmation is gone. The board logic was edited but not run or looked at as a picture. Nothing is built. Ask now: Jordan's OK on the six boards, and question 67.
 
 Changes on 6 November 2026 (version ar): Jordan asked for a way to end a child after one jump or throw, because the official may need to cut 15 athletes who are far too short. Decisions 86 to 88 below. Nothing is built, and A1.29 is not on the canvas yet; a sketch was shown in the chat. Ask now: Jordan's OK on the sketch, then I redraw A1.8, A1.9, A1.10, A1.18, A1.19 and A1.21 with the END button. Question 67 is new.
 
