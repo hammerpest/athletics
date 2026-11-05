@@ -305,12 +305,13 @@ const ACT={
     await addRecords(p.out);A.modal=null;toast(plural(p.out.length,"record")+" added"+(p.bad.length?". Rows not understood: "+p.bad.join(", "):""));render()},
   obackup:()=>downloadBackup(),
   oclear:()=>{if(A.past){toast("Past years are look only.");return}A.o.newMsg="";A.modal={t:"orgPin",title:"Clear practice data?",ok:"Clear practice data",go:"clear",body:`<p style="margin:0"><b>Cleared:</b> ${plural(A.heats.length,"race")} with their places and times, the field results${A.extras.length?", and "+plural(A.extras.length,"athlete")+" added on the day":""}. Race number back to 1.</p><p style="margin:0"><b>Kept:</b> ${students().length-A.extras.length} students, settings, PINs, program, points, limits and records.</p><p style="margin:0;font-weight:700">This cannot be undone. Download a full backup first if you may need it.</p>`};render()},
-  oorgpinok:()=>{const M=A.modal;if(!M)return;
-    if(!orgPinOk(document.getElementById("opPin").value.trim())){M.err="That PIN is not right. Try again.";render();return}
+  oorgpinok:async()=>{const M=A.modal;if(!M)return;
+    const ok=await orgPinOk(document.getElementById("opPin").value.trim());if(ok===null)return;
+    if(!ok){M.err="That PIN is not right. Try again.";render();return}
     if(M.go==="clear")clearPractice();else if(M.go==="restore")restoreBackup(M.b);else if(M.go==="override"){A.modal=null;A.r.ovr=true;render()}},
   olock:()=>saveCfg({locked:!A.cfg.locked,lockedAt:A.cfg.locked?null:Date.now()},A.cfg.locked?"Results unlocked":"Results locked"),
   onew:()=>{if(A.past){toast("Past years are look only.");return}const yr=(A.cfg.date||"2027").slice(0,4);if(A.years.some(y=>String(y.year)===yr)){A.modal={t:"info",title:"Year already kept",body:`<p style="margin:0">The ${esc(yr)} carnival has already been kept. Change the carnival date in section 1 to the right year first.</p>`};render();return}A.modal={t:"newCarnival",step:1};A.o.newMsg="";render()},
-  onew1:()=>{if(!orgPinOk(document.getElementById("ncPin").value.trim())){A.modal.err="That PIN is not right. Try again.";render();return}
+  onew1:async()=>{const ok=await orgPinOk(document.getElementById("ncPin").value.trim());if(ok===null)return;if(!ok){A.modal.err="That PIN is not right. Try again.";render();return}
     const list=A.R.broken.filter(G=>G.final).map(G=>G.label+": "+G.recordNote.rows.map(r=>pname(r.p)).join(" and ")+" "+resultText(G,G.recordNote.rows[0])+(G.recordNote.kind==="new"?" (new)":" (equal)"));
     A.modal={t:"newCarnival",step:2,list};render()},
   onew2:el=>newCarnival(el.dataset.v==="yes")

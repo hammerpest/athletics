@@ -74,9 +74,14 @@ function schedule(){
 }
 document.addEventListener("focusout",()=>{if(A.dirty){A.dirty=false;setTimeout(()=>{const ae=document.activeElement;if(!(ae&&/INPUT|TEXTAREA|SELECT/.test(ae.tagName)))render();else A.dirty=true},50)}});
 async function connect(){
-  /* Supabase joins here at Aths Opt 1.2 with the same store calls */
-  const st=localStore(()=>{if(A.job==="slips")schedule();else renderHeader()});
+  /* Supabase when js/config.js has the project address and key (and the address has no ?mode=local); if not, one-device test mode */
+  const onQueue=()=>{if(A.job==="slips")schedule();else renderHeader()};
+  let st=null;
+  try{if(typeof supabaseStore==="function")st=await supabaseStore(onQueue)}catch(e){}
+  if(!st)st=localStore(onQueue);
   A.store=st;
+  /* Supabase: the server decides the job; forget a job it does not know about */
+  if(st.claimRole&&st.role!==A.role){A.role=null;A.job=null;A.yearPicked=null;ssSet("aths_role",null);ssSet("aths_job",null);ssSet("aths_year",null);render()}
   const s=A.store;
   /* live data goes to A.L; it shows on screen unless a past year is open */
   const live=(k,v)=>{A.L[k]=v;if(!A.past)A[k]=v;schedule()};
@@ -193,6 +198,7 @@ async function enterYear(y){
     }catch(e){toast("The "+y+" carnival could not be loaded. Check the connection.");return}
   }
   A.yearPicked=y||"current";ssSet("aths_year",A.yearPicked);
+  if(A.store&&A.store.setYear)A.store.setYear(A.yearPicked).catch(()=>{});
   recompute();render();
 }
 function pressKey(k){
@@ -203,6 +209,18 @@ function pressKey(k){
 }
 function pinStart(){
   if(A.pin.length<4)return;
+  /* Supabase: the server checks the PIN and gives this device its job */
+  if(A.store&&A.store.claimRole){
+    const h=pinHash(A.pin);A.pin="";render();
+    A.store.claimRole(h).then(r=>{
+      if(!r){A.pinErr=true;render();return}
+      A.pinErr=false;A.role=r;ssSet("aths_role",r);
+      if(r!=="org"){goJob(homeJob());return}
+      if(!A.years.length){A.yearPicked="current";ssSet("aths_year","current");if(A.store.setYear)A.store.setYear("current").catch(()=>{})}
+      render();
+    },()=>{toast("No connection. Try again.");render()});
+    return;
+  }
   const h=pinHash(A.pin),P=pins();A.pin="";
   const hit=PIN_ROLES.find(([k])=>P[k]===h);
   if(!hit){A.pinErr=true;render();return}
@@ -222,7 +240,7 @@ function goJob(k){
   if(k==="recorder")A.r.since=Date.now();
   announce();render();window.scrollTo(0,0);
 }
-function signOut(){if(A.past)enterYear("current");clearReadLists();A.yearPicked=null;ssSet("aths_year",null);A.role=null;A.job=null;ssSet("aths_role",null);ssSet("aths_job",null);A.menu=false;A.m.phase="start";A.f.gid=null;A.f.station=null;A.f.a=null;fSave();A.r.ovr=false;announce();render()}
+function signOut(){if(A.past)enterYear("current");clearReadLists();if(A.store&&A.store.releaseRole)A.store.releaseRole().catch(()=>{});A.yearPicked=null;ssSet("aths_year",null);A.role=null;A.job=null;ssSet("aths_role",null);ssSet("aths_job",null);A.menu=false;A.m.phase="start";A.f.gid=null;A.f.station=null;A.f.a=null;fSave();A.r.ovr=false;announce();render()}
 
 /* ---------- modal ---------- */
 function modalHtml(){

@@ -132,7 +132,11 @@ MODALS.orgPin=M=>`<h2>${esc(M.title)}</h2>${M.body}
   <label class="stack" style="gap:4px;font-weight:600">Type the organiser PIN<input id="opPin" inputmode="numeric" maxlength="4" autocomplete="off" style="width:8em"></label>
   ${M.err?`<div class="msg bad">${esc(M.err)}</div>`:""}
   <div class="acts"><button type="button" class="btn" data-act="closemodal">&lt; Back</button><button type="button" class="btn redfill" data-act="oorgpinok">${esc(M.ok)}</button></div>`;
-function orgPinOk(p){return pinHash(p)===pins().org}
+async function orgPinOk(p){
+  /* Supabase: the organiser PIN is checked on the server */
+  if(A.store&&A.store.checkPin){try{return await A.store.checkPin("org",pinHash(p))}catch(e){toast("No connection. Try again.");return null}}
+  return pinHash(p)===pins().org;
+}
 function newRunId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function carnivalPaths(){
   const jobs=[];

@@ -1,4 +1,7 @@
-/* Supabase project for this copy of the app. Jordan fills these in at Aths Opt 1.2 (see PROJECT-STATE next steps).
-   Only the public "anon" key goes here, never the service_role key.
-   Empty means test mode: this device only, browser tabs act as separate devices (the same as ?mode=local). */
-window.ATHS_CONFIG={url:"",key:""};
+/* Supabase project for this copy of the app (ccas-athletics-staging, Sydney). See supabase/SETUP.md.
+   Only the public "publishable" key goes here, never the secret or service_role key.
+   Empty values mean test mode: this device only, browser tabs act as separate devices (the same as ?mode=local). */
+window.ATHS_CONFIG={
+  url:"https://qgqsdhwcskpnvoqcedfi.supabase.co",
+  key:"sb_publishable_C9Kzgf1tdREXRDGI_Jg_vQ_xGmWMhO5"
+};
