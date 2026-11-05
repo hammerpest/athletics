@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 6 November 2026, version aq. Replaces 5 November version ap.
+Date: 6 November 2026, version ar. Replaces 6 November version aq.
+
+Changes on 6 November 2026 (version ar): Jordan asked for a way to end a child after one jump or throw, because the official may need to cut 15 athletes who are far too short. Decisions 86 to 88 below. Nothing is built, and A1.29 is not on the canvas yet; a sketch was shown in the chat. Ask now: Jordan's OK on the sketch, then I redraw A1.8, A1.9, A1.10, A1.18, A1.19 and A1.21 with the END button. Question 67 is new.
 
 Changes on 6 November 2026 (version aq): Aths Opt 1.3 is built in test mode on the local staging branch, nothing pushed. It builds decisions 53 to 85 (high jump, long jump, shot put and discus) as drawn on A1.8, A1.9, A1.10, A1.18, A1.19 and A1.21 to A1.28. The Supabase build moves to Aths Opt 1.4. Engine tests 76 of 76. Flow tests 103 of 103, plus 50 of 50 in the new tests/flow_field.py. Check 1: 950 screenshots of the new build against 860 of the previous commit made with its own script; 204 screens differ, all field screens or screens that show field results (houses, results, results-field, results-hris, results-locked, results-newsletter, recorder-field, recorder-field-high, recorder-field-override, recorder-field-pin, recorder-field-throw, org-field, org-field-javelin); 106 screens are new; the diff first showed shared style names clashing (Sign out, the Houses and Full results buttons), which were renamed. No phone screen is wider than 390 and no iPad portrait screen is wider than 820. Check 2: Claude in Chrome was not connected, so the walk-through was run by script (flow tests) and a short real-browser pass in the built-in browser at 1512 wide (high jump, no console errors); not repeated in Chrome. Check 3: a fresh-eyes agent found 6 must-fix and 12 should-fix faults. Fixed: participation points now a flat 4 whatever the number measured; Keep top N waits until the round is done; the Recorder can again tap a high jump box; a closed high jump box takes no more tries; the throw again screen shows names on iPad portrait; the long jump Finish column stays on screen; pop-ups measured at the right width and only one open at a time; Nobody ticked asks first and Change who throws again; the athlete's discus weight shows in the throws grid; the phone keeps its results and throw again screens through a reload; the next height box reads from the bar's own list; Foul and Pass sit above the keypad on the phone; the results screen warns when not everyone has finished. The fixes were proven by new tests and a re-shoot, not by a second review. Left for later (section 5). Ask now: Jordan tries Aths Opt 1.3, and question 63.
 
@@ -347,6 +349,10 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 84. (5 November 2026, answers 62) Discus 12 and 13: the teacher picks a 0.75 kg or 1 kg tag for each athlete on Take Names. No exact age is stored.
 85. (5 November 2026) Jordan approved A1.18, A1.19 and A1.24 to A1.28 (decisions 78 to 84). All 28 boards are approved.
 
+86. (6 November 2026) Every athlete on every field event (high jump, long jump, shot put, discus; iPad and phone) gets an END button. One tap ends the athlete at once, with no confirmation. It replaces the Finish button and the Finish athlete confirmation. The athlete keeps their marks and points; they just take no more attempts.
+87. (6 November 2026) To undo END, press and hold ENDED for about 1 second. A quick tap on ENDED does nothing (it only shows the hint), so a wrong tap cannot bring someone back by accident.
+88. (6 November 2026) END works on high jump too, for an athlete who is far too low to carry on. Keep top N stays for long jump.
+
 ## 4. Rules and constraints
 
 See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
@@ -383,6 +389,8 @@ Ask now: 63.
 - (Later) 10. Records: is there a CCAS athletics records list to load?
 - (Later) 11. Real student names: the same approval path as swimming (principal and ICT, swimming question 1)?
 - (Closed by 1 to 10) Questions 1 to 7.
+
+67. (6 November 2026) On the phone there is one athlete on screen at a time. Should END sit in the bottom bar beside Save mark (where Finish athlete is now), and should it end the athlete shown and move on to the next? Recommended: yes. Also: does an ENDed shot put or discus athlete with a fair throw still go to the measured or participation list? Recommended: yes.
 
 ## 7. Exact next steps
 
