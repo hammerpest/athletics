@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 6 November 2026, version aw. Replaces 6 November version av.
+Date: 6 November 2026, version ax. Replaces 6 November version aw.
+
+Changes on 6 November 2026 (version ax): Jordan left question 63 to me (decision 93): shot put and discus Take Names shows an always-visible safety line, with no extra tap. It is not drawn or built. Next: draw it on A1.20 and A1.28 for Jordan's OK. No open questions. Ask now: Jordan tries Aths Opt 1.4, and OK to draw the safety line.
 
 Changes on 6 November 2026 (version aw): Jordan answered question 67 (decisions 91 and 92). On the phone, Undo last brings back the athlete just ended. An ended shot put or discus athlete with a fair throw stays on the measured or participation list and keeps their points. Both are how Aths Opt 1.4 already works, so nothing changes in the build. Ask now: Jordan tries Aths Opt 1.4, and question 63.
 
@@ -370,6 +372,8 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 91. (6 November 2026, answer 67) On the phone, Undo last brings back the athlete just ended.
 92. (6 November 2026, answer 67) An ended shot put or discus athlete with a fair throw stays on the measured or participation list and keeps their points.
 
+93. (6 November 2026, answer 63, left to Claude) Take Names for shot put and discus shows a safety line all the time: "Athletes stay behind the safety area. The person returning the implement watches every throw." No extra tap and no pop-up. It will be drawn on A1.20 and A1.28 before it is built.
+
 ## 4. Rules and constraints
 
 See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
@@ -386,9 +390,9 @@ See CLAUDE.md: writing rules, the look, the three checks, privacy, devices.
 
 ## 6. Unresolved questions (ask Jordan)
 
-Ask now: 63.
+Ask now: none.
 
-- 63. Shot put and discus: show a safety reminder on Take Names or Start (athletes stay behind the safety area, the person returning the implement watches every throw)?
+- (Closed by 93) Question 63 (safety reminder).
 - (Closed by 78 to 84) Questions 58 to 62, 64, 65 (shot put and discus).
 - (Closed by 71 to 76) Questions 51 to 57 (long jump).
 - (Closed by 60 to 66) Questions 43 to 50 (high jump).
