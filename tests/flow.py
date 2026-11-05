@@ -190,6 +190,13 @@ async def main():
     await F.click(f'.hjc[aria-label*="1.10 metres"] >> nth=0'); await F.click('.hjpop [data-v=back]'); await F.wait_for_timeout(150)
     ok("a box can still be tapped to fix it (Remove last)",(await F.evaluate(f"{V}.rows[0].m.h[110]")or"")=="")
     await F.click('[data-act=fundo]'); await F.wait_for_timeout(100)
+    # END on high jump (decisions 86 to 88)
+    left0=await F.evaluate(f"{V}.plan.left"); id0=await F.evaluate(f"{V}.rows[0].id")
+    await F.click('[data-act=ffin] >> nth=0'); await F.wait_for_timeout(150)
+    ok("high jump END ends the athlete with no question",await F.evaluate(f"{V}.rows[0].m.fin")==True and await F.locator('.ljconf').count()==0)
+    ok("an ended high jump athlete leaves the bar and the count",await F.evaluate(f"{V}.plan.left")==left0-1 and await F.evaluate(f"{V}.plan.isIn('{id0}',{V}.plan.cur)")==False)
+    await F.hover('[data-act=ffin] >> nth=0'); await F.mouse.down(); await F.wait_for_timeout(1100); await F.mouse.up(); await F.wait_for_timeout(150)
+    ok("press and hold brings a high jump athlete back",not await F.evaluate(f"{V}.rows[0].m.fin") and await F.evaluate(f"{V}.plan.left")==left0)
     # a double tap counts once; a try saved on the other device is not added twice; undo takes only this device's try
     await F.evaluate("(()=>{const f=A.R.fgroups.find(f=>f.key==='HJ|M|18');A.f.station=f.station;fOpen(f.id)})()"); await F.wait_for_timeout(100)
     for i in range(3): await F.click('.namebtn:not(.sel) >> nth=0'); await F.wait_for_timeout(40)

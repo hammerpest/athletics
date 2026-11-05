@@ -184,7 +184,7 @@ async def run(pw,dev,theme):
         for k in "545": await F.click(f'.ljpop .keypad [data-k="{k}"]')
         await shot(F,"field-marks-typed"); await F.click('.ljpop [data-v=save]'); await F.wait_for_timeout(250)
         assert await F.evaluate("A.R.groups.get('LJ|M|17').rows[0].best")==561
-        await F.click('[data-act=ffin] >> nth=0'); await F.wait_for_timeout(120); await shot(F,"field-finish-ask"); await F.click('[data-act=ffinno]'); await F.wait_for_timeout(100)
+        await F.click('[data-act=ffin] >> nth=0'); await F.wait_for_timeout(120); await shot(F,"field-ended"); await F.hover('[data-act=ffin] >> nth=0'); await F.mouse.down(); await F.wait_for_timeout(1100); await F.mouse.up(); await F.wait_for_timeout(100)
         await F.fill('[data-keepn]','3'); await F.press('[data-keepn]','Tab'); await F.wait_for_timeout(100)
         await F.click('[data-act=fkeep]'); await F.wait_for_timeout(250); await shot(F,"field-keeptop")
         await F.click('[data-act=fkeepundo]'); await F.wait_for_timeout(250)
@@ -196,7 +196,7 @@ async def run(pw,dev,theme):
         await F.click('[data-act=fsave]'); await F.wait_for_timeout(150); await shot(F,"field-phone-saved")
         await F.click('[data-act=fundo]'); await F.wait_for_timeout(150); await shot(F,"field-phone-undo")
         await F.click('.attcell[data-act=fcell] >> nth=0'); await F.wait_for_timeout(100); await shot(F,"field-phone-change")
-        await F.evaluate("A.f.a=null;render()"); await F.click('[data-act=ffinphone]'); await F.wait_for_timeout(100); await shot(F,"field-phone-finishask"); await F.click('[data-act=ffinno]'); await F.wait_for_timeout(100)
+        await F.evaluate("A.f.a=null;render()"); await F.click('[data-act=ffinphone]'); await F.wait_for_timeout(250); await shot(F,"field-phone-end"); await F.click('[data-act=fundo]'); await F.wait_for_timeout(150)
         await F.click('[data-act=fcut]'); await F.wait_for_timeout(100); await shot(F,"field-phone-cut"); await F.click('[data-act=fcut]'); await F.wait_for_timeout(100)
     if not phone:
         await F.click('[data-act=ffinish]'); await shot(F,"field-finishmodal"); await F.click('[data-act=ffinishok]'); await tick(); await F.wait_for_timeout(250); await shot(F,"field-final")

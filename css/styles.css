@@ -435,3 +435,7 @@ td.todoh input,td.todoh select{font:700 .9rem var(--font-mono);min-height:48px;m
 @media (min-width:1000px){.namegrid.names3{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .namegrid.names3{grid-template-columns:repeat(2,minmax(0,1fr))}
 @media (max-width:900px){.field-table th,.field-table td{padding-left:6px;padding-right:6px}.field-table .stbtn{min-width:0 !important;padding-inline:8px}}
+
+/* Aths Opt 1.4: END button */
+.endbtn{user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+.hjgrid .hjend{position:sticky;right:0;background:var(--surface);z-index:1;box-shadow:-1px 0 0 var(--line)}

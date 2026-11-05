@@ -90,12 +90,10 @@ function hjCm(t){const n=parseFloat(String(t).replace(",","."));if(!(n>0))return
 const whereOf=i=>i>=4?"above":"below";
 const keyBtns=(keys,act,dis)=>keys.map(l=>`<button type="button" class="${/^[0-9]$/.test(l)?"":"w"}" data-act="${act}" data-k="${l}" aria-label="${l}" ${dis?"disabled":""}>${l}</button>`).join("");
 const typedShow=t=>t.length?(t.length>2?t.slice(0,-2)+"."+t.slice(-2):"0."+t.padStart(2,"0"))+" m":"0.00 m";
-function finConfirm(r,n,where){
-  return `<div class="hjpop ljconf ${where}" role="group" aria-label="Finish this athlete"><span>Finish ${esc(pname(r.p))} with ${n}?</span><div class="row" style="flex-wrap:nowrap"><button type="button" class="btn" style="flex:1" data-act="ffinno">Cancel</button><button type="button" class="btn navy" style="flex:1" data-act="ffinyes">Finish</button></div></div>`;
-}
+/* END (decision 86): one tap ends an athlete, press and hold ENDED brings them back (decision 87) */
 function finCell(f,r,i,dis,unit){
-  const fin=!!r.m.fin;const n=Object.keys((unit==="throw"?r.m.t:r.m.a)||{}).filter(k=>((unit==="throw"?r.m.t:r.m.a)||{})[k]).length;
-  return `<td style="position:relative"><button type="button" class="stbtn" style="min-width:72px" data-act="ffin" data-id="${esc(r.id)}" aria-pressed="${fin}" ${dis?"disabled":""}>${fin?"Put back":"Finish"}</button>${A.f.conf===r.id?finConfirm(r,plural(n,unit==="throw"?"throw":"jump"),whereOf(i)):""}</td>`;
+  const fin=!!r.m.fin;
+  return `<td><button type="button" class="stbtn endbtn" style="min-width:84px" data-act="ffin" data-end="1" data-id="${esc(r.id)}" aria-pressed="${fin}" ${fin?`aria-label="${esc(pname(r.p))} ended. Press and hold to bring back"`:""} ${dis?"disabled":""}>${fin?"ENDED":"END"}</button></td>`;
 }
 /* ---------- A1.9 high jump, iPad ---------- */
 function hjPopHtml(f,r,h,where,isUp){
@@ -114,12 +112,12 @@ function hjControls(f,v,edit){
 }
 function hjTable(f,v,edit){
   const {rows,plan}=v;const hts=plan.heights;const up=!v.fin&&v.turn.up>=0?v.rows[v.turn.up]:null;
-  const head=`<th class="hjs1">No.</th><th class="hjs2">Athlete</th>${hts.map(h=>`<th style="text-align:center" class="${h===plan.cur?"curh":""}">${fmtHeight(h)}</th>`).join("")}<th class="num">Best</th><th>Place</th><th class="num">Points</th>`;
+  const head=`<th class="hjs1">No.</th><th class="hjs2">Athlete</th>${hts.map(h=>`<th style="text-align:center" class="${h===plan.cur?"curh":""}">${fmtHeight(h)}</th>`).join("")}<th class="num">Best</th><th>Place</th><th class="num">Points</th><th class="hjend">END</th>`;
   const body=rows.map((r,i)=>`<tr><td class="hjs1" style="text-align:center;font-weight:800">${r.no}</td><td class="nmcell hjs2"><span class="htag">${hdot(r.p.h)}<b>${esc(pname(r.p))}</b></span>${up&&r.id===up.id?` <span class="chip">Up</span>`:v.turn.next>=0&&!v.fin&&rows[v.turn.next].id===r.id?` <span class="chip">Next</span>`:""}</td>${hts.map(h=>{
     const val=(r.m.h||{})[h]||"";const isUp=!!up&&r.id===up.id&&h===plan.cur;const open=A.f.pop&&A.f.pop.id===r.id&&+A.f.pop.h===h;
     const dis=!edit||(plan.cur!=null&&h>plan.cur)||(plan.cur==null&&!val);
     const c=/O$/.test(val)?"clear":hjOutCell(f,r,h)?"out":val.includes("-")?"pass":"";
-    return `<td style="text-align:center;padding:5px;position:relative"><button type="button" class="hjc ${c}${isUp?" upc":""}" data-act="hjpop" data-id="${esc(r.id)}" data-h="${h}" aria-label="${esc(pname(r.p))} at ${fmtHeight(h)} metres: ${esc(val?hjShow(val):"not tried")}${isUp?", up now":""}" ${dis?"disabled":""}>${esc(hjShow(val))||" "}</button>${open?hjPopHtml(f,r,h,whereOf(i),isUp):""}</td>`}).join("")}<td class="num"><span class="bestm">${r.best?fmtHeight(r.best):"&ndash;"}</span></td>${resultCells(r)}</tr>`);
+    return `<td style="text-align:center;padding:5px;position:relative"><button type="button" class="hjc ${c}${isUp?" upc":""}" data-act="hjpop" data-id="${esc(r.id)}" data-h="${h}" aria-label="${esc(pname(r.p))} at ${fmtHeight(h)} metres: ${esc(val?hjShow(val):"not tried")}${isUp?", up now":""}" ${dis?"disabled":""}>${esc(hjShow(val))||" "}</button>${open?hjPopHtml(f,r,h,whereOf(i),isUp):""}</td>`}).join("")}<td class="num"><span class="bestm">${r.best?fmtHeight(r.best):"&ndash;"}</span></td>${resultCells(r)}${finCell(f,r,i,!edit,"hj").replace("<td>",`<td class="hjend">`)}</tr>`);
   return {head,body};
 }
 /* a try added to a box. The box the athlete on screen is up on only takes a try if it is as it was drawn (the other teacher may have saved it) */
@@ -178,7 +176,7 @@ async function fieldKeep(){
   if(!roundDone(v.rows,v.rule)){A.f.keepMsg="Finish this round first: some athletes have not jumped yet.";A.f.keepPrev=[];render();return}
   const ids=keepTop(v.rows,n,v.rule);
   if(!ids.length){A.f.keepMsg="Only "+v.rows.filter(r=>r.best>0).length+" marks so far. No one is finished.";A.f.keepPrev=[];render();return}
-  A.f.keepPrev=ids;A.f.keepMsg="Kept the top "+n+" (equal marks stay in). "+plural(ids.length,"athlete")+" finished. Tap Put back on an athlete to change it.";
+  A.f.keepPrev=ids;A.f.keepMsg="Kept the top "+n+" (equal marks stay in). "+plural(ids.length,"athlete")+" finished. Press and hold ENDED on an athlete to bring them back.";
   await fieldWrite(f,{marks:Object.fromEntries(ids.map(id=>[id,{fin:true}]))});
 }
 async function fieldKeepUndo(){
@@ -227,24 +225,24 @@ function renderFieldTable(f){
   let chips,head,body,note,extra="",wrapCls="";
   if(ev.style==="height"){
     const t=hjTable(f,v,edit);head=t.head;body=t.body;wrapCls="hjgrid";extra=hjControls(f,v,edit);chips="";
-    note=`Tap the highlighted box for the athlete who is up, then Clear, Miss or Pass. O is a clear, X a miss. A pass after a miss shows as X Pass. ${rule.tries} misses in a row is out, and misses carry on to the next height after a pass. A new height is added after each round, and the list goes on until every athlete is out. It scrolls sideways, with the names kept in view, and opens at the height now. Tap any other box to fix it. Equal heights: fewer misses at that height wins, then fewer misses overall, then they share the place.`;
+    note=`Tap the highlighted box for the athlete who is up, then Clear, Miss or Pass. O is a clear, X a miss. A pass after a miss shows as X Pass. ${rule.tries} misses in a row is out, and misses carry on to the next height after a pass. A new height is added after each round, and the list goes on until every athlete is out. It scrolls sideways, with the names kept in view, and opens at the height now. END stops an athlete at once, for one far too low to carry on (press and hold ENDED to bring them back). Tap any other box to fix it. Equal heights: fewer misses at that height wins, then fewer misses overall, then they share the place.`;
   }else if(ev.style==="throw"){
     const w=weightLabel(ev,A.cfg,f.x,f.g);const doc=v.G?v.G.doc:{};const again=Object.keys(doc.tg||{}).filter(k=>doc.tg[k]).length;
     const sd=setdControl(v,dis);const meas=rows.filter(r=>r.m.best&&r.fair).length;
     chips=`${w?`<span class="chip info">${esc(w)}</span>`:""}<span class="chip">${again} throwing again, about ${A.f.guide||10}</span>${doc.tgo&&!v.fin?`<button type="button" class="btn small" data-act="tgchange" ${dis?"disabled":""}>Change who throws again</button>`:""}<span class="chip">${meas} measured, about 5</span>${sd.html}`;
     extra=sd.bad?`<div class="msg warn" style="margin-bottom:12px">${esc(sd.bad)}</div>`:"";
-    head=`<th>No.</th><th>Athlete</th>${Array.from({length:rule.attempts},(_,a)=>`<th style="text-align:center">Throw ${a+1}</th>`).join("")}<th>Measured mark</th><th>Place</th><th class="num">Points</th><th>No show</th><th>Finish</th>`;
-    body=rows.map((r,i)=>`<tr><td style="text-align:center;font-weight:800">${r.no}</td><td class="nmcell"><span class="htag">${hdot(r.p.h)}<b>${esc(pname(r.p))}</b></span> ${throwTag(v,r)}</td>${Array.from({length:rule.attempts},(_,a)=>{const val=(r.m.t||{})[a]||"";return `<td style="text-align:center;padding:6px">${throwCell(f,r,a,val,dis||throwDis(v,r,a,val))}</td>`}).join("")}<td>${bestCell(f,r,i,dis)}</td>${resultCells(r)}<td><button type="button" class="stbtn" data-act="fns" data-g="${f.id}" data-id="${esc(r.id)}" aria-pressed="${!!r.m.ns}" ${dis?"disabled":""}>NS</button></td>${finCell(f,r,i,dis,"throw")}</tr>`);
-    note=`Everyone throws once. The official picks who throws again. Tap a box to step through Fair, Foul and Pass. Type a measured mark only for the athletes you measured (534 is 5.34 m). Everyone else with a fair throw is participation: they get the set distance, share a place and get 4 points. No fair throw or no show is 0. Discus and javelin work the same way, each with its own weights.`;
+    head=`<th>No.</th><th>Athlete</th>${Array.from({length:rule.attempts},(_,a)=>`<th style="text-align:center">Throw ${a+1}</th>`).join("")}<th>Measured mark</th><th>Place</th><th class="num">Points</th><th>END</th>`;
+    body=rows.map((r,i)=>`<tr><td style="text-align:center;font-weight:800">${r.no}</td><td class="nmcell"><span class="htag">${hdot(r.p.h)}<b>${esc(pname(r.p))}</b></span> ${throwTag(v,r)}</td>${Array.from({length:rule.attempts},(_,a)=>{const val=(r.m.t||{})[a]||"";return `<td style="text-align:center;padding:6px">${throwCell(f,r,a,val,dis||throwDis(v,r,a,val))}</td>`}).join("")}<td>${bestCell(f,r,i,dis)}</td>${resultCells(r)}${finCell(f,r,i,dis,"throw")}</tr>`);
+    note=`Everyone throws once. The official picks who throws again. Tap a box to step through Fair, Foul and Pass. Type a measured mark only for the athletes you measured (534 is 5.34 m). Everyone else with a fair throw is participation: they get the set distance, share a place and get 4 points. No fair throw is 0. END stops an athlete at once (press and hold ENDED to bring them back). Discus and javelin work the same way, each with its own weights.`;
   }else{
     chips=`<span class="chip">Up to ${rule.attempts} jumps each</span><span class="chip">${rows.filter(r=>!r.m.ns&&!r.m.fin&&attemptsUsed(r,rule)<rule.attempts).length} still jumping</span>${keepControls(v,dis)}`;
     extra=A.f.keepMsg?`<div class="msg ok" style="margin-bottom:12px">${esc(A.f.keepMsg)}</div>`:"";
-    head=`<th>No.</th><th>Athlete</th>${Array.from({length:rule.attempts},(_,a)=>`<th style="text-align:center">Jump ${a+1}</th>`).join("")}<th class="num">Best</th><th>Place</th><th class="num">Points</th><th>No show</th><th>Finish</th>`;
+    head=`<th>No.</th><th>Athlete</th>${Array.from({length:rule.attempts},(_,a)=>`<th style="text-align:center">Jump ${a+1}</th>`).join("")}<th class="num">Best</th><th>Place</th><th class="num">Points</th><th>END</th>`;
     body=rows.map((r,i)=>`<tr class="${!v.fin&&i===v.turn.up?"selrow":""}">${nameCell(r,v,i)}${Array.from({length:rule.attempts},(_,a)=>{
       const val=(r.m.a||{})[a]||"";const isUp=!v.fin&&i===v.turn.up&&a===attemptsUsed(r,rule);const open=A.f.pop&&A.f.pop.id===r.id&&A.f.pop.a===a;const off=!val&&(r.m.ns||r.m.fin);
       const c=(val==="x"?"foul":val==="-"?"pass":"")+(isUp?" upc":"");
-      return `<td style="text-align:center;padding:5px;position:relative"><button type="button" class="hjc ${c}" data-act="ljpop" data-id="${esc(r.id)}" data-a="${a}" aria-label="${esc(pname(r.p))} jump ${a+1}${isUp?", up now":""}" ${dis||off?"disabled":""}>${off?"&ndash;":esc(val==="x"?"X":val==="-"?"Pass":fmtCell(val))||" "}</button>${open?ljPopHtml(f,r,a,whereOf(i)):""}</td>`}).join("")}<td class="num"><span class="bestm">${r.best?fmtMark(r.best):"&ndash;"}</span></td>${resultCells(r)}<td><button type="button" class="stbtn" data-act="fns" data-g="${f.id}" data-id="${esc(r.id)}" aria-pressed="${!!r.m.ns}" ${dis?"disabled":""}>NS</button></td>${finCell(f,r,i,dis,"jump")}</tr>`);
-    note=`Tap the highlighted box for the athlete who is up. Type the distance (534 is 5.34 m), or tap Foul or Pass. Everyone can take up to 3 jumps, in the same order each round. Finish ends an athlete's jumping, and Keep top N finishes everyone below the Nth best mark. The official decides. Everyone with a valid mark gets points; no valid mark gets 0.`;
+      return `<td style="text-align:center;padding:5px;position:relative"><button type="button" class="hjc ${c}" data-act="ljpop" data-id="${esc(r.id)}" data-a="${a}" aria-label="${esc(pname(r.p))} jump ${a+1}${isUp?", up now":""}" ${dis||off?"disabled":""}>${off?"&ndash;":esc(val==="x"?"X":val==="-"?"Pass":fmtCell(val))||" "}</button>${open?ljPopHtml(f,r,a,whereOf(i)):""}</td>`}).join("")}<td class="num"><span class="bestm">${r.best?fmtMark(r.best):"&ndash;"}</span></td>${resultCells(r)}${finCell(f,r,i,dis,"jump")}</tr>`);
+    note=`Tap the highlighted box for the athlete who is up. Type the distance (534 is 5.34 m), or tap Foul or Pass. Everyone can take up to 3 jumps, in the same order each round. END ends an athlete's jumping at once (press and hold ENDED to bring them back), and Keep top N finishes everyone below the Nth best mark. The official decides. Everyone with a valid mark gets points; no valid mark gets 0.`;
   }
   const cols=(head.match(/<th/g)||[]).length;
   return `${lockBar()}${fieldHead(f,v)}<div class="row" style="margin-bottom:12px;gap:12px;align-items:center">${chips}</div>${extra}
@@ -450,7 +448,6 @@ function renderFieldPhone(f){
   if(!r)return `${lockBar()}<div class="stack" style="gap:8px">${racehead("No athletes yet")}<div class="msg info">Add the athletes as they arrive.</div>${addBtn}${tools}</div>`;
   const nx=v.turn.next>=0?rows[v.turn.next]:null;
   const nameBlock=`<span class="htag bigath"><span class="hdot h${esc(r.p.h)}" style="width:30px;height:30px;font-size:.9rem">${esc(r.p.h)}</span>${esc(pname(r.p))}</span>`;
-  const confirm=(n)=>A.f.conf===r.id?`<div class="msg warn">Finish ${esc(pname(r.p))} with ${n}?<div class="row" style="margin-top:8px;flex-wrap:nowrap"><button type="button" class="btn" style="flex:1" data-act="ffinno">Cancel</button><button type="button" class="btn navy" style="flex:1" data-act="ffinyes">Finish</button></div></div>`:"";
   if(ev.style==="height"){
     const p=v.plan;const mh=r.m.h||{};const at=p.cur!=null?p.cur:p.heights[0];const box=mh[at]||"";
     const up=v.turn.up>=0;const tryData=up?`data-act="hjtry" data-id="${esc(r.id)}" data-h="${at}" data-box="${esc(box)}"`:"";const td=edit&&up?"":"disabled";
@@ -462,7 +459,7 @@ function renderFieldPhone(f){
     return `${lockBar()}<div class="stack" style="gap:8px">${racehead(`Round ${p.cur!=null?p.at+1:p.heights.length} &middot; ${p.left} left in`)}
       <div class="row" style="flex-wrap:nowrap;justify-content:space-between;align-items:center"><div><span class="label">Bar now</span><br><b class="stepval" style="text-align:left">${p.cur!=null?fmtHeight(p.cur)+" m":"All out"}</b></div><button type="button" class="btn" data-act="fedit">Set heights</button></div>
       ${A.f.edit?phoneHjControls(f,v,edit):""}${p.left===3&&p.cur!=null?`<div class="msg warn">3 left. The sheet raise is now 3 cm. The official decides the next height.</div>`:""}${main}${tools}</div>
-      <div class="pbar"><div class="wrap">${undoBtn}${addBtn}</div></div>`;
+      <div class="pbar"><div class="wrap">${undoBtn}${up?`<button type="button" class="btn" data-act="ffinphone" ${dis}>END</button>`:""}${addBtn}</div></div>`;
   }
   if(ev.style==="throw"){
     const t=r.m.t||{};const n=rule.attempts;const cnt=Object.keys(t).filter(k=>t[k]).length;
@@ -475,8 +472,8 @@ function renderFieldPhone(f){
     else main=`${nameBlock}<span class="muted" style="font-size:.9rem">Marker ${r.no} &middot; Next: ${nx?esc(pname(nx.p)):"no one"}</span>
       <div class="attrow" style="grid-template-columns:repeat(${Math.min(n,4)},minmax(0,1fr))">${Array.from({length:n},(_,i)=>`<div class="attcell ${i===cnt?"cur":""} ${t[i]==="Foul"?"foul":""}" ${edit&&t[i]?`data-act="ttap" data-g="${f.id}" data-id="${esc(r.id)}" data-a="${i}"`:""}><span>Throw ${i+1}</span><b style="font-size:1.05rem">${esc(t[i]||"")||" "}</b></div>`).join("")}</div>
       <button type="button" class="btn go big" style="min-height:96px" data-act="fthrow" data-v="Fair" ${dis}>Fair</button><div class="row" style="flex-wrap:nowrap"><button type="button" class="btn redfill big" style="flex:1;min-height:96px" data-act="fthrow" data-v="Foul" ${dis}>Foul</button><button type="button" class="btn big" style="flex:1;min-height:96px" data-act="fthrow" data-v="Pass" ${dis}>Pass</button></div>`;
-    const finBtn=`<button type="button" class="btn" data-act="ffinphone" ${dis}>Finish athlete</button>`;
-    return `${lockBar()}<div class="stack" style="gap:8px">${racehead(sub)}${v.turn.up>=0?confirm(plural(cnt,"throw")):""}${main}${tools}</div>
+    const finBtn=`<button type="button" class="btn" data-act="ffinphone" ${dis}>END</button>`;
+    return `${lockBar()}<div class="stack" style="gap:8px">${racehead(sub)}${main}${tools}</div>
       <div class="pbar"><div class="wrap">${undoBtn}${v.turn.up>=0?finBtn:""}${addBtn}</div></div>`;
   }
   /* long jump */
@@ -490,9 +487,9 @@ function renderFieldPhone(f){
     <div class="row" style="flex-wrap:nowrap"><button type="button" class="btn redfill big" style="flex:1;min-height:64px" data-act="ffoul" ${pdis}>Foul</button><button type="button" class="btn big" style="flex:1;min-height:64px" data-act="fpass" ${pdis}>Pass</button></div>
     <div class="markshow" aria-live="polite">${cur<0&&!t?"All jumps done":typedShow(t)}</div><div class="keypad fp">${keyBtns(["1","2","3","4","5","6","7","8","9","Clear","0","Back"],"fkey",!edit||(cur<0&&!t))}</div>`;
   return `${lockBar()}<div class="stack" style="gap:8px">${racehead(`Athlete ${r.no} of ${rows.length} &middot; ${left} still jumping`)}
-    <div class="row" style="flex-wrap:nowrap;justify-content:space-between;align-items:center">${nameBlock}<button type="button" class="btn" data-act="fcut">Cut the field</button></div>${keepPanel}${confirm(plural(used,"jump"))}
+    <div class="row" style="flex-wrap:nowrap;justify-content:space-between;align-items:center">${nameBlock}<button type="button" class="btn" data-act="fcut">Cut the field</button></div>${keepPanel}
     <span class="muted" style="font-size:.9rem">Next: ${nx&&nx!==r?esc(pname(nx.p)):(nextAfter(rows,A.f.i,v)!==A.f.i?esc(pname(rows[nextAfter(rows,A.f.i,v)].p)):"no one")}</span>${main}${tools}</div>
-    <div class="pbar"><div class="wrap">${undoBtn}<button type="button" class="btn" data-act="ffinphone" ${dis}>Finish athlete</button><button type="button" class="btn navy" data-act="fsave">${t?"Save mark":"Next athlete"}</button></div></div>`;
+    <div class="pbar"><div class="wrap">${undoBtn}<button type="button" class="btn" data-act="ffinphone" ${dis}>END</button><button type="button" class="btn navy" data-act="fsave">${t?"Save mark":"Next athlete"}</button></div></div>`;
 }
 /* the jump box the keypad fills: the one tapped to change, else the next empty one */
 function jumpBox(v,r){
@@ -537,3 +534,7 @@ function fieldPhoneAct(kind,val){
 }
 /* Finish: the official ends an athlete's jumping at any time (decision 73) */
 async function fieldFinishAth(f,id){A.f.conf=null;await setField(f,id,"fin",0,true)}
+/* END on the phone: ends the athlete on screen and moves to the next. Undo last brings them back */
+function fieldEndPhone(f){const v=fieldView(f);const r=fieldCur(v);if(!r||v.fin)return;
+  if(A.f.typed){toast("Save or clear the typed mark first.");return}
+  A.f.pop=null;fieldFinishAth(f,r.id).then(()=>{const x=fieldView(f);A.f.i=nextAfter(x.rows,A.f.i,x);A.f.id=null;fSave();render();if(!x.rows.some(q=>liveAth(q,x)))toast("Everyone has finished. Tap Group finished.")})}

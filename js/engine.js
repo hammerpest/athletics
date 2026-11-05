@@ -266,7 +266,7 @@ function hjOutAt(mh,tries){
    Returns the heights so far with some ahead, the current height (null when all are out), and who is left. */
 function hjPlan(cfg,ev,rule,x,g,ids,marks,opt){
   opt=opt||{};const sheetStart=hjStart(cfg,x,g);const start=opt.hs>0?opt.hs:sheetStart;const hn=opt.hn||{};const cell=(id,h)=>((marks[id]||{}).h||{})[h]||"";
-  const isIn=(id,upto)=>!(marks[id]||{}).ns&&!hjOutBy((marks[id]||{}).h,rule.tries,upto);
+  const isIn=(id,upto)=>!(marks[id]||{}).ns&&!(marks[id]||{}).fin&&!hjOutBy((marks[id]||{}).h,rule.tries,upto);
   const steps=rule.raise[x]||rule.raise.F;
   const raiseAt=(n,left)=>left<=rule.lastLeft?rule.lastRaise:steps[Math.min(n,steps.length-1)];
   /* boxes already filled show where the bar really went, so a late athlete or a corrected box never moves it */

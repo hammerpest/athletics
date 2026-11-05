@@ -507,5 +507,9 @@ t("high jump: 3 left is shown as plan.left, and the sheet's next raise drops to 
   const ids=["a","b","c","d"];const m={a:{h:{110:"O"}},b:{h:{110:"XXX"}},c:{h:{110:"O"}},d:{h:{110:"O"}}};
   const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{});eq(p.left,3);eq(p.cur,113);
 });
+t("high jump: an ended athlete leaves the bar and the count, and keeps the best height",()=>{
+  const ids=["a","b","c","d"];const m={a:{h:{110:"O"}},b:{h:{110:"O"},fin:true},c:{h:{110:"XXX"}},d:{h:{110:"O"}}};
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{});eq(p.left,2);eq(p.cur,113);eq(p.isIn("b",113),false);
+});
 console.log(`${n-fail} of ${n} engine tests passed`);
 process.exit(fail?1:0);

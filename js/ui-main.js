@@ -224,17 +224,14 @@ const ACT={
   rfadd:()=>{const f=A.R.fgroups.find(x=>x.key===A.r.fkey);if(!f)return;A.f.filter="";A.modal={t:"fieldAdd",gid:f.id};render()},
   rfreopen:()=>{const f=A.R.fgroups.find(x=>x.key===A.r.fkey);if(f)fieldWrite(f,{final:false})},
   faddnew:()=>{const f=modalGroup();if(!f)return;A.modal={t:"addStudent",x:f.x,ages:[f.g],then:async st=>{await fieldAdd(f,st.id)}};render()},
-  fns:el=>{const f=fieldGroupById(el.dataset.g);if(!f)return;const on=!!((fieldDocOf(f).marks||{})[el.dataset.id]||{}).ns;setNs(f,el.dataset.id,!on)},
   hjtap:el=>{const f=fieldGroupById(el.dataset.g);if(f)hjStep(f,el.dataset.id,+el.dataset.h)},
   hjpop:el=>{A.f.conf=null;const same=A.f.pop&&A.f.pop.id===el.dataset.id&&+A.f.pop.h===+el.dataset.h;A.f.pop=same?null:{id:el.dataset.id,h:+el.dataset.h};render()},
   hjadd:el=>hjAdd(el),
   hjsreset:()=>{const f=fieldGroupOpen();if(f)fieldWrite(f,{hs:0})},
   hjnreset:()=>{const f=fieldGroupOpen();if(!f)return;const p=fieldView(f).plan;if(p.cur!=null)fieldWrite(f,{hn:{[p.at+1]:0}})},
   ljpop:el=>ljPopOpen(el),ljkey:el=>{if(A.f.mopen!=null||A.f.pop)ljKey(el.dataset.k)},ljput:el=>ljPut(el.dataset.v),ljcancel:()=>{A.f.pop=null;A.f.typed="";fSave();render()},
-  ffin:el=>{const f=fieldGroupOpen();if(!f)return;A.f.pop=null;A.f.typed="";const r=fieldView(f).rows.find(x=>x.id===el.dataset.id);if(!r)return;if(r.m.fin)setField(f,r.id,"fin",0,false);else{A.f.conf=r.id;render()}},
-  ffinno:()=>{A.f.conf=null;render()},
-  ffinyes:()=>{const f=fieldGroupOpen();if(!f||!A.f.conf)return;const id=A.f.conf;const v=fieldView(f);fieldFinishAth(f,id).then(()=>{if(phoneNow()){const x=fieldView(f);A.f.i=nextAfter(x.rows,A.f.i,x);A.f.id=null;fSave();render()}})},
-  ffinphone:()=>{const f=fieldGroupOpen();if(!f)return;const r=fieldCur(fieldView(f));if(r){A.f.conf=r.id;render()}},
+  ffin:el=>{const f=fieldGroupOpen();if(!f)return;A.f.pop=null;A.f.typed="";const r=fieldView(f).rows.find(x=>x.id===el.dataset.id);if(!r)return;if(endHeld)return;if(r.m.fin){toast("Press and hold ENDED to bring them back.");return}fieldFinishAth(f,r.id)},
+  ffinphone:()=>{const f=fieldGroupOpen();if(f)fieldEndPhone(f)},
   ffoul:()=>fieldPhoneAct("foul"),
   fkeep:()=>fieldKeep(),fkeepundo:()=>fieldKeepUndo(),
   fcut:()=>{A.f.cut=!A.f.cut;render()},fedit:()=>{A.f.edit=!A.f.edit;render()},
@@ -339,6 +336,14 @@ window.addEventListener("resize",()=>{clearTimeout(rsT);rsT=setTimeout(()=>{
   if(phoneNow()!==wasPhone||slimHdr()!==h.classList.contains("slim")){wasPhone=phoneNow();render()}
   else document.documentElement.style.setProperty("--hdrh",h.offsetHeight+"px");
 },150)});
+/* press and hold ENDED for about a second to bring an athlete back (decision 87) */
+let endTimer=null,endHeld=false;
+document.addEventListener("pointerdown",e=>{
+  const el=e.target.closest("[data-end]");endHeld=false;if(!el||el.disabled||el.getAttribute("aria-pressed")!=="true")return;
+  clearTimeout(endTimer);endTimer=setTimeout(()=>{const f=fieldGroupOpen();if(!f)return;endHeld=true;setField(f,el.dataset.id,"fin",0,false)},900);
+});
+document.addEventListener("contextmenu",e=>{if(e.target.closest&&e.target.closest("[data-end]"))e.preventDefault()});
+["pointerup","pointerleave","pointercancel"].forEach(t=>document.addEventListener(t,e=>{if(e.target.closest&&e.target.closest("[data-end]"))clearTimeout(endTimer)},true));
 document.addEventListener("click",e=>{
   const el=e.target.closest("[data-act]");
   if(!el){if(A.menu&&!e.target.closest(".jobpill")){A.menu=false;renderHeader()}return}

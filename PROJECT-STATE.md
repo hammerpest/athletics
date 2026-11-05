@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 6 November 2026, version au. Replaces 6 November version at.
+Date: 6 November 2026, version av. Replaces 6 November version au.
+
+Changes on 6 November 2026 (version av): Aths Opt 1.4 is built in test mode on the local staging branch, nothing pushed. It builds decisions 86 to 89: every field athlete (iPad grids and phone, including high jump) has an END button; one tap ends the athlete with no question, the button reads ENDED, and press and hold for about a second brings them back; on the phone END is in the bottom bar, ends the athlete on screen and moves on, and Undo last brings them back; an ended high jump athlete leaves the bar and the left in count and keeps their best height; the No show column is gone from the long jump and throws grids. Question 67 was built with the recommended answers (Undo last on the phone; an ended athlete keeps marks and points) and is still open for Jordan. Engine tests 77 of 77; flow tests 0 failed (including END on all events, hold to bring back, phone Undo last). Check 1: 950 screenshots against the 1.3 build; only field screens differ (END column or button, no No show, no Finish question), then re-shot after the review fixes. Check 2: by script only, not repeated in Claude in Chrome. Check 3: a fresh-eyes agent found these, all fixed: the high jump END column was off screen on iPad portrait (now fixed to the right edge); long press could be taken by the browser (select, callout and menu blocked); a quick tap after a hold could end the athlete again; END on the phone with a typed mark now asks to save or clear it first; the Keep top message said Put back; a toast says Everyone has finished when the last athlete is ended. Its claim that Undo last did not bring an athlete back was wrong, and a new test shows it does. Not fixed: an ended high jump athlete's boxes can still be tapped to fix them; the phone summary has no Ended label; a keyboard cannot hold ENDED. Ask now: Jordan tries Aths Opt 1.4, question 67, question 63.
 
 Changes on 6 November 2026 (version au): Jordan approved the END boards A1.8, A1.9, A1.10, A1.18, A1.19 and A1.21, and the removal of No show (decision 90). All 28 boards are approved. END and the No show removal are approved but not built; they are the next build, Aths Opt 1.4 (the Supabase store moves to 1.5). Ask now: question 67 (phone END and undo, and an ended throws athlete), question 63, and Jordan's go to build.
 
@@ -413,6 +415,7 @@ Ask now: 63.
 5. (Done 5 November 2026) Decisions 40 to 46 built as Aths Opt 1.1, with checks 1 to 3.
 6. (Done 5 November 2026) Decisions 48 to 50 built as Aths Opt 1.2, with checks 1 to 3.
 6a. (Done 6 November 2026) Decisions 53 to 85 built as Aths Opt 1.3, with checks 1 to 3 (version aq).
+6a2. (Done 6 November 2026) Decisions 86 to 89 (END, no No show) built as Aths Opt 1.4 (version av). The Supabase build is Aths Opt 1.5.
 6b. NOW: Jordan looks at Aths Opt 1.2 and 1.3 (one local build). Once Jordan approves it, save the screenshots to baseline/.
 6b. Jordan answers 43 to 47 and edits docs/high-jump-flow.md and its sheet wording. Then the same flow is written for long jump, shot put and discus, and the changes are drawn as boards before they are built.
 7. Jordan makes the GitHub repo and the Supabase project (Sydney) from click-by-click steps. Aths Opt 1.4 (the Supabase store) goes live on staging with made-up data.
