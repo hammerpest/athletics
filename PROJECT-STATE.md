@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 6 November 2026, version as. Replaces 6 November version ar.
+Date: 6 November 2026, version at. Replaces 6 November version as.
+
+Changes on 6 November 2026 (version at): Jordan said No show (NS) is not needed on field events (decision 89). Removed from A1.8 and A1.18 (the No show column) and from the sample data on A1.26 and A1.27; republished to the canvas. Aths Opt 1.3 still has No show; it comes out in the next build. Nothing is built. Ask now: Jordan's OK on the six END boards, and question 67.
 
 Changes on 6 November 2026 (version as): END button (decisions 86 to 88) drawn and published to the canvas (version 33). Redrawn: A1.8 (long jump), A1.18 (shot put and discus) and A1.9 (high jump, new END column) on the iPad: one tap on END ends the athlete with no question, the button reads ENDED, and pressing and holding it for about a second brings them back; an ended high jump athlete leaves the order and the count of athletes left. A1.10, A1.19 and A1.21 (phone): END replaces Finish athlete in the bottom bar, ends the athlete on screen and moves to the next. The Finish confirmation is gone. The board logic was edited but not run or looked at as a picture. Nothing is built. Ask now: Jordan's OK on the six boards, and question 67.
 
@@ -354,6 +356,8 @@ Assumed in the draft, not decided: race numbers count track heats only, and fiel
 86. (6 November 2026) Every athlete on every field event (high jump, long jump, shot put, discus; iPad and phone) gets an END button. One tap ends the athlete at once, with no confirmation. It replaces the Finish button and the Finish athlete confirmation. The athlete keeps their marks and points; they just take no more attempts.
 87. (6 November 2026) To undo END, press and hold ENDED for about 1 second. A quick tap on ENDED does nothing (it only shows the hint), so a wrong tap cannot bring someone back by accident.
 88. (6 November 2026) END works on high jump too, for an athlete who is far too low to carry on. Keep top N stays for long jump.
+
+89. (6 November 2026) No show (NS) is removed from every field event. The station teacher only adds the athletes who are in front of them, so an athlete who is absent is simply never added. Athletes added by mistake can be taken off Take Names.
 
 ## 4. Rules and constraints
 

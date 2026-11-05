@@ -402,7 +402,7 @@ def field_marks(dark):
 <sc-if value="{{{{canUndoKeep}}}}" hint-placeholder-val="{{{{false}}}}"><button type="button" class="btn" onClick="{{{{keepUndo}}}}">Undo Keep top</button></sc-if></div>
 <sc-if value="{{{{keepMsg}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg ok" style="margin-bottom:12px">{{{{keepMsg}}}}</div></sc-if>
 <div class="panel" style="padding:0"><div class="tablewrap" style="overflow:visible"><table>
-<thead><tr><th>No.</th><th>Athlete</th><th style="text-align:center">Jump 1</th><th style="text-align:center">Jump 2</th><th style="text-align:center">Jump 3</th><th class="num">Best</th><th>Place</th><th class="num">Points</th><th>No show</th><th>END</th></tr></thead>
+<thead><tr><th>No.</th><th>Athlete</th><th style="text-align:center">Jump 1</th><th style="text-align:center">Jump 2</th><th style="text-align:center">Jump 3</th><th class="num">Best</th><th>Place</th><th class="num">Points</th><th>END</th></tr></thead>
 <tbody><sc-for list="{{{{rows}}}}" as="r" hint-placeholder-count="7"><tr class="{{{{r.c}}}}">
 {ROW_NAME.format()}
 <sc-for list="{{{{r.cells}}}}" as="c" hint-placeholder-count="3"><td style="text-align:center;padding:5px;position:relative"><button type="button" class="hjc {{{{c.c}}}}" style="min-width:84px" disabled="{{{{c.dis}}}}" aria-label="{{{{c.aria}}}}" onClick="{{{{c.tap}}}}">{{{{c.v}}}}</button>
@@ -412,7 +412,6 @@ def field_marks(dark):
 <div class="row" style="flex-wrap:nowrap"><button type="button" class="btn" style="flex:1" onClick="{{{{c.cancel}}}}">Cancel</button><button type="button" class="btn navy" style="flex:1" onClick="{{{{c.save}}}}">Save mark</button></div></div></sc-if></td></sc-for>
 <td class="num"><span class="bestm">{{{{r.best}}}}</span></td>
 {ROW_PLACE.format()}
-<td><button type="button" class="stbtn" aria-pressed="{{{{r.ns}}}}" onClick="{{{{r.tapNs}}}}">NS</button></td>
 <td><button type="button" class="stbtn endbtn" style="min-width:84px" aria-pressed="{{{{r.fin}}}}" onPointerDown="{{{{r.endDown}}}}" onPointerUp="{{{{r.endUp}}}}" onPointerLeave="{{{{r.endUp}}}}" onClick="{{{{r.tapFin}}}}">{{{{r.finL}}}}</button></td>
 </tr></sc-for></tbody></table></div></div>
 <p class="muted" style="font-size:.9rem;margin:10px 0 0">Tap the highlighted box for the athlete who is up. Type the distance (534 is 5.34 m), or tap Foul or Pass. Everyone can take up to 3 jumps, in the same order each round. END ends an athlete's jumping at once (press and hold ENDED to bring them back), and Keep top N finishes everyone below the Nth best mark. The official decides. Everyone with a valid mark gets points; no valid mark gets 0.</p>
@@ -453,7 +452,7 @@ def field_marks(dark):
               tap: () => set({ pop: isPop ? null : { i, a }, typed: /^[0-9]+$/.test(v) ? v : '', conf: null }), pop: isPop, where: i >= 4 ? 'above' : 'below', show: show(st.typed), keys: isPop ? keys(i, a) : [],
               foul: () => put(i, a, 'x'), pass: () => put(i, a, '-'), cancel: () => set({ pop: null, typed: '' }), save: () => put(i, a, st.typed) }; }) }; }) };
 '''
-    return body, logic, "{ m: " + J(init) + ", ns: {5: true}, fin: {4: true}, finPrev: null, keepN: '4', keepMsg: '', pop: null, typed: '', conf: null, sent: false }"
+    return body, logic, "{ m: " + J(init) + ", ns: {}, fin: {4: true}, finPrev: null, keepN: '4', keepMsg: '', pop: null, typed: '', conf: null, sent: false }"
 
 # ---------- A1.18 Field Station: throws ----------
 def field_throws(dark):
@@ -466,13 +465,12 @@ def field_throws(dark):
 <label class="label" for="setd" style="display:flex;align-items:center;gap:8px;margin-left:auto">Set distance for everyone not measured (m)<input id="setd" class="markin hjin" inputmode="decimal" value="{{{{setTxt}}}}" onChange="{{{{setType}}}}"></label></div>
 <sc-if value="{{{{setBad}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg warn" style="margin-bottom:12px">{{{{setBad}}}}</div></sc-if>
 <div class="panel" style="padding:0"><div class="tablewrap" style="overflow:visible"><table>
-<thead><tr><th>No.</th><th>Athlete</th><th style="text-align:center">Throw 1</th><th style="text-align:center">Throw 2</th><th style="text-align:center">Throw 3</th><th>Measured mark</th><th>Place</th><th class="num">Points</th><th>No show</th><th>END</th></tr></thead>
+<thead><tr><th>No.</th><th>Athlete</th><th style="text-align:center">Throw 1</th><th style="text-align:center">Throw 2</th><th style="text-align:center">Throw 3</th><th>Measured mark</th><th>Place</th><th class="num">Points</th><th>END</th></tr></thead>
 <tbody><sc-for list="{{{{rows}}}}" as="r" hint-placeholder-count="7"><tr>
 <td style="text-align:center;font-weight:800">{{{{r.no}}}}</td><td class="nmcell"><span class="htag"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span><b>{{{{r.n}}}}</b></span><sc-if value="{{{{r.tag}}}}" hint-placeholder-val="{{{{false}}}}"> <span class="chip {{{{r.tagc}}}}">{{{{r.tag}}}}</span></sc-if></td>
 <sc-for list="{{{{r.cells}}}}" as="c" hint-placeholder-count="3"><td style="text-align:center;padding:6px"><button type="button" class="hjc {{{{c.c}}}}" disabled="{{{{c.dis}}}}" aria-label="{{{{c.aria}}}}" onClick="{{{{c.tap}}}}">{{{{c.v}}}}</button></td></sc-for>
 <td><input class="markin" aria-label="{{{{r.markAria}}}}" value="{{{{r.mv}}}}" disabled="{{{{r.noMark}}}}" onChange="{{{{r.chg}}}}" placeholder="{{{{r.ph}}}}"></td>
 {ROW_PLACE.format()}
-<td><button type="button" class="stbtn" aria-pressed="{{{{r.ns}}}}" onClick="{{{{r.tapNs}}}}">NS</button></td>
 <td><button type="button" class="stbtn endbtn" style="min-width:84px" aria-pressed="{{{{r.fin}}}}" onPointerDown="{{{{r.endDown}}}}" onPointerUp="{{{{r.endUp}}}}" onPointerLeave="{{{{r.endUp}}}}" onClick="{{{{r.tapFin}}}}">{{{{r.finL}}}}</button></td>
 </tr></sc-for></tbody></table></div></div>
 <p class="muted" style="font-size:.9rem;margin:10px 0 0">Everyone throws once. The official picks who throws again on the Throw again screen. Tap a box to step through Fair, Foul and Pass. Type a measured mark only for the athletes you measured (534 is 5.34 m). Everyone else with a fair throw is participation: they get the set distance, share a place and get 4 points. No fair throw or no show is 0. Discus and javelin work the same way, each with its own weights.</p>
@@ -507,7 +505,7 @@ def field_throws(dark):
           cells: [0, 1, 2].map((a) => { const v = st.m[i][a] || '', dis = (v === '' && (st.ns[i] || fin[i] || (a >= 1 && !again[i]) || a > nt)); return { dis, v: dis ? '–' : (v || ' '), c: v === 'Fair' ? 'clear' : (v === 'Foul' ? 'out' : (v === 'Pass' ? 'pass' : '')), aria: r.n + ' throw ' + (a + 1) + ': ' + (v || 'not thrown'),
             tap: () => { const m = st.m.map((x) => x.slice()); m[i][a] = seq[(seq.indexOf(v) + 1) % seq.length]; while (m[i].length && m[i][m[i].length - 1] === '') m[i].pop(); set({ m }); } }; }) }; }) };
 '''
-    return body, logic, "{ m: " + J(init) + ", again: {0: true, 1: true, 3: true, 6: true}, mk: ['1124','1006','','1287','','','985'], set: '800', ns: {5: true}, fin: {}, conf: null, sent: false }"
+    return body, logic, "{ m: " + J(init) + ", again: {0: true, 1: true, 3: true, 6: true}, mk: ['1124','1006','','1287','','','985'], set: '800', ns: {}, fin: {}, conf: null, sent: false }"
 
 # ---------- A1.9 Field Station: high jump ----------
 def field_high(dark):
@@ -766,7 +764,7 @@ def field_measure_phone(dark):
       rows: roster.map((r, i) => { const op = st.open === i; return { no: i + 1, n: r.n, h: r.h, off: !fair(i) || !!st.ns[i], c: op ? 'sel' : '', open: op, mark: st.ns[i] ? 'No show' : (!fair(i) ? 'No fair throw' : (isNum(st.mk[i]) ? fmt(st.mk[i]) + ' m' : 'Participation')),
         throws: st.m[i].length ? st.m[i].join(', ') : 'No throws', tap: () => set({ open: op ? null : i, typed: isNum(st.mk[i]) ? st.mk[i] : '' }), show: show(st.typed), keys: op ? keys() : [], cancel: () => set({ open: null, typed: '' }), save: () => put(i, st.typed) }; }) };
 """
-    return body, logic, "{ m: " + J(init) + ", mk: ['1124','1006','','1287','','','985'], set: '800', ns: {5: true}, open: null, typed: '' }"
+    return body, logic, "{ m: " + J(init) + ", mk: ['1124','1006','','1287','','','985'], set: '800', ns: {}, open: null, typed: '' }"
 
 # ---------- A1.27 Field Station phone: throws group results ----------
 def field_throws_summary(dark):
@@ -788,7 +786,7 @@ def field_throws_summary(dark):
     const fair = (i) => st.m[i].includes('Fair'), meas = (i) => fair(i) && !!mk[i];
     const marks = roster.map((r, i) => (meas(i) ? Number(mk[i]) : (fair(i) ? setN : 0))), sorted = marks.filter((b) => b > 0).sort((a, b) => b - a);
     const rows = roster.map((r, i) => { const b = marks[i], pl = b ? sorted.indexOf(b) + 1 : 0, ties = sorted.filter((x) => x === b).length;
-      return { pl: pl || 99, label: pl ? (ties > 1 ? '=' : '') + pl : '–', n: r.n, h: r.h, best: b ? fmt(b) + ' m' + (meas(i) ? '' : ' set') : (i === 5 ? 'No show' : 'No mark'), throws: st.m[i].length ? st.m[i].join(', ') + (meas(i) ? '' : (fair(i) ? ' (participation)' : '')) : 'No throws', pts: b ? ptsFor(pl, ties) : 0 }; })
+      return { pl: pl || 99, label: pl ? (ties > 1 ? '=' : '') + pl : '–', n: r.n, h: r.h, best: b ? fmt(b) + ' m' + (meas(i) ? '' : ' set') : 'No mark', throws: st.m[i].length ? st.m[i].join(', ') + (meas(i) ? '' : (fair(i) ? ' (participation)' : '')) : 'No throws', pts: b ? ptsFor(pl, ties) : 0 }; })
       .sort((a, b) => a.pl - b.pl).map((r) => ({ n: r.n, h: r.h, best: r.best, throws: r.throws, pts: r.pts, pl: r.label, medal: r.pl <= 3, plain: r.pl > 3, mc: 'm' + r.pl }));
     out = { rows, sent: st.sent, notSent: !st.sent, send: () => set({ sent: true }), reset: () => set({ sent: false }) };
 """
