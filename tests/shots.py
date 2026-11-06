@@ -40,7 +40,7 @@ async def run(pw,dev,theme):
     async def shot(p,name):
         await p.wait_for_timeout(150)
         # toasts and the scroll position come and go: they are not part of the screen
-        await p.evaluate("window.scrollTo(0,0);document.getElementById('toast').hidden=true"); await p.wait_for_timeout(50)
+        await p.evaluate("window.scrollTo(0,0);{const t=document.getElementById('toast');if(t)t.hidden=true}"); await p.wait_for_timeout(50)
         await p.screenshot(path=os.path.join(OUT,f"{name}-{dev}-{theme}.png"),full_page=True,animations="disabled")
         # no sideways scroll on any screen
         sw=await p.evaluate("[document.documentElement.scrollWidth,innerWidth]")
@@ -53,7 +53,7 @@ async def run(pw,dev,theme):
     await O.click('.tile[data-job=organiser]')
     await O.click('[data-act=osec][data-v=students]'); await O.click('[data-act=oload]'); await O.click('[data-act=otest]'); await shot(O,"org-students-preview")
     await O.click('[data-act=oimport]'); await O.wait_for_timeout(200)
-    for sec in ["details","students","program","field","points","limits","records","export","lock"]:
+    for sec in ["details","students","program","field","points","limits","records","export","lock","parents"]:
         await O.click(f'[data-act=osec][data-v={sec}]'); await shot(O,f"org-{sec}")
     await O.click('[data-act=menu]'); await shot(O,"org-jobmenu"); await O.click('[data-act=menu]')
     # program: add, remove, Javelin on and off (decision 31)
@@ -306,6 +306,23 @@ async def run(pw,dev,theme):
     await A.click('[data-act=rtab][data-v=hris]'); await shot(A,"results-hris")
     await A.click('[data-act=rtab][data-v=news]'); await shot(A,"results-newsletter")
     await A.click('.hlink[data-job=houses]'); await A.wait_for_timeout(150); await shot(A,"houses")
+    # ---- parents page and Organiser section 10 (A1.29, A1.30, Aths Opt 1.7)
+    PURL=URL.replace("index.html","parents/index.html") if "index.html" in URL else URL.split("?")[0].rstrip("/")+"/parents/index.html?"+(URL.split("?")[1] if "?" in URL else "")
+    await O.click('[data-act=osec][data-v=parents]')
+    PP=await ctx.new_page(); pages.append(PP); PP.on("pageerror",lambda e:errs.append((dev,theme,str(e))))
+    await PP.goto(PURL); await PP.wait_for_timeout(500); await shot(PP,"parents-off")
+    await O.click('[data-act=ptog]'); await O.wait_for_timeout(250); await shot(O,"org-parents-on")
+    await O.click('[data-act=pnames][data-v=short]'); await O.wait_for_timeout(250)
+    await PP.reload(); await PP.wait_for_timeout(500); await shot(PP,"parents-house")
+    for tab in ["age","events","champs","program"]:
+        await PP.click(f'[data-tab={tab}]'); await PP.wait_for_timeout(150); await shot(PP,f"parents-{tab}")
+    await PP.click('[data-tab=find]'); await PP.fill('#pfq','an'); await PP.wait_for_timeout(250); await shot(PP,"parents-find")
+    await O.click('[data-act=pnames][data-v=none]'); await O.wait_for_timeout(250); await PP.reload(); await PP.wait_for_timeout(500)
+    await PP.click('[data-tab=events]'); await PP.wait_for_timeout(150)
+    if not await PP.evaluate("!!document.querySelector('.pgroup[open]')"): await PP.click('.pgroup summary >> nth=0'); await PP.wait_for_timeout(100)
+    await shot(PP,"parents-nonames-events")
+    await O.click('[data-act=pnames][data-v=none]'); await O.wait_for_timeout(200); await O.click('[data-act=ptog]'); await O.wait_for_timeout(250)
+    await PP.close(); pages.remove(PP)
     # ---- lock, new carnival, past year ----
     await O.click('[data-act=osec][data-v=lock]'); await O.click('[data-act=olock]'); await O.wait_for_timeout(200)
     await A.click('.hlink[data-job=results]'); await A.wait_for_timeout(150); await shot(A,"results-locked")

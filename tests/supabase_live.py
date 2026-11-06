@@ -88,6 +88,43 @@ async def main():
     req("/rest/v1/rpc/set_year", {"y": "current"}, org)
     wipe(org)
 
+    # ---- the parents page: no sign-in, off until turned on, codes not ids, names only when allowed
+    anon = lambda have="": req("/rest/v1/rpc/parent_results", {"have": have})
+    check(anon()[1] == {"off": True}, "parents: nothing is given while the page is off")
+    check(req("/rest/v1/roster?select=*")[0] >= 400 or req("/rest/v1/roster?select=*")[1] == [], "parents: the public key cannot read tables directly")
+    studs = [{"id": "Fisher-Xavier-2010", "f": "Xavier", "s": "Fisher", "h": "N", "x": "M", "g": "17"}, {"id": "Hall-Reuben-2010", "f": "Reuben", "s": "Hall", "h": "B", "x": "M", "g": "17"}]
+    req("/rest/v1/roster", [{"id": "M", "doc": {"students": studs}}], org)
+    req("/rest/v1/config", [{"id": "main", "doc": {"name": "Live test", "parents": True, "chief": "Jordan Dennis", "parentsNames": "short"}}], org)
+    req("/rest/v1/heats", [{"id": "r0001", "doc": {"race": 1, "k": "100", "x": "M", "g": "17", "heat": 1, "lanes": {"1": "Fisher-Xavier-2010", "2": "Hall-Reuben-2010"}, "dev": "secret-device"}}], org)
+    req("/rest/v1/times", [{"id": "r0001", "doc": {"lanes": {"1": {"t": 1261, "st": "ok"}, "2": {"t": 1291, "st": "ok"}}, "checked": True}}], org)
+    req("/rest/v1/extras", [{"id": "clk", "doc": {"id": "Ghost-Removed-1999", "f": "Ghost", "s": "Removed", "h": "B", "x": "M", "g": "17"}, "updated_at": "2001-01-01T00:00:00Z"}], m)
+    st_, ex = req("/rest/v1/extras?id=eq.clk&select=updated_at", tok=org)
+    check(isinstance(ex, list) and ex and not ex[0]["updated_at"].startswith("2001"), "a device's old clock cannot set a result's time: updated_at is the server's")
+    req("/rest/v1/heats", [{"id": "r0002", "doc": {"race": 2, "k": "100", "x": "M", "g": "17", "heat": 1, "lanes": {"1": "Nobody-Known-1980"}}}], org)
+    s_, d = anon(); raw = json.dumps(d)
+    check("Nobody-Known-1980" not in raw and "Nobody" not in raw, "parents: an id the roster does not know is hashed, never passed on")
+    req("/rest/v1/heats?id=eq.r0002", tok=org, method="DELETE"); req("/rest/v1/extras?id=eq.clk", tok=org, method="DELETE")
+    s_, d = anon(); raw = json.dumps(d)
+    check(s_ == 200 and isinstance(d, dict) and len(d.get("heats", [])) == 1, "parents: on, results come through with no sign-in")
+    check("Fisher-Xavier-2010" not in raw and "secret-device" not in raw and "Jordan Dennis" not in raw, "parents: no student id, device id or chief name")
+    check({(x["f"], x["s"]) for x in d["students"]} == {("Xavier", "F."), ("Reuben", "H.")}, "parents: first name and surname initial")
+    check(anon(d["v"])[1].get("same") is True, "parents: the same version gives a tiny answer")
+    req("/rest/v1/rpc/doc_update", {"tbl": "config", "doc_id": "main", "patch": {"parentsNames": "none"}}, org)
+    check("Xavier" not in json.dumps(anon()[1]), "parents: names off means no name leaves the server")
+    req("/rest/v1/rpc/doc_update", {"tbl": "config", "doc_id": "main", "patch": {"parentsNames": "short"}}, org)
+    async with async_playwright() as pw0:
+        b0 = await pw0.chromium.launch(); pc = await b0.new_context(viewport={"width": 390, "height": 844}); pp = await pc.new_page()
+        perrs = []; pp.on("pageerror", lambda e: perrs.append(str(e)))
+        await pp.goto(URL.replace("index.html", "parents/index.html")); await asyncio.sleep(2.5)
+        ptxt = await pp.inner_text("#pmain")
+        check("Bradman" in ptxt and "Newcombe" in ptxt and "Results will be here" not in ptxt, "parents page: shows the house points live, with no sign-in")
+        await pp.click("[data-tab=events]"); await asyncio.sleep(0.4)
+        et = await pp.inner_text("#pmain")
+        check("Xavier F." in et and "Fisher" not in et, "parents page: names as first name and surname initial")
+        check(perrs == [], "parents page: no page errors " + str(perrs[:2]))
+        await b0.close()
+    wipe(org)
+
     # ---- two browsers sharing data live
     async with async_playwright() as pw:
         b = await pw.chromium.launch(); errs = []

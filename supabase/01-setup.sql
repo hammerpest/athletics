@@ -55,6 +55,22 @@ begin
   end loop;
 end $$;
 
+-- updated_at is always the server's clock, never a device's: the parents page asks "has anything changed?" with it.
+create or replace function private.touch() returns trigger
+language plpgsql security definer set search_path = '' as $$
+begin
+  new.updated_at := now();
+  return new;
+end $$;
+do $$
+declare t text;
+begin
+  foreach t in array array['config','roster','extras','heats','times','finish','slips','field','records','counter','years','archive'] loop
+    execute format('drop trigger if exists touch on public.%I', t);
+    execute format('create trigger touch before insert or update on public.%I for each row execute function private.touch()', t);
+  end loop;
+end $$;
+
 -- ---------- helpers ----------
 create or replace function private.my_role() returns text
 language sql stable security definer set search_path = '' as $$

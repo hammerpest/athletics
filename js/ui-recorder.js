@@ -190,16 +190,16 @@ function renderRecField(){
   return `${lockBar()}<div class="recgrid rf">${left}${right}</div>`;
 }
 function recFieldTable(f,G,ev,ovr){
-  const v=fieldView(f);const rule=v.rule;const rows=G?G.rows:[];const dis=!ovr||locked();
+  const v=fieldView(f);const rule=v.rule;const rows=G?G.rows:[];const dis=!ovr||locked();const dis_=r=>dis||!!r.m.fin;
   const n=rule.attempts;const hts=ev.style==="height"?v.plan.heights.filter(h=>rows.some(r=>(r.m.h||{})[h])||h===v.plan.cur):null;
   const heads=hts?hts.map(h=>`<th>${fmtHeight(h)}</th>`).join(""):Array.from({length:n},(_,i)=>`<th>${i+1}</th>`).join("");
   const box=(r,ri)=>{
-    if(hts)return hts.map(h=>{const c=(r.m.h||{})[h]||"";return `<td>${ovr?hjCell(f,r,h,c,dis):esc(c)}</td>`}).join("");
-    if(ev.style==="throw")return Array.from({length:n},(_,a)=>{const c=(r.m.t||{})[a]||"";return `<td>${ovr?throwCell(f,r,a,c,dis):esc(c||(r.m.ns&&a===0?"NS":""))}</td>`}).join("");
-    return Array.from({length:n},(_,a)=>{const c=(r.m.a||{})[a];return `<td>${ovr?markCell(f,r,ri,a,c,dis):esc(fmtCell(c)||(r.m.ns&&a===0?"NS":""))}</td>`}).join("");
+    if(hts)return hts.map(h=>{const c=(r.m.h||{})[h]||"";return `<td>${ovr?hjCell(f,r,h,c,dis_(r)):esc(c)}</td>`}).join("");
+    if(ev.style==="throw")return Array.from({length:n},(_,a)=>{const c=(r.m.t||{})[a]||"";return `<td>${ovr?throwCell(f,r,a,c,dis_(r)):esc(c||"")}</td>`}).join("");
+    return Array.from({length:n},(_,a)=>{const c=(r.m.a||{})[a];return `<td>${ovr?markCell(f,r,ri,a,c,dis_(r)):esc(fmtCell(c)||"")}</td>`}).join("");
   };
   const best=(r,ri)=>ev.style==="throw"&&ovr?bestCell(f,r,ri,dis):`<span class="bestm">${r.best?(hts?fmtHeight(r.best):fmtMark(r.best)):"&ndash;"}</span>`;
   return `<table><thead><tr><th>Place</th><th>Athlete</th>${heads}<th class="num">Best</th><th class="num">Points</th><th></th></tr></thead><tbody>
-    ${rows.map((r,ri)=>`<tr><td>${placeCell(r.place,r.tie)}</td><td class="nmcell"><span class="htag">${hdot(r.p.h)}${esc(pname(r.p))}</span></td>${box(r,ri)}<td class="num">${best(r,ri)}</td><td class="num">${fmtPts(r.pts||0)}</td><td>${ovr&&!hts?`<button type="button" class="stbtn" data-act="fns" data-g="${f.id}" data-id="${esc(r.id)}" aria-pressed="${!!r.m.ns}" ${dis?"disabled":""}>NS</button> `:""}${r.tag?`<span class="tag ${r.tag==="NEW RECORD"?"rec":"eq"}">${r.tag}</span> `:""}${r.hris?`<span class="tag hris">HRIS</span>`:""}</td></tr>`).join("")||`<tr><td colspan="${5+(hts?hts.length:n)}" class="muted">No athletes entered yet.</td></tr>`}
+    ${rows.map((r,ri)=>`<tr><td>${placeCell(r.place,r.tie)}</td><td class="nmcell"><span class="htag">${hdot(r.p.h)}${esc(pname(r.p))}</span></td>${box(r,ri)}<td class="num">${best(r,ri)}</td><td class="num">${fmtPts(r.pts||0)}</td><td>${ovr&&r.m.fin?`<button type="button" class="stbtn" data-act="rfback" data-g="${f.id}" data-id="${esc(r.id)}" ${locked()?"disabled":""}>Bring back</button> `:""}${r.tag?`<span class="tag ${r.tag==="NEW RECORD"?"rec":"eq"}">${r.tag}</span> `:""}${r.hris?`<span class="tag hris">HRIS</span>`:""}</td></tr>`).join("")||`<tr><td colspan="${5+(hts?hts.length:n)}" class="muted">No athletes entered yet.</td></tr>`}
   </tbody></table>`;
 }

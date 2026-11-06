@@ -106,7 +106,12 @@ async def main():
     await O.evaluate("A.job='recorder';A.r.tab='field';A.r.ovr=true;A.f.gid='keep';A.r.fkey='LJ|M|17';render()"); await O.wait_for_timeout(100)
     await O.click('[data-act=rfadd]'); await O.wait_for_timeout(80)
     ok("override Add an athlete leaves the station's group alone",await O.evaluate("A.f.gid")=="keep" and await O.locator('.modal h2').count()==1)
-    await O.click('.modal [data-act=closemodal]'); await O.evaluate("A.f.gid=null;A.r.ovr=false;A.job='organiser';render()")
+    await O.click('.modal [data-act=closemodal]')
+    await O.evaluate("(async()=>{const f=A.R.fgroups.find(f=>f.key==='LJ|M|17');const id=Object.keys(fieldDocOf(f).ath).find(k=>fieldDocOf(f).ath[k]>0);window.__eid=id;await setField(f,id,'fin',0,true)})()"); await O.wait_for_timeout(250)
+    ok("Aths Opt 1.7: in the Recorder an ended athlete's boxes are locked and Bring back is shown",await O.locator('[data-act=rfback]').count()==1 and await O.locator('tr:has([data-act=rfback]) .hjc:not([disabled])').count()==0)
+    await O.click('[data-act=rfback]'); await O.wait_for_timeout(250)
+    ok("Bring back lets the Recorder fix that athlete again",await O.evaluate("!A.R.fgroups.length||!fieldDocOf(A.R.fgroups.find(f=>f.key==='LJ|M|17')).marks[window.__eid]?.fin")==True and await O.locator('[data-act=rfback]').count()==0)
+    await O.evaluate("A.f.gid=null;A.r.ovr=false;A.job='organiser';render()")
     # multitimer survives a reload mid race
     await M.evaluate("(async()=>{const m=A.m;m.k='800';m.x='F';m.g='16';m.phase='start';await marshalGo()})()"); await M.wait_for_timeout(150)
     n=await M.evaluate("A.heats.filter(h=>h.multi)[0].race")

@@ -268,7 +268,7 @@ function curMark(f,id){return (fieldDocOf(f).marks||{})[id]||{}}
 function setField(f,id,kind,key,val,noUndo){
   if(stationFinal(f))return;
   /* an ended athlete has finished (decision 96): no jump, throw or height box changes until the END is brought back */
-  if((kind==="a"||kind==="t"||kind==="h")&&curMark(f,id).fin){toast("This athlete has ended. Press and hold ENDED to bring them back.");render();return}
+  if((kind==="a"||kind==="t"||kind==="h")&&curMark(f,id).fin){toast("This athlete has ended. Bring them back first: press and hold ENDED, or use Bring back in the Recorder.");return}
   const m=curMark(f,id);const prev=kind==="best"?(m.best||""):kind==="ns"?!!m.ns:kind==="fin"?!!m.fin:(m[kind]||{})[key]||"";
   if(prev===val)return;
   if(!noUndo)fieldUndoPush(f,id,kind,key,prev,val);

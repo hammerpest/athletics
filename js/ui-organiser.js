@@ -1,5 +1,5 @@
-/* ===== Carnival Organiser: 9 sections (A1.16) ===== */
-const SECS=[["details","Carnival details"],["students","Students"],["program","Program"],["field","Field event rules"],["points","Points"],["limits","Odd-time limits"],["records","Records"],["export","Export"],["lock","Lock and new carnival"]];
+/* ===== Carnival Organiser: 10 sections (A1.16, A1.30) ===== */
+const SECS=[["details","Carnival details"],["students","Students"],["program","Program"],["field","Field event rules"],["points","Points"],["limits","Odd-time limits"],["records","Records"],["export","Export"],["lock","Lock and new carnival"],["parents","Parents page"]];
 function secStatus(k){
   const c=A.cfg;
   if(k==="details")return {t:longDate(c.date)};
@@ -11,6 +11,7 @@ function secStatus(k){
   if(k==="records")return A.records.length?{t:plural(A.records.length,"record")}:{t:"No list yet"};
   if(k==="export")return {t:"CSV, HRIS file, backup"};
   if(k==="lock")return c.locked?{t:"Results locked",a:1}:{t:"Results open"};
+  if(k==="parents")return c.parents?{t:"On"}:{t:"Off"};
 }
 function renderOrganiser(){
   const sec=A.o.sec;
@@ -18,6 +19,22 @@ function renderOrganiser(){
   return `${lockBar()}<div class="org"><nav class="secnav" aria-label="Organiser sections">${nav}</nav><div class="panel" style="min-width:0"><div class="stack">${(OSEC[sec]||(()=>""))()}</div></div></div>`;
 }
 const OSEC={};
+/* A1.30: the parents page, on or off, and what parents can see */
+const PSHOW=[["house","House points","The three houses and their points."],["age","Points by age group","House points for each age group, girls and boys together."],["events","Event results","Places and times or marks for every event, once final."],["find","Find a student","Type a name to see that student's house and their results."],["champs","Age champions","The age champion for each age group."],["records","Records broken","Any new school records from the day."],["program","What is on now","The program and the field events on now."]];
+function parentsCfg(){const c=A.cfg;return {on:!!c.parents,show:Object.assign({house:true,age:true,events:true,find:true,champs:true,records:false,program:true},c.parentsShow||{}),names:c.parentsNames||"none",prov:!!c.parentsProv}}
+function parentsUrl(){return new URL("parents/",location.href).href}
+OSEC.parents=()=>{const p=parentsCfg();
+  return `<h2>Parents page</h2><p class="muted" style="margin:0">A page for parents. They need no PIN and no sign-in. It shows nothing until you turn it on, and then only what is ticked below. Parents see final results only, unless you tick provisional.</p>
+  <div class="row"><button type="button" class="switch" role="switch" aria-checked="${p.on}" aria-label="Parents page on" data-act="ptog" ${A.past?"disabled":""}></button><b>Parents page is ${p.on?"on":"off"}</b><span class="chip" style="overflow-wrap:anywhere">${esc(parentsUrl())}</span><button type="button" class="btn" data-act="pcopy">Copy link</button></div>
+  <h3>What parents can see</h3>
+  <div class="tablewrap"><table><thead><tr><th>Show</th><th>What it is</th></tr></thead><tbody>${PSHOW.map(([k,l,d])=>`<tr><td><label style="display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer;font-weight:700"><input type="checkbox" style="width:24px;height:24px" aria-label="${esc(l)}" data-act="pshow" data-v="${k}" ${p.show[k]?"checked":""} ${A.past?"disabled":""}>${esc(l)}</label></td><td>${esc(d)}</td></tr>`).join("")}</tbody></table></div>
+  <h3>Names</h3>
+  <div class="choices"><button type="button" class="choice" data-act="pnames" data-v="short" aria-pressed="${p.names==="short"}" ${A.past?"disabled":""}>Show first name and surname initial, for example Xavier F.</button><button type="button" class="choice" data-act="pnames" data-v="none" aria-pressed="${p.names==="none"}" ${A.past?"disabled":""}>No names: house and place only</button></div>
+  <div class="todo">Check newsletter and media consent before names go on a public page. Real student names also wait for the principal and ICT.</div>
+  <h3>When results show</h3>
+  <label style="display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer"><input type="checkbox" style="width:24px;height:24px" aria-label="Show results before a group is final" data-act="pprov" ${p.prov?"checked":""} ${A.past?"disabled":""}>Show results before a group is final, marked Provisional</label>
+  <p class="muted" style="margin:0">Never shown to parents: PINs, devices, photos of slips, dates of birth, full surnames.</p>`;
+};
 OSEC.details=()=>{const c=A.cfg;
   return `<h2>Carnival details</h2><div class="fields">
     <label>Carnival name<input id="cName" value="${esc(c.name)}"></label>

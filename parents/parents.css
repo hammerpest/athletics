@@ -1,0 +1,28 @@
+/* The parents page (A1.29): the same look as the app, on one scrolling page, phone first. No PIN, nothing to type except a name. */
+body.parents{background:var(--bg)}
+body.parents .wrap{max-width:720px}
+.ptabs{display:flex;gap:6px;overflow-x:auto;padding-block:4px;margin:0 0 4px;scrollbar-width:thin}
+.ptabs button{flex:0 0 auto;border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 16px;min-height:44px;font:600 .95rem var(--font-body);color:var(--ink);cursor:pointer}
+.ptabs button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#ffffff}
+#pmain{padding-block:12px 28px;display:flex;flex-direction:column;gap:12px}
+.pcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.pcard h3{margin:0}
+.prow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:10px;align-items:center;min-height:44px}
+.prow .nm{font-weight:700;overflow-wrap:anywhere}
+.prow .vv{font:700 1rem var(--font-mono);font-variant-numeric:tabular-nums}
+.pfilter{display:flex;gap:6px;flex-wrap:wrap}
+.pfilter button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:6px 14px;min-height:44px;font:600 .9rem var(--font-body);color:var(--ink);cursor:pointer}
+.pfilter button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#ffffff}
+.pgroup{border:1px solid var(--line);border-radius:14px;background:var(--surface)}
+.pgroup>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 14px;min-height:48px;font-weight:800;font-family:var(--font-display)}
+.pgroup>summary::-webkit-details-marker{display:none}
+.pgroup>summary .chip{margin-left:auto}
+.pgroup .pbody{padding:0 14px 12px;display:flex;flex-direction:column;gap:2px}
+.ptabs.more{-webkit-mask-image:linear-gradient(to right,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(to right,#000 calc(100% - 36px),transparent)}
+/* in the dark theme the chosen pill is navy on navy: a yellow ring carries the state */
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ptabs button[aria-pressed="true"],:root:not([data-theme="light"]) .pfilter button[aria-pressed="true"]{outline:2px solid #ffc907;outline-offset:-2px}}
+:root[data-theme="dark"] .ptabs button[aria-pressed="true"],:root[data-theme="dark"] .pfilter button[aria-pressed="true"]{outline:2px solid #ffc907;outline-offset:-2px}
+.pfind{display:flex;flex-direction:column;gap:4px}
+.pfind input{min-height:48px}
+.pnote{font-size:.85rem;color:var(--muted)}
+.poff{padding:24px 16px;text-align:center}
