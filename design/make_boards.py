@@ -259,6 +259,7 @@ def multitimer(dark):
     roster = names("F","16",17,5)
     body = header("TIME SLIPS","Time Slips",dark,slim=True) + f'''
 <div class="scroll"><main class="wrap" style="padding-top:10px;padding-bottom:96px"><div class="phone" style="gap:10px">
+<div class="tabs" style="margin:0"><a class="btn" style="border-radius:999px" href="{lnk("TimeSlips",dark)}">Take photo</a><button type="button" aria-pressed="true">Multi</button></div>
 <div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>RACE</small><b>{{{{raceNo}}}}</b></span><div class="info"><b>{{{{label}}}}</b><span>{{{{sub}}}}</span></div></div>
 <sc-if value="{{{{isNames}}}}" hint-placeholder-val="{{{{true}}}}">
 <div class="prompt" style="margin:0">Tap each runner on the start line.</div>
@@ -349,6 +350,7 @@ def slips(dark):
     CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><circle cx="12" cy="13" r="4"></circle></svg>'
     body = header("TIME SLIPS","Time Slips",dark,slim=True) + f'''
 <div class="scroll"><main class="wrap" style="padding-top:12px"><div class="phone">
+<div class="tabs" style="margin:0"><button type="button" aria-pressed="true">Take photo</button><a class="btn" style="border-radius:999px" href="{lnk("Multitimer",dark)}">Multi</a></div>
 <div class="racebar" style="margin:0"><span class="racebadge xl"><small>RACE</small><b>3</b></span><div class="info"><b>100 m, Boys 18+</b><span>Heat 1</span></div></div>
 <sc-if value="{{{{before}}}}" hint-placeholder-val="{{{{true}}}}"><button type="button" class="cam" onClick="{{{{shoot}}}}">{CAM}Take photo of the slip</button>
 <div class="msg info">Race 3 is ready. Hold the phone flat over the printed slip.</div></sc-if>
@@ -1310,8 +1312,8 @@ board("Main","A1.1 Home: a job PIN opens its job straight away; only the organis
 board("MarshalPick","A1.2 Track Marshal (a): pick race, boys or girls, age, iPad landscape",*IPAD,marshal_pick,1260,R1)
 board("MarshalLanes","A1.3 Track Marshal (b): names into lanes, iPad landscape",*IPAD,marshal_lanes,2520,R1)
 board("PlaceJudge","A1.4 Track Place Judge: tap the top 4 at the finish line, phone",*PHONE,judge,3780,R1,radius=40)
-board("Multitimer","A1.5 Multitimer (800 m, 1500 m): names, START, splits, STOP, a button next to each name, then next heat or a new age on the phone",*PHONE,multitimer,4250,R1,radius=40)
-board("TimeSlips","A1.6 Time Slips: photo each heat's slip, phone",*PHONE,slips,4720,R1,radius=40)
+board("Multitimer","A1.5 Multitimer (Multi): names, START, splits, STOP, a button next to each name, then next heat or a new age on the phone; Take photo or Multi always shown",*PHONE,multitimer,4250,R1,radius=40)
+board("TimeSlips","A1.6 Time Slips: Take photo or Multi, always shown; photo each heat's slip, phone",*PHONE,slips,4720,R1,radius=40)
 board("FieldStart","A1.7 Field Station (a): pick the station, its day from the timetable, iPad landscape",*IPAD,field_start,0,R2)
 board("FieldMarks","A1.8 Field Station (b): long jump, up to 3 jumps, Foul and Pass, END and Keep top N, iPad landscape",*IPAD,field_marks,1260,R2)
 board("FieldHigh","A1.9 Field Station (c): high jump, tap the box that is up, Clear, Miss or Pass, start height and raise can be set, END, iPad landscape",*IPAD,field_high,2520,R2)

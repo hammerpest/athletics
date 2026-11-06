@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 6 November 2026, version bk. Replaces 6 November version bj.
+Date: 7 November 2026, version bl. Replaces 6 November version bk.
+
+Changes on 7 November 2026 (version bl): Jordan asked that the Time Slips phone always shows the choice, Take photo or Multi, and that Jordan just picks (decision 101). Today the phone picks by itself: a race sent as 800 m or 1500 m (run "multi", no lanes) shows the multitimer, every other race shows the slip camera (explained to Jordan in chat from js/ui-slips.js). Drawn on the canvas (version 41), waiting for Jordan's OK, nothing built: a switch at the top of A1.6 (Take photo chosen) and A1.5 (Multi chosen). How it would work, to confirm: the switch always shows; the choice is Jordan's and holds until changed; Multi on a race that already has lanes uses those runners and writes each time to the right lane (the send code already maps by lane); Multi on a race with no names starts at Names; Take photo on a race with no names asks for names first (use Multi); the default when a new race opens stays Take photo for a normal race and Multi for a race with no lanes (800 m, 1500 m). Aths Opt 1.8 is live on staging (4200358). Main is not done. Ask now: Jordan's OK on the switch (A1.5, A1.6) and the behaviour above.
 
 Changes on 6 November 2026 (version bk): Jordan approved Aths Opt 1.8. The 1,038 screenshots (4 sizes, 2 themes) are saved to baseline/, replacing the 1.7 ones (the 1.8 set compares clean against itself: 1,038 compared, 0 different). Committed locally. Not pushed: the 1.8 code and this baseline (staging still has 1.7, commit 2a8abe9). Main is not done. Next options: push 1.8 to staging; tidy PROJECT-STATE sections 0, 5 and 7, which still describe older builds; the Supabase production project; Questions 10 and 20 stay later. Ask now: Jordan says whether to push 1.8 to staging.
 
