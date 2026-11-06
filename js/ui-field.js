@@ -195,11 +195,11 @@ function throwTag(v,r){
   if(r.fair)return `<span class="chip">Participation</span>`+wchip;
   return (Object.values(r.m.t||{}).some(Boolean)?`<span class="chip">No fair throw</span>`:"")+wchip;
 }
-function setdControl(v,dis){
+function setdControl(v,dis,gid){
   const s=v.G&&v.G.setd?v.G.setd:{cm:0,low:0,ok:false,n:0};
   const bad=s.n>0&&!s.ok?(s.cm?`The set distance must be lower than the lowest measured mark (${fmtMark(s.low)} m).`:"Type one set distance for everyone who was not measured."):"";
   const doc=v.G?v.G.doc:{};
-  return {html:`<label class="label" for="setd" style="display:flex;align-items:center;gap:8px;margin-left:auto">Set distance for everyone not measured (m)<input id="setd" class="markin hjin" inputmode="decimal" data-setd value="${esc(doc.setd?fmtCell(doc.setd):"")}" ${dis?"disabled":""}></label>`,bad};
+  return {html:`<label class="label" for="setd" style="display:flex;align-items:center;gap:8px;margin-left:auto">Set distance for everyone not measured (m)<input id="setd" class="markin hjin" inputmode="decimal" data-setd data-g="${gid||(v.G&&v.G.fg?v.G.fg.id:"")}" value="${esc(doc.setd?fmtCell(doc.setd):"")}" ${dis?"disabled":""}></label>`,bad};
 }
 function throwAgainTiles(f,v,cls){
   const doc=v.G?v.G.doc:{};const tg=doc.tg||{};

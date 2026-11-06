@@ -97,7 +97,7 @@ function wireInputs(){
   document.querySelectorAll("[data-hjs],[data-hjn]").forEach(inp=>{inp.onchange=()=>{if(!A.rendering)hjTyped(inp)};inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();inp.blur()}}});
   document.querySelectorAll("[data-keepn]").forEach(inp=>{inp.onchange=()=>{A.f.keepN=Math.max(1,parseInt(inp.value,10)||4);render()}});
   document.querySelectorAll("[data-guide]").forEach(inp=>{inp.onchange=()=>{A.f.guide=Math.max(1,parseInt(inp.value,10)||10);render()}});
-  document.querySelectorAll("[data-setd]").forEach(inp=>{inp.onchange=()=>{if(A.rendering)return;const f=fieldGroupOpen();if(!f)return;const v=cleanMark(inp.value);
+  document.querySelectorAll("[data-setd]").forEach(inp=>{inp.onchange=()=>{if(A.rendering)return;const f=inp.dataset.g?fieldGroupById(inp.dataset.g):fieldGroupOpen();if(!f)return;const v=cleanMark(inp.value);
     if(inp.value.trim()&&(!markOk(inp.value)||/[^0-9]/.test(v))){toast("Type 800 or 8.00 for 8.00 m.");render();return}
     fieldWrite(f,{setd:v})};inp.onkeydown=e=>{if(e.key==="Enter"){e.preventDefault();inp.blur()}}});
   document.querySelectorAll("[data-rule]").forEach(el=>{el.onchange=()=>{
@@ -235,7 +235,7 @@ const ACT={
   ffoul:()=>fieldPhoneAct("foul"),
   fkeep:()=>fieldKeep(),fkeepundo:()=>fieldKeepUndo(),
   fcut:()=>{A.f.cut=!A.f.cut;render()},fedit:()=>{A.f.edit=!A.f.edit;render()},
-  tgtick:el=>{const f=fieldGroupOpen();if(!f)return;const on=!!((fieldView(f).G.doc.tg||{})[el.dataset.id]);fieldWrite(f,{tg:{[el.dataset.id]:!on}})},
+  tgtick:el=>{const f=(el.dataset.g&&fieldGroupById(el.dataset.g))||fieldGroupOpen();if(!f)return;const on=!!((fieldView(f).G.doc.tg||{})[el.dataset.id]);fieldWrite(f,{tg:{[el.dataset.id]:!on}})},
   tgstart:()=>{const f=fieldGroupOpen();if(!f)return;const n=Object.values(fieldView(f).G.doc.tg||{}).filter(Boolean).length;
     if(!n&&!A.f.tg0){A.f.tg0=true;toast("Nobody is ticked, so nobody throws again. Tap Start again to go on, or tick the athletes.");return}
     A.f.tg0=false;A.f.ta=false;fieldWrite(f,{tgo:true})},
@@ -248,7 +248,7 @@ const ACT={
   msave:()=>{const f=fieldGroupOpen();if(!f||!A.f.mopen)return;if(!A.f.typed){A.f.mopen=null;render();return}if(A.f.typed.length<2){toast("Type the whole mark: 1124 is 11.24 m.");return}const id=A.f.mopen,m=A.f.typed;A.f.mopen=null;A.f.typed="";setBest(f,id,m)},
   fsumback:()=>{A.f.summary=false;render()},
   fsend:()=>fieldFinish().then(()=>{A.f.summary=true;render()}),
-  wtset:el=>{const f=fieldGroupOpen();if(f)fieldWeight(f,el.dataset.id,+el.dataset.v)},
+  wtset:el=>{const f=(el.dataset.g&&fieldGroupById(el.dataset.g))||fieldGroupOpen();if(f)fieldWeight(f,el.dataset.id,+el.dataset.v)},
   ttap:el=>{const f=fieldGroupById(el.dataset.g);if(f)throwStep(f,el.dataset.id,+el.dataset.a)},
   hjtry:el=>{const f=fieldGroupOpen();if(f)hjTry(f,el.dataset.id,+el.dataset.h,el.dataset.v,el.dataset.box)},
   ftake:el=>{const f=fieldGroupOpen();if(f)fieldTake(f,el.dataset.id)},
@@ -271,6 +271,7 @@ const ACT={
   hrisfile:()=>exportHris(),
   newscopy:async()=>{try{await navigator.clipboard.writeText(document.getElementById("newsText").textContent);toast("Text copied")}catch(e){toast("Select the text and copy it.")}},
   osec:el=>{A.o.sec=el.dataset.v;render()},
+  rfend:el=>{const f=fieldGroupById(el.dataset.g)||fieldGroupOpen();if(f)fieldFinishAth(f,el.dataset.id)},
   rfback:el=>{const f=fieldGroupById(el.dataset.g)||fieldGroupOpen();if(f)setField(f,el.dataset.id,"fin",0,false)},
   ptog:()=>{if(A.past)return;const on=!parentsCfg().on;saveCfg({parents:on},on?"Parents page is on":"Parents page is off")},
   pshow:el=>{if(A.past)return;const p=parentsCfg();saveCfg({parentsShow:Object.assign({},p.show,{[el.dataset.v]:!p.show[el.dataset.v]})},"Saved")},

@@ -53,7 +53,7 @@ function setStatus(msg){
   const el=$("pupd");
   if(msg){el.hidden=false;el.textContent=msg;return}
   if(!D){el.hidden=true;return}
-  el.hidden=false;el.textContent="Updated "+new Date().toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"});
+  el.hidden=false;el.textContent="Updated "+new Date(Date.now()).toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"});
 }
 
 /* ---- screens ---- */

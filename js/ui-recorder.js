@@ -182,24 +182,33 @@ function renderRecField(){
   const right=`<div class="stack">
     <div class="racebar" style="margin:0"><span class="racebadge"><small>FIELD</small><b>${esc(sel.station)}</b></span><div class="info"><b>${esc(groupLabel(ev,sel.x,sel.g))}</b><span>${esc(stn(sel.station))} · ${esc(when)}<span class="chip ${G&&G.final?"final":""}">${G?G.status:"Not started"}</span></span></div></div>
     <div class="panel" style="padding:0;overflow:hidden"><div class="tablewrap">${recFieldTable(sel,G,ev,ovr)}</div></div>
-    ${ovr?`<div class="msg warn">Override is on. Changes show on every device at once.</div>
+    ${ovr?`<div class="msg warn">Override is on. Changes show on every device at once. An ended athlete's boxes are locked: press Bring back to change them.</div>
       <div class="row"><button type="button" class="btn" data-act="rfadd">Add an athlete</button>${G&&G.final?`<button type="button" class="btn" data-act="rfreopen">Reopen this group</button>`:""}</div>`:""}
     <p class="muted" style="font-size:.86rem;margin:0">Results are final at the station. The event coordinator can overrule any result at any time.</p>
     <button type="button" class="btn big" data-act="rovr">${ovr?"Finish override":"Override (event coordinator)"}</button>
   </div>`;
-  return `${lockBar()}<div class="recgrid rf">${left}${right}</div>`;
+  return `${lockBar()}<div class="recgrid rf${ovr?" rfwide":""}">${left}${right}</div>`;
 }
 function recFieldTable(f,G,ev,ovr){
   const v=fieldView(f);const rule=v.rule;const rows=G?G.rows:[];const dis=!ovr||locked();const dis_=r=>dis||!!r.m.fin;
   const n=rule.attempts;const hts=ev.style==="height"?v.plan.heights.filter(h=>rows.some(r=>(r.m.h||{})[h])||h===v.plan.cur):null;
+  /* shot put and discus in override (A1.31): weight, throws again, measured mark, the set distance and Finish */
+  const T=ev.style==="throw"&&ovr;const doc=fieldDocOf(f);const tg=doc.tg||{};const wt=doc.wt||{};
+  const wo=T?weightOpts(ev,{k:f.k,x:f.x,g:f.g}):[];
   const heads=hts?hts.map(h=>`<th>${fmtHeight(h)}</th>`).join(""):Array.from({length:n},(_,i)=>`<th>${i+1}</th>`).join("");
   const box=(r,ri)=>{
     if(hts)return hts.map(h=>{const c=(r.m.h||{})[h]||"";return `<td>${ovr?hjCell(f,r,h,c,dis_(r)):esc(c)}</td>`}).join("");
-    if(ev.style==="throw")return Array.from({length:n},(_,a)=>{const c=(r.m.t||{})[a]||"";return `<td>${ovr?throwCell(f,r,a,c,dis_(r)):esc(c||"")}</td>`}).join("");
+    if(ev.style==="throw")return Array.from({length:n},(_,a)=>{const c=(r.m.t||{})[a]||"";return `<td>${ovr?throwCell(f,r,a,c,dis_(r)||(a>=1&&!tg[r.id]&&!c)):esc(c||"")}</td>`}).join("");
     return Array.from({length:n},(_,a)=>{const c=(r.m.a||{})[a];return `<td>${ovr?markCell(f,r,ri,a,c,dis_(r)):esc(fmtCell(c)||"")}</td>`}).join("");
   };
-  const best=(r,ri)=>ev.style==="throw"&&ovr?bestCell(f,r,ri,dis):`<span class="bestm">${r.best?(hts?fmtHeight(r.best):fmtMark(r.best)):"&ndash;"}</span>`;
-  return `<table><thead><tr><th>Place</th><th>Athlete</th>${heads}<th class="num">Best</th><th class="num">Points</th><th></th></tr></thead><tbody>
-    ${rows.map((r,ri)=>`<tr><td>${placeCell(r.place,r.tie)}</td><td class="nmcell"><span class="htag">${hdot(r.p.h)}${esc(pname(r.p))}</span></td>${box(r,ri)}<td class="num">${best(r,ri)}</td><td class="num">${fmtPts(r.pts||0)}</td><td>${ovr&&r.m.fin?`<button type="button" class="stbtn" data-act="rfback" data-g="${f.id}" data-id="${esc(r.id)}" ${locked()?"disabled":""}>Bring back</button> `:""}${r.tag?`<span class="tag ${r.tag==="NEW RECORD"?"rec":"eq"}">${r.tag}</span> `:""}${r.hris?`<span class="tag hris">HRIS</span>`:""}</td></tr>`).join("")||`<tr><td colspan="${5+(hts?hts.length:n)}" class="muted">No athletes entered yet.</td></tr>`}
-  </tbody></table>`;
+  const bestTxt=r=>`<span class="bestm">${r.best?(hts?fmtHeight(r.best):fmtMark(r.best)):"&ndash;"}</span>${r.part?` <span class="chip prov">${r.best?"Participation":"Set distance needed"}</span>`:""}`;
+  const wcell=r=>T&&wo.length?`<td><div style="display:flex;gap:4px">${wo.map((o,k)=>`<button type="button" class="stbtn" data-act="wtset" data-g="${f.id}" data-id="${esc(r.id)}" data-v="${k+1}" aria-pressed="${wt[r.id]===k+1}" ${dis_(r)?"disabled":""}>${esc(o.w)}</button>`).join("")}</div></td>`:"";
+  const again=(r,ri)=>T?`<td><label style="display:flex;align-items:center;gap:8px;min-height:48px;cursor:pointer"><input type="checkbox" style="width:24px;height:24px" aria-label="${esc(pname(r.p))} throws again" data-act="tgtick" data-g="${f.id}" data-id="${esc(r.id)}" ${tg[r.id]?"checked":""} ${dis_(r)?"disabled":""}>${tg[r.id]?"Yes":"No"}</label></td><td class="num">${bestCell(f,r,ri,dis_(r))}</td>`:"";
+  const fin=r=>ovr?(r.m.fin?`<button type="button" class="stbtn" data-act="rfback" data-g="${f.id}" data-id="${esc(r.id)}" ${locked()?"disabled":""}>Bring back</button>`:`<button type="button" class="stbtn" data-act="rfend" data-g="${f.id}" data-id="${esc(r.id)}" ${locked()?"disabled":""}>End</button>`):(r.m.fin?`<span class="chip">Ended</span>`:"");
+  const sd=T?setdControl(v,dis,f.id):null;
+  const head=`<th>Place</th><th>Athlete</th>${T&&wo.length?"<th>Weight</th>":""}${heads}${T?`<th>Throws again</th><th class="num">Measured</th>`:""}<th class="num">Best</th><th class="num">Points</th><th>Finish</th><th></th>`;
+  const cols=6+(hts?hts.length:n)+(T?2+(wo.length?1:0):0);
+  return `${T?`<div class="panel stack" style="padding:12px 14px;margin-bottom:10px"><div class="row">${sd.html.replace('margin-left:auto','margin-left:0')}<span class="muted" style="flex:1 1 320px;font-size:.88rem">Athletes with a fair throw who were not measured all get this distance, one shared place and 4 points. It must be lower than the lowest measured mark.</span></div>${sd.bad?`<div class="msg warn">${esc(sd.bad)}</div>`:""}</div>`:""}<div class="tablewrap"><table><thead><tr>${head}</tr></thead><tbody>
+    ${rows.map((r,ri)=>`<tr><td>${placeCell(r.place,r.tie)}</td><td class="nmcell"><span class="htag">${hdot(r.p.h)}${esc(pname(r.p))}</span></td>${wcell(r)}${box(r,ri)}${again(r,ri)}<td class="num">${bestTxt(r)}</td><td class="num">${fmtPts(r.pts||0)}</td><td>${fin(r)}</td><td>${r.tag?`<span class="tag ${r.tag==="NEW RECORD"?"rec":"eq"}">${r.tag}</span> `:""}${r.hris?`<span class="tag hris">HRIS</span>`:""}</td></tr>`).join("")||`<tr><td colspan="${cols}" class="muted">No athletes entered yet.</td></tr>`}
+  </tbody></table></div>`;
 }

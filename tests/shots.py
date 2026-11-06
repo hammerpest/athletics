@@ -295,6 +295,9 @@ async def run(pw,dev,theme):
     await R.fill('#mk-3-0','530'); await R.press('#mk-3-0','Enter'); await R.wait_for_timeout(200); await R.click('[data-act=rovr]'); await R.wait_for_timeout(150)
     await R.click('[data-act=rfgroup][data-v="HJ|F|18"]'); await R.wait_for_timeout(150); await shot(R,"recorder-field-high")
     await R.click('[data-act=rfgroup][data-v="SP|M|17"]'); await R.wait_for_timeout(150); await shot(R,"recorder-field-throw")
+    # A1.31 (Aths Opt 1.7): the Recorder's override for a throws group
+    await R.click('[data-act=rovr]'); await R.fill('#opPin','9999'); await R.click('[data-act=oorgpinok]'); await R.wait_for_timeout(200); await shot(R,"recorder-field-throws-override")
+    await R.click('[data-act=rovr]'); await R.wait_for_timeout(150)
     # ---- announcer, results, houses ----
     await M.click('[data-act=mpick][data-f=k][data-v="200"]'); await M.wait_for_timeout(100)
     A=await page("5555"); await A.wait_for_timeout(250); await shot(A,"announcer")
