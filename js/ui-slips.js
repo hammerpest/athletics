@@ -7,6 +7,17 @@ function slipRace(){
   A.s.race=liveRaceNo(A.s.race,list);
   return A.R.races.get(A.s.race);
 }
+/* Aths Opt 1.9: the Take photo or Multi switch is always shown and the choice is the user's (decision 101).
+   It is kept for each race. With no choice yet, a race with no lanes (800 m, 1500 m) opens on Multi and any other race on Take photo. */
+const SM_KEY="aths_slipmodes";
+function slipModes(){try{return JSON.parse(localStorage.getItem(SM_KEY)||"{}")}catch(e){return {}}}
+function slipModeKey(r){return r.draft?"d"+r.race:String(r.race)}
+function slipMode(r){return slipModes()[slipModeKey(r)]||(r.multi?"multi":"photo")}
+function setSlipMode(v){const r=mtDraftRace()||slipRace();if(!r||(v!=="photo"&&v!=="multi"))return;const m=slipModes();m[slipModeKey(r)]=v;try{localStorage.setItem(SM_KEY,JSON.stringify(m))}catch(e){}render();window.scrollTo(0,0)}
+function slipSwitch(mode){
+  const running=!!(A.mt&&A.mt.phase==="run");
+  return `<div class="tabs" role="group" aria-label="How to time this race" style="margin:0">${[["photo","Take photo"],["multi","Multi"]].map(([k,l])=>`<button type="button" data-act="smode" data-v="${k}" aria-pressed="${mode===k}" ${running&&mode!==k?"disabled":""}>${l}</button>`).join("")}</div>`;
+}
 function slipQueued(){return A.s.queued||0}
 function slipWaiting(race){return !!(A.s.waiting&&A.s.waiting[race])}
 function renderSlips(){
@@ -14,18 +25,21 @@ function renderSlips(){
   const r=mtDraftRace()||slipRace();const waiting=slipQueued();
   const top=waiting?`<div class="msg warn">No signal. ${plural(waiting,"photo")} waiting to send. It sends by itself when there is signal.</div>`:"";
   if(!r)return `<div class="phone">${top}${waitingCard("Waiting for the marshal","Race 1 appears here once it is sent.")}</div>`;
-  if(r.multi)return renderMulti(r,top);
+  const mode=slipMode(r);const sw=slipSwitch(mode);
+  if(mode==="multi")return renderMulti(r,top,sw);
+  const noNames=!r.filled.length;
   const done=r.hasSlip;const t=A.s.test||"good";
   const showNext=done&&!A.s.err&&!A.s.flash;
   const hasNext=nextRaceAfter(r.race)!=null;
   const CAM=`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="12" cy="13" r="4"/></svg>`;
-  return `${lockBar()}<div class="phone">${top}
+  return `${lockBar()}<div class="phone">${top}${sw}
     <div class="racebar" style="margin:0">${badge(r.race,"xl")}<div class="info"><b>${esc(r.label)}</b><span>Heat ${r.heat}</span></div></div>
     ${A.s.err?`<div class="msg bad" role="alert">${A.s.err}</div>`:""}
     ${showNext?`<div class="msg ${slipWaiting(r.race)?"warn":"ok"}">${slipWaiting(r.race)?`Race ${r.race} slip saved on this phone. It sends by itself when there is signal.`:`Race ${r.race} slip read and sent to the Recorder.`}</div>
        ${hasNext?`<button type="button" class="btn navy big" data-act="snext">Next race</button>`:`<button type="button" class="btn big" disabled>Waiting for marshal</button>`}
        <label class="btn big" for="camin">Replace this slip with a new photo</label>
        <div class="row" style="flex-wrap:nowrap"><button type="button" class="btn big" style="flex:1" data-act="sgoto">Check race</button><button type="button" class="btn big" style="flex:1" data-act="soverall">Race overall</button></div>`
+     :noNames?`<div class="msg warn">Race ${r.race} has no names yet, so there is no slip to read. Choose Multi to add the names.</div>`
      :A.s.sending?`<div class="cam" role="status">Sending the slip...</div>`
      :`<label class="cam" for="camin">${CAM}${A.s.err?"Take again":"Take photo of the slip"}</label>
        <div class="msg info">Race ${r.race} is ready. Hold the phone flat over the printed slip.</div>`}
@@ -139,9 +153,9 @@ function mtList(ev,x,g,r){
   const H=r.draft?{race:-1,k:r.k,x,g}:A.heats.find(h=>h.race===r.race)||{};const used=heatUsed(H);
   return eligible(ev,x,g).filter(s=>!used.has(s.id));
 }
-function renderMulti(r,top){
+function renderMulti(r,top,sw){
   const M=mtFor(r);const lk=locked();const n=M.picked.length;
-  const head=`<div class="racebar ph" style="margin:0">${badge(r.race,"sm")}<div class="info"><b>${esc(r.label)}</b><span>${r.draft?`Heat ${r.heat} · `:""}No lanes · ${plural(n,"runner")}</span></div></div>`;
+  const head=`<div class="racebar ph" style="margin:0">${badge(r.race,"sm")}<div class="info"><b>${esc(r.label)}</b><span>${r.draft?`Heat ${r.heat} · `:""}${r.multi?"No lanes · ":""}${plural(n,"runner")}</span></div></div>`;
   let body="",bar="";
   if(M.phase==="names"){
     const q=(M.q||"").toLowerCase();
@@ -157,7 +171,7 @@ function renderMulti(r,top){
       <div class="mtbtns">${run?`<button type="button" class="btn mtstop" data-act="mtstop" data-mt>STOP</button>`:`<button type="button" class="btn mtgo" data-act="mtgo" data-mt ${lk?"disabled":""}>START</button>`}<button type="button" class="btn mtsplit" ${run?`data-act="mtsplit" data-mt`:"disabled"}>SPLIT</button></div>
       <div class="panel stack" style="gap:8px"><div class="row" style="justify-content:space-between"><span class="label">Splits</span><span class="chip">${M.splits.length} of ${plural(n,"runner")}</span></div>${mtSplitList(M.splits)}</div>
       <p class="muted" style="margin:0;font-size:.88rem">No need to catch every runner. Stop any time after the top places are in.</p>
-      ${run?"":`<button type="button" class="linkbtn" data-act="mtrename">Change the names</button>`}`;
+      ${run||!r.multi?"":`<button type="button" class="linkbtn" data-act="mtrename">Change the names</button>`}`;
     if(run)bar=`<button type="button" class="btn" data-act="mtunsplit" ${M.splits.length?"":"disabled"}>Undo last split</button><button type="button" class="btn navy" data-act="mtfix">Fix splits</button>`;
   }else if(M.phase==="place"){
     const sp=M.splits;const tp=M.taps;const allDone=tp.length>=n;const nm=id=>A.R.who(id)||{};
@@ -172,11 +186,11 @@ function renderMulti(r,top){
     bar=`<button type="button" class="btn" data-act="mtundo" ${tp.length&&!lk?"":"disabled"}>Undo last</button><button type="button" class="btn navy" data-act="mtsend" ${allDone&&sp.length&&!lk?"":"disabled"}>Send to Recorder</button>`;
   }else{
     body=`<div class="msg ok">Race ${r.race} times sent to the Recorder.</div>
-      <button type="button" class="btn navy big" data-act="mtnext">${nextRaceAfter(r.race)!=null?"Next race":"Next heat, "+esc(r.label)}</button>
-      <button type="button" class="btn big" data-act="mtnew">New age or event</button>
+      ${nextRaceAfter(r.race)!=null||r.multi?`<button type="button" class="btn navy big" data-act="mtnext">${nextRaceAfter(r.race)!=null?"Next race":"Next heat, "+esc(r.label)}</button>`:`<button type="button" class="btn big" disabled>Waiting for marshal</button>`}
+      ${r.multi?`<button type="button" class="btn big" data-act="mtnew">New age or event</button>`:""}
       <div class="row" style="flex-wrap:nowrap"><button type="button" class="btn" style="flex:1" data-act="sgoto">Check race</button><button type="button" class="btn" style="flex:1" data-act="soverall">Race overall</button></div>`;
   }
-  return `${lockBar()}<div class="phone" style="gap:10px">${top}${head}${body}</div>
+  return `${lockBar()}<div class="phone" style="gap:10px">${top}${sw||""}${head}${body}</div>
   ${bar?`<div class="pbar"><div class="wrap">${bar}</div></div>`:""}
   ${A.s.flash?`<div class="flash ${A.s.flash.c}" role="status">${esc(A.s.flash.t)}</div>`:""}`;
 }
@@ -289,12 +303,16 @@ async function mtSend(force){
   const lanes={},read={};
   M.taps.forEach((id,i)=>{const l=laneOf(id);if(!l)return;const t=mtTimeAt(M.splits,i);lanes[l]={t,st:"ok",src:"multi",keep:false,chk:false,o:i+1,auto:i>=M.splits.length};read[l]=t});
   const meta={race:r.race,multi:true,splits:M.splits.slice(),read,gen:r.gen,at:Date.now(),dev:DEV,test:false};
-  A.slips[key]=meta;A.times[key]={lanes,src:"multi",checked:false,gen:r.gen};recompute();
+  A.slips[key]=meta;A.times[key]={lanes,src:"multi",checked:false,gen:r.gen};
+  /* a race with lanes (a normal race timed on the multitimer) also needs its places, as the Place Judge would give them */
+  let fdoc=null;if(!r.multi){const order=M.taps.map(id=>[laneOf(id)]).filter(g=>g[0]);fdoc={order,seq:order.flat(),undo:[],gen:r.gen||0,ck:0,ok:true,at:Date.now(),dev:DEV};A.finish[key]=fdoc}
+  recompute();
   M.phase="sent";mtSave();
   A.s.flash={c:"green",t:`Race ${r.race} sent to the Recorder`};render();
   setTimeout(()=>{A.s.flash=null;render()},1100);
   await w(()=>A.store.set("slips/"+key,meta));
   await w(()=>A.store.set("times/"+key,{lanes,src:"multi",checked:false,gen:r.gen,by:DEV,at:Date.now()}));
+  if(fdoc)await w(()=>A.store.set("finish/"+key,fdoc));
 }
 /* Fix splits: delete a double tap, add a missed time, or clear and time again */
 function mtFixSplits(sp){const M=A.mt;M.splits=sp.slice().sort((a,b)=>a-b);M.taps=[];mtSave();render()}

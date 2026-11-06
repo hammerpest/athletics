@@ -107,6 +107,9 @@ async def run(pw,dev,theme):
     await J.click('[data-act=jtap][data-l="4"]'); await J.click('[data-act=jtap][data-l="1"]'); await J.click('[data-act=jtap][data-l="5"]'); await J.wait_for_timeout(60); await shot(J,"judge-relay")
     # ---- time slips ----
     S=await page("4444"); await shot(S,"slips-ready")
+    # Aths Opt 1.9: the Take photo or Multi switch, with Multi chosen on a normal race that has lanes (A1.5)
+    await S.click('[data-act=smode][data-v=multi]'); await S.wait_for_timeout(200); await shot(S,"slips-multi-on-normal-race")
+    await S.click('[data-act=smode][data-v=photo]'); await S.wait_for_timeout(150)
     await S.click('[data-act=stest][data-v=bad]'); await S.set_input_files('#camin',SLIP); await S.wait_for_timeout(400); await shot(S,"slips-cannotread")
     await S.click('[data-act=stest][data-v=wrong]'); await S.set_input_files('#camin',SLIP); await S.wait_for_timeout(400); await shot(S,"slips-wrongslip")
     await S.click('[data-act=stest][data-v=good]'); await S.set_input_files('#camin',SLIP); await S.wait_for_timeout(1500); await shot(S,"slips-readok")

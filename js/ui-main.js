@@ -192,6 +192,7 @@ const ACT={
   mtname:el=>{const M=A.mt;const id=el.dataset.id;M.picked=M.picked.includes(id)?M.picked.filter(x=>x!==id):M.picked.concat([id]);mtSave();render()},
   mtadd:()=>{const r=slipRace();if(!r)return;A.modal={t:"addStudent",x:r.x,ages:agesFor(r.ev,r.g),then:async st=>{A.mt.picked=A.mt.picked.concat([st.id]);mtSave()}};render()},
   mtnames:()=>mtNamesDone(),
+  smode:el=>setSlipMode(el.dataset.v),
   mtrename:()=>{A.mt.phase="names";mtSave();render()},
   mtgo:(el,e,at)=>mtGo(at),
   mtsplit:(el,e,at)=>mtSplit(at),
