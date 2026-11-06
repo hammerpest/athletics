@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 6 November 2026, version bh. Replaces 6 November version bg.
+Date: 6 November 2026, version bi. Replaces 6 November version bh.
+
+Changes on 6 November 2026 (version bi): Jordan confirmed names default to off on the parents page and that FIND house means find a student (decision 99, closes both asks). Boards drawn and published to the canvas (version 39), waiting for Jordan's OK, nothing built (decision 100): A1.31 (new, Recorder, field override for shot put and discus: one box for the set distance for everyone not measured, a Weight 0.75 kg or 1 kg choice per athlete, the three throws as Fair, Foul or Pass buttons, a Throws again tick, a Measured box, Best with a Participation chip, Points, and Finish as End or Bring back); A1.12 (Recorder, long jump override: a Finish column with End, Bring back and an Ended chip, an ended athlete's boxes locked, the old NS sample gone); A1.14 (Results: a shot put card with Measured or Participation in a Based on column, the set distance marked set, a shared place and 4 points, and a note). The board logic was run in Node and ranks correctly (measured 1st to 3rd, participation shared =4 with 4 points, no fair throw gets a dash); not looked at as pictures. The 1.7 baseline (1,030 screenshots) is committed locally, not pushed. Main is still not done. Ask now: Jordan's OK on A1.31, A1.12 and A1.14, and whether to push the baseline.
 
 Changes on 6 November 2026 (version bh): Jordan approved Aths Opt 1.7. The 1,030 screenshots (4 sizes, 2 themes, the phone light set re-shot clean) are saved to baseline/, replacing the 1.5 ones. Staging is live at 2a8abe9. Not pushed: this baseline commit. Next: draw the Recorder editing of Finish, throw again, set distance and weight, and participation in Results, as boards, for Jordan's OK. Main is not done yet (Jordan's decision 98). Ask now: confirm FIND house means find a student, and the names default is off.
 
