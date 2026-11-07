@@ -130,6 +130,8 @@ async def run(pw,dev,theme):
     await shot(S,"multi-place-start")
     for i in [4,2]: await S.click(f'[data-act=mttap] >> nth={i}')
     await shot(S,"multi-place")
+    # Aths Opt 2.1: Add a runner who ran, while placing (A1.5, decision 107)
+    await S.click('[data-act=mtaddopen]'); await S.wait_for_timeout(250); await shot(S,"multi-add-runner"); await S.click('.modal [data-act=closemodal]'); await S.wait_for_timeout(150)
     for i in [0,5]: await S.click(f'[data-act=mttap] >> nth={i}')
     if await has(S,'.spot'):
         await S.click('[data-act=mttap] >> nth=3'); await S.wait_for_timeout(60); await shot(S,"multi-past-splits")

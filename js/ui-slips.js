@@ -160,6 +160,38 @@ function mtList(ev,x,g,r){
   for(const a of gl)for(const s of eligible(ev,x,a))if(!seen.has(s.id)){seen.add(s.id);list.push(s)}
   return list.filter(s=>!used.has(s.id));
 }
+/* Add a runner who ran but was not named (decision 107). From the list, or not on the list. On a race with lanes they take
+   the next free lane (the race's lanes are saved at once, so their time and place are stored with everyone's). */
+function mtAddCandidates(r){
+  const M=A.mt;const q=(M.aq||"").toLowerCase();
+  /* not anyone already in this phone's list or in this race's lanes (the Recorder or another phone may have added them) */
+  const inLanes=new Set(Object.values(r.lanes||{}).filter(Boolean));
+  return mtList(r.ev,r.x,r.g,r).filter(s=>!M.picked.includes(s.id)&&!inLanes.has(s.id)).filter(s=>!q||listName(s).toLowerCase().includes(q));
+}
+/* the next free lane for a runner added now: any number on an 800 m or 1500 m, up to the track's lanes on a lane race; null if full */
+function mtFreeLane(r){
+  const L=Number(A.cfg.lanes)||8;
+  const used=new Set(Object.keys(r.lanes||{}).filter(l=>r.lanes[l]).map(Number));
+  let l=1;while(used.has(l))l++;
+  return !r.multi&&l>L?null:l;
+}
+function mtLanesFull(r){return "All "+(Number(A.cfg.lanes)||8)+" lanes are full. Ask the Recorder to add them to the race."}
+async function mtAddRunner(id){
+  const r=slipRace();const M=A.mt;if(!r||r.ev.relay||locked()||!id||M.picked.includes(id))return;
+  A.modal=null;
+  const had=Object.values(r.lanes||{}).includes(id);
+  if(!had){
+    const l=mtFreeLane(r);
+    if(l==null){toast(mtLanesFull(r));render();return}
+    const ok=await setHeatLane(r.race,l,id);if(!ok){render();return}
+    /* if another phone took the same lane at the same moment, say so rather than leave a runner with no lane */
+    const H=A.heats.find(h=>h.race===r.race);
+    if(H&&H.lanes&&H.lanes[l]!==id){toast("That lane was just taken on another phone. Add the runner again.");render();return}
+  }
+  M.picked=M.picked.concat([id]);M.aq="";mtSave();
+  toast((A.R.who(id)?pname(A.R.who(id)):"Runner")+" added"+(M.phase==="place"?". Place them with the others.":"."));
+  render();
+}
 function renderMulti(r,top,sw){
   const M=mtFor(r);const lk=locked();const n=M.picked.length;
   const head=`<div class="racebar ph" style="margin:0">${badge(r.race,"sm")}<div class="info"><b>${esc(r.label)}</b><span>${r.draft?`Heat ${r.heat} · `:""}${r.multi?"No lanes · ":""}${plural(n,"runner")}</span></div></div>`;
@@ -178,7 +210,8 @@ function renderMulti(r,top,sw){
       <div class="mtbtns">${run?`<button type="button" class="btn mtstop" data-act="mtstop" data-mt>STOP</button>`:`<button type="button" class="btn mtgo" data-act="mtgo" data-mt ${lk?"disabled":""}>START</button>`}<button type="button" class="btn mtsplit" ${run?`data-act="mtsplit" data-mt`:"disabled"}>SPLIT</button></div>
       <div class="panel stack" style="gap:8px"><div class="row" style="justify-content:space-between"><span class="label">Splits</span><span class="chip">${M.splits.length} of ${plural(n,"runner")}</span></div>${mtSplitList(M.splits)}</div>
       <p class="muted" style="margin:0;font-size:.88rem">No need to catch every runner. Stop any time after the top places are in.</p>
-      ${run||!r.multi?"":`<button type="button" class="linkbtn" data-act="mtrename">Change the names</button>`}`;
+      ${run||!r.multi?"":`<button type="button" class="linkbtn" data-act="mtrename">Change the names</button>`}
+      ${run||r.ev.relay?"":`<button type="button" class="btn big" data-act="mtaddopen" ${lk?"disabled":""}>Add a runner who ran</button>`}`;
     if(run)bar=`<button type="button" class="btn" data-act="mtunsplit" ${M.splits.length?"":"disabled"}>Undo last split</button><button type="button" class="btn navy" data-act="mtfix">Fix splits</button>`;
   }else if(M.phase==="place"){
     const sp=M.splits;const tp=M.taps;const allDone=tp.length>=n;const nm=id=>A.R.who(id)||{};
@@ -189,6 +222,7 @@ function renderMulti(r,top,sw){
     body+=`<div class="pool ph track">${M.picked.map(id=>{const p=nm(id);const k=tp.indexOf(id);const pl=k+1;const nm2=esc(pname(p));
       return `<div class="lane" style="grid-template-columns:minmax(0,1fr) auto"><div class="body" style="cursor:default"><span class="nm">${hdot(p.h)}<span>${nm2}</span></span></div>
       <div class="wall mt"><button type="button" class="spot ${pl?(pl<=4?"p"+pl:"px"):""}" data-act="mttap" data-id="${esc(id)}" aria-label="${pl?`${nm2}, place ${pl}. Tap to remove`:`${nm2}, tap for place ${tp.length+1}`}" ${sp.length&&!lk?"":"disabled"}>${pl||""}</button><span class="mtt" style="display:block;min-height:18px;min-width:62px;box-sizing:border-box;text-align:center;border-radius:4px;${pl?"background:#1d3160;color:#ffffff":""}">${pl?mtFmt(mtTimeAt(sp,k)):"&nbsp;"}</span></div></div>`}).join("")}</div>`;
+    if(!r.ev.relay)body+=`<button type="button" class="btn big" data-act="mtaddopen" ${lk?"disabled":""}>Add a runner who ran</button>`;
     body+=`<div style="text-align:center"><button type="button" class="linkbtn" data-act="mtfix">Fix splits</button></div>`;
     bar=`<button type="button" class="btn" data-act="mtundo" ${tp.length&&!lk?"":"disabled"}>Undo last</button><button type="button" class="btn navy" data-act="mtsend" ${allDone&&sp.length&&!lk?"":"disabled"}>Send to Recorder</button>`;
   }else{
@@ -273,6 +307,12 @@ function mtDraftRace(){
   return {draft:true,race:A.counter,heat:Math.max(...gs.map(g=>heatsSentFor(groupKey(d.k,d.x,g))))+1,k:d.k,x:d.x,g:gs[0],gs,key,ev,multi:true,label:gs.length>1?gsLabel(ev,d.x,gs):groupLabel(ev,d.x,gs[0]),lanes:{},filled:[],hasSlip:false};
 }
 function mtDraftDrop(){A.mt=mtBlank(null);mtSave();render()}
+MODALS.mtAddRunner=M=>{
+  const r=slipRace();if(!r)return "";const list=mtAddCandidates(r);
+  return `<h2>Who ran but was not named?</h2><p class="muted" style="margin:0">${esc(r.label)}. Tap the runner.${r.multi?"":" They take the next free lane."}</p>
+    <label class="label" style="display:flex;flex-direction:column;gap:4px">Find a runner<input type="search" id="mtaq" placeholder="Type part of a name" value="${esc(A.mt.aq||"")}" autocomplete="off"></label>
+    <div class="namegrid">${list.slice(0,60).map(s=>`<button type="button" class="namebtn" data-act="mtaddrun" data-id="${esc(s.id)}">${hdot(s.h)}<span class="t">${esc(s.f+" "+s.s)}</span></button>`).join("")||`<span class="muted">Nobody else to add. Try Not on the list.</span>`}</div>
+    <div class="acts"><button type="button" class="btn" data-act="mtaddnot">Not on the list</button><button type="button" class="btn primary" data-act="closemodal">Close</button></div>`};
 MODALS.mtNoHeat=M=>`<h2>No more heats?</h2><p style="margin:0">The ${plural(M.n,"name")} picked for this heat will be cleared.</p><div class="acts"><button type="button" class="btn" data-act="closemodal">&lt; Back</button><button type="button" class="btn redfill" data-act="mtnoheatok">Clear the names</button></div>`;
 async function mtDraftDone(){
   const M=A.mt;const r=mtDraftRace();if(!r||!M.picked.length||locked()||M.sending)return;

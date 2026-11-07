@@ -67,6 +67,7 @@ function wireInputs(){
   const f=document.getElementById("mfilter");if(f)f.oninput=()=>{A.m.filter=f.value;render()};
   const ff=document.getElementById("ffilter");if(ff)ff.oninput=()=>{A.f.filter=ff.value;render()};
   const tn=document.getElementById("tnfilter");if(tn)tn.oninput=()=>{A.f.q=tn.value;render()};
+  const aq=document.getElementById("mtaq");if(aq)aq.oninput=()=>{A.mt.aq=aq.value;render();const n=document.getElementById("mtaq");if(n){n.focus();n.setSelectionRange(n.value.length,n.value.length)}};
   const mf=document.getElementById("mtfilter");if(mf)mf.oninput=()=>{A.mt.q=mf.value;mtSave();render()};
   const cam=document.getElementById("camin");if(cam)cam.onchange=e=>{const file=e.target.files[0];e.target.value="";onPhoto(file)};
   document.querySelectorAll("[data-time]").forEach(inp=>{
@@ -196,6 +197,9 @@ const ACT={
   mtadd:()=>{const r=slipRace();if(!r)return;A.modal={t:"addStudent",x:r.x,ages:agesFor(r.ev,r.gs||r.g),then:async st=>{A.mt.picked=A.mt.picked.concat([st.id]);mtSave()}};render()},
   mtnames:()=>mtNamesDone(),
   smode:el=>setSlipMode(el.dataset.v),
+  mtaddopen:()=>{if(locked())return;A.mt.aq="";A.modal={t:"mtAddRunner"};render()},
+  mtaddrun:el=>mtAddRunner(el.dataset.id),
+  mtaddnot:()=>{const r=slipRace();if(!r)return;if(mtFreeLane(r)==null){A.modal=null;toast(mtLanesFull(r));render();return}A.modal={t:"addStudent",x:r.x,ages:agesFor(r.ev,r.gs||r.g),then:async st=>{await mtAddRunner(st.id)}};render()},
   mtrename:()=>{A.mt.phase="names";mtSave();render()},
   mtgo:(el,e,at)=>mtGo(at),
   mtsplit:(el,e,at)=>mtSplit(at),

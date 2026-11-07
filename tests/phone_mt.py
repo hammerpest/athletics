@@ -9,7 +9,7 @@ async def main():
         for k in pin: await p.click(f'.keypad [data-k="{k}"]')
         await p.click('[data-act=pinstart]'); await p.wait_for_timeout(100); return p
     O=await page("9999"); await O.click('.tile[data-job=organiser]'); await O.click('[data-act=osec][data-v=students]'); await O.click('[data-act=oload]'); await O.click('[data-act=otest]'); await O.click('[data-act=oimport]'); await O.wait_for_timeout(200)
-    M=await page("1111"); await M.evaluate("(async()=>{const m=A.m;m.k='800';m.x='F';m.g='16';m.phase='start';await marshalGo()})()"); await M.wait_for_timeout(200)
+    M=await page("1111"); await M.evaluate("(async()=>{const m=A.m;m.k='800';m.x='F';m.gs=['16'];m.phase='start';await marshalGo()})()"); await M.wait_for_timeout(200)
     S=await page("4444")
     for i in range(3): await S.click(f'.namebtn >> nth={i}')
     await S.click('[data-act=mtnames]'); await S.click('[data-act=mtgo]')
