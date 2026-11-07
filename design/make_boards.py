@@ -184,20 +184,22 @@ def marshal_pick(dark):
     const evs = ['100 m','200 m','400 m','800 m','1500 m','4 x 100 m relay'];
     const age = ['12 & 13','14','15','16','17','18+'];
     const band = ['Junior','Intermediate','Senior'];
-    const isRelay = st.e === '4 x 100 m relay', is1500 = st.e === '1500 m';
-    const groups = isRelay ? band : (is1500 ? ['Open'] : age);
-    const g = groups.includes(st.g) ? st.g : (is1500 ? 'Open' : null);
-    const miss = [st.e ? null : 'the race', st.x ? null : 'boys or girls', g ? null : (isRelay ? 'the group' : 'the age')].filter(Boolean);
+    const isRelay = st.e === '4 x 100 m relay', multi = st.e === '800 m' || st.e === '1500 m';
+    const groups = isRelay ? band : age;
+    const gs = age.filter((a) => st.gs.includes(a));
+    const g = multi ? (gs.length ? gs.join(', ') : null) : (groups.includes(st.g) ? st.g : null);
+    const toggle = (l) => () => set({ gs: gs.includes(l) ? gs.filter((a) => a !== l) : gs.concat([l]) });
+    const miss = [st.e ? null : 'the race', st.x ? null : 'boys or girls', g ? null : (isRelay ? 'the group' : (multi ? 'at least one age' : 'the age'))].filter(Boolean);
     out = { ev: evs.map((l) => ({ l, on: st.e === l, tap: () => set({ e: l }) })),
       sex: ['Girls','Boys'].map((l) => ({ l, on: st.x === l, tap: () => set({ x: l }) })),
-      grp: groups.map((l) => ({ l, on: g === l, tap: () => set({ g: l }) })),
-      showSex: true, gLabel: isRelay ? 'Group' : 'Age', showNote: isRelay || st.e === '800 m' || is1500,
-      note: isRelay ? 'One team per house. Pick the house for each lane; no names.' : 'No lanes. The person with the multitimer enters the names and times this race on a phone.',
-      go: isRelay ? F.r : ((st.e === '800 m' || is1500) ? F.m : F.l),
+      grp: multi ? [{ l: 'All ages', on: gs.length === age.length, tap: () => set({ gs: gs.length === age.length ? [] : age.slice() }) }].concat(age.map((l) => ({ l, on: gs.includes(l), tap: toggle(l) }))) : groups.map((l) => ({ l, on: g === l, tap: () => set({ g: l }) })),
+      showSex: true, gLabel: isRelay ? 'Group' : (multi ? 'Ages (tick as many as run in this race)' : 'Age'), showNote: isRelay || multi,
+      note: isRelay ? 'One team per house. Pick the house for each lane; no names.' : 'Tick every age that runs in this race. They run together, and each age is scored on its own. No lanes: the person with the multitimer enters the names and times this race on a phone.',
+      go: isRelay ? F.r : (multi ? F.m : F.l),
       notReady: miss.length > 0, ready: miss.length === 0, miss: miss.join(', '),
       name: (st.e || '') + ', ' + (st.x || '') + ' ' + (g || '') };
 '''
-    return body, logic, "{ e: '100 m', x: 'Boys', g: '18+' }"
+    return body, logic, "{ e: '800 m', x: 'Girls', g: '18+', gs: ['12 & 13','14','15'] }"
 
 # ---------- A1.3 Track Marshal: lanes ----------
 def marshal_lanes(dark):
@@ -285,7 +287,7 @@ def multitimer(dark):
 <sc-if value="{{{{isPick}}}}" hint-placeholder-val="{{{{false}}}}">
 <div class="mrow" style="padding:0"><span class="label">Race</span><div class="choices"><sc-for list="{{{{cEv}}}}" as="c" hint-placeholder-count="2"><button type="button" class="choice" aria-pressed="{{{{c.on}}}}" onClick="{{{{c.tap}}}}">{{{{c.l}}}}</button></sc-for></div></div>
 <div class="mrow" style="padding:0"><span class="label">Boys or girls</span><div class="choices"><sc-for list="{{{{cX}}}}" as="c" hint-placeholder-count="2"><button type="button" class="choice" aria-pressed="{{{{c.on}}}}" onClick="{{{{c.tap}}}}">{{{{c.l}}}}</button></sc-for></div></div>
-<div class="mrow" style="padding:0"><span class="label">Age</span><div class="choices"><sc-for list="{{{{cG}}}}" as="c" hint-placeholder-count="6"><button type="button" class="choice" aria-pressed="{{{{c.on}}}}" onClick="{{{{c.tap}}}}">{{{{c.l}}}}</button></sc-for></div></div>
+<div class="mrow" style="padding:0"><span class="label">Ages (tick as many as run in this race)</span><div class="choices"><sc-for list="{{{{cG}}}}" as="c" hint-placeholder-count="6"><button type="button" class="choice" aria-pressed="{{{{c.on}}}}" onClick="{{{{c.tap}}}}">{{{{c.l}}}}</button></sc-for></div></div>
 <button type="button" class="btn navy big" onClick="{{{{again}}}}">Take names</button>
 <button type="button" class="btn" onClick="{{{{backSent}}}}">Back</button>
 <a class="linkbtn" style="text-align:center" href="{lnk("MarshalPick",dark)}">Another race: go to the Track Marshal</a>
@@ -299,10 +301,10 @@ def multitimer(dark):
     // a place past the last split gets 1 second more than the place before
     const timeAt = (k) => k < sp.length ? sp[k] : sp[sp.length - 1] + (k - sp.length + 1) * 100;
     const O = (x) => x + (x % 100 > 10 && x % 100 < 14 ? 'th' : (['th','st','nd','rd'][x % 10] || 'th'));
-    out = { isNames: ph === 'names', isClock: ph === 'ready' || ph === 'run', isReady: ph === 'ready', isRun: ph === 'run', isPlace: ph === 'place', isSent: ph === 'sent', isPick: ph === 'pick', raceNo: st.race, label: st.e + ', ' + st.x + ' ' + (st.e === '1500 m' ? 'Open' : st.g),
+    out = { isNames: ph === 'names', isClock: ph === 'ready' || ph === 'run', isReady: ph === 'ready', isRun: ph === 'run', isPlace: ph === 'place', isSent: ph === 'sent', isPick: ph === 'pick', raceNo: st.race, label: st.e + ', ' + st.x + ' ' + st.gs.join(', '),
       newGroup: () => set({ ph: 'pick' }), backSent: () => set({ ph: 'sent' }),
       cEv: ['800 m','1500 m'].map((l) => ({ l, on: st.e === l, tap: () => set({ e: l }) })), cX: ['Girls','Boys'].map((l) => ({ l, on: st.x === l, tap: () => set({ x: l }) })),
-      cG: (st.e === '1500 m' ? ['Open'] : ['12 & 13','14','15','16','17','18+']).map((l) => ({ l, on: st.e === '1500 m' || st.g === l, tap: () => set({ g: l }) })),
+      cG: [{ l: 'All ages', on: st.gs.length === 6, tap: () => set({ gs: st.gs.length === 6 ? [] : ['12 & 13','14','15','16','17','18+'] }) }].concat(['12 & 13','14','15','16','17','18+'].map((l) => ({ l, on: st.gs.includes(l), tap: () => set({ gs: st.gs.includes(l) ? st.gs.filter((a) => a !== l) : st.gs.concat([l]) }) }))),
       hasBar: ph === 'names' || ph === 'place' || ph === 'run', sub: 'No lanes · ' + n + ' runners',
       ppl: roster.map((r, i) => { const on = st.picked.includes(i); return { n: r.n, h: r.h, on, c: on ? 'sel' : '', tap: () => set({ picked: on ? st.picked.filter((x) => x !== i) : st.picked.concat([i]) }) }; }),
       clock: fmt(ph === 'ready' ? 0 : (sp.length ? sp[sp.length - 1] + 212 : 15120)), runC: ph === 'run' ? 'run' : '',
@@ -317,7 +319,7 @@ def multitimer(dark):
       again: () => set({ ph: 'names', taps: [], splits: st.seed, race: st.race + 1 }) };
 '''
     seed = [15120+337*i+(i*i*7)%90 for i in range(10)]
-    return body, logic, "{ e: '800 m', x: 'Girls', g: '16', race: 35, ph: 'names', picked: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], taps: [4,9,1,12,0,7,3], splits: " + J(seed) + ", seed: " + J(seed) + " }"
+    return body, logic, "{ e: '800 m', x: 'Girls', g: '16', gs: ['15','16'], race: 35, ph: 'names', picked: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], taps: [4,9,1,12,0,7,3], splits: " + J(seed) + ", seed: " + J(seed) + " }"
 
 # ---------- A1.17 Track Marshal: relay ----------
 def marshal_relay(dark):
@@ -358,7 +360,6 @@ def slips(dark):
 <button type="button" class="btn navy big">Next race</button>
 <button type="button" class="btn big" onClick="{{{{again}}}}">Replace this slip with a new photo</button>
 <div class="row" style="flex-wrap:nowrap"><a class="btn big" style="flex:1" href="{lnk("Recorder",dark)}">Check race</a><a class="btn big" style="flex:1" href="{lnk("Recorder",dark)}">Race overall</a></div></sc-if>
-<div class="row"><span class="qchip">QUESTION 19</span><span class="muted" style="font-size:.86rem;flex:1 1 200px">Drawn as the pool slip: one slip per heat, a time per lane. To confirm from a photo of a track slip.</span></div>
 </div></main></div>'''
     logic = "out = { before: !st.done, after: st.done, shoot: () => set({ done: true }), again: () => set({ done: false }) };"
     return body, logic, "{ done: false }"
@@ -1309,7 +1310,7 @@ def organiser_parents(dark):
 gap = 80; rowgap = 120
 R1 = 0; R2 = 820 + rowgap + 103; R3 = R2 + 982 + rowgap + 103
 board("Main","A1.1 Home: a job PIN opens its job straight away; only the organiser PIN shows all jobs, iPad landscape",*IPAD,home,0,R1)
-board("MarshalPick","A1.2 Track Marshal (a): pick race, boys or girls, age, iPad landscape",*IPAD,marshal_pick,1260,R1)
+board("MarshalPick","A1.2 Track Marshal (a): pick race, boys or girls, age; for the 800 m and 1500 m tick as many ages as run together, iPad landscape",*IPAD,marshal_pick,1260,R1)
 board("MarshalLanes","A1.3 Track Marshal (b): names into lanes, iPad landscape",*IPAD,marshal_lanes,2520,R1)
 board("PlaceJudge","A1.4 Track Place Judge: tap the top 4 at the finish line, phone",*PHONE,judge,3780,R1,radius=40)
 board("Multitimer","A1.5 Multitimer (Multi): names, START, splits, STOP, a button next to each name, then next heat or a new age on the phone; Take photo or Multi always shown",*PHONE,multitimer,4250,R1,radius=40)

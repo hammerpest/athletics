@@ -52,6 +52,23 @@ async def main():
         ok("Take photo on a race with no names says so and offers no camera", "no names yet" in await S.inner_text('#main') and await S.locator('label.cam').count() == 0)
         await S.click('[data-act=smode][data-v=multi]'); await S.wait_for_timeout(250)
         ok("back on Multi it starts at the names", "Tap each runner" in await S.inner_text('#main'))
+        # a relay race (a house team in each lane) can also be timed on Multi
+        await O.evaluate("""(async()=>{await A.store.set('heats/r0003',{race:3,k:'R',x:'F',g:'J',heat:1,lanes:{2:'T-B',4:'T-J',6:'T-N'},at:Date.now()});await A.store.set('counter/race',{next:4,at:Date.now()})})()"""); await O.wait_for_timeout(400)
+        await S.evaluate("A.s.race=3;render()"); await S.wait_for_timeout(300)
+        ok("a relay opens on Take photo with the switch shown", await S.locator('[data-act=smode]').count() == 2 and await S.locator('[data-act=smode][data-v=photo]').get_attribute('aria-pressed') == 'true')
+        await S.click('[data-act=smode][data-v=multi]'); await S.wait_for_timeout(300)
+        ok("Multi on a relay lists the three house teams", "3 runners" in await S.inner_text('.racebar'))
+        await S.click('[data-act=mtgo]'); await S.wait_for_timeout(250)
+        for _ in range(3):
+            await S.click('[data-act=mtsplit]'); await S.wait_for_timeout(200)
+        await S.click('[data-act=mtstop]'); await S.wait_for_timeout(250)
+        for team in ('T-J', 'T-N', 'T-B'):
+            await S.click(f'[data-act=mttap][data-id="{team}"]'); await S.wait_for_timeout(150)
+        await S.click('[data-act=mtsend]'); await S.wait_for_timeout(500)
+        ok("the relay times go to the teams' lanes (2, 4, 6) with places in finish order", sorted((await S.evaluate("A.times.r0003.lanes")).keys()) == ['2', '4', '6'] and (await S.evaluate("A.finish.r0003.seq")) == ['4', '6', '2'])
+        # the Question 19 note is gone from the Time Slips screen
+        await S.evaluate("A.s.race=1;render()"); await S.click('[data-act=smode][data-v=photo]'); await S.wait_for_timeout(300)
+        ok("the Question 19 note is not on the Time Slips screen", "QUESTION 19" not in await S.inner_text('#main'))
         # the choice is kept after a reload
         await S.reload(); await S.wait_for_function("typeof A!=='undefined'&&!!A.store"); await S.wait_for_timeout(500)
         ok("the choice is kept after a reload", await S.locator('[data-act=smode]').count() == 2)

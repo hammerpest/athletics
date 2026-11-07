@@ -45,7 +45,6 @@ function renderSlips(){
      :`<label class="cam" for="camin">${CAM}${A.s.err?"Take again":"Take photo of the slip"}</label>
        <div class="msg info">Race ${r.race} is ready. Hold the phone flat over the printed slip.</div>`}
     <input id="camin" type="file" accept="image/*" capture="environment" hidden ${locked()?"disabled":""}>
-    <div class="row"><span class="qchip">QUESTION 19</span><span class="muted" style="font-size:.86rem;flex:1 1 200px">Drawn as the pool slip: one slip per heat, a time per lane. To confirm from a photo of a track slip.</span></div>
     <div class="panel stack" style="gap:8px;background:var(--sunk);border-color:transparent">
       <span class="label">Slip reader: test mode</span>
       <p style="margin:0;font-size:.88rem">The reader for the track slip is built once a real slip photo arrives. Until then the photo is saved and test times are made up, so the Recorder can be tried. Pick what the next photo should do:</p>
