@@ -132,17 +132,20 @@ const ACT={
   signout:()=>{if(A.job==="marshal"&&A.m.phase==="lanes"&&Object.keys(A.m.lanes).length){A.modal={t:"leaveMarshal",to:null};A.menu=false;render();return}signOut()},
   closemodal:()=>{A.modal=null;A.f.filter="";render()},
   modalbg:(el,e)=>{if(e.target===el){A.modal=null;render()}},
-  leaveok:()=>{const to=A.modal&&A.modal.to;A.modal=null;A.m.phase="start";A.m.lanes={};A.m.k=null;A.m.x=null;A.m.g=null;if(to==="marshal"){announce();render()}else if(to)goJob(to);else signOut()},
-  mpick:el=>{const m=A.m;m[el.dataset.f]=el.dataset.v;m.msg="";
+  leaveok:()=>{const to=A.modal&&A.modal.to;A.modal=null;A.m.phase="start";A.m.lanes={};A.m.k=null;A.m.x=null;A.m.g=null;A.m.gs=[];if(to==="marshal"){announce();render()}else if(to)goJob(to);else signOut()},
+  mpick:el=>{const m=A.m;m.msg="";
+    if(el.dataset.f==="gs"){const v=el.dataset.v;const cur=m.gs||[];m.gs=cur.includes(v)?cur.filter(a=>a!==v):cur.concat([v]);render();return}
+    m[el.dataset.f]=el.dataset.v;
     if(el.dataset.f==="k"){const ev=mEv();if(m.g&&!groupsOf(ev).includes(m.g))m.g=null;if(ev.gk==="open")m.g="O"}
     render()},
+  mpickall:()=>{const m=A.m;m.msg="";m.gs=(m.gs||[]).length===AGE_GROUPS.length?[]:AGE_GROUPS.slice();render()},
   mgo:()=>marshalGo(),
   mlane:el=>{const l=+el.dataset.l;A.m.open=A.m.open===l?null:l;A.m.cur=l;A.m.filter="";render()},
   mset:el=>{const l=+el.dataset.l;A.m.lanes[l]=el.dataset.id;const n=nextEmpty(l);A.m.cur=n||l;A.m.open=mEv().relay?null:n;A.m.filter="";render()},
   mclear:el=>{delete A.m.lanes[+el.dataset.l];A.m.cur=+el.dataset.l;render()},
   mclose:()=>{A.m.open=null;render()},
   maddnew:el=>{const m=A.m;const l=+el.dataset.l;const ev=m.phase==="edit"?eventOf(A.cfg,m.k):mEv();
-    A.modal={t:"addStudent",x:m.x,ages:agesFor(ev,m.g),then:async st=>{m.open=null;if(m.phase==="edit")await setHeatLane(m.edit,l,st.id);else{m.lanes[l]=st.id;m.cur=nextEmpty(l)||l}}};render()},
+    A.modal={t:"addStudent",x:m.x,ages:agesFor(ev,m.phase==="edit"&&m.edit!=null?heatGs(A.heats.find(h=>h.race===m.edit)||{g:m.g}):m.g),then:async st=>{m.open=null;if(m.phase==="edit")await setHeatLane(m.edit,l,st.id);else{m.lanes[l]=st.id;m.cur=nextEmpty(l)||l}}};render()},
   addstudent:()=>addStudent(),
   mback:()=>{if(Object.keys(A.m.lanes).length){A.modal={t:"leaveMarshal",to:"marshal"};render();return}finishMarshalRace()},
   mnext:async()=>{if(await sendHeat())render()},
@@ -159,7 +162,7 @@ const ACT={
   rgoto:()=>{A.modal={t:"goRace",job:"recorder"};render()},
   sgoto:()=>{A.modal={t:"goRace",job:"slips"};render()},
   medit:()=>{A.modal={t:"goRace",job:"medit"};render()},
-  medone:()=>{const m=A.m;m.phase="start";m.edit=null;m.k=null;m.x=null;m.g=null;m.open=null;m.filter="";render();window.scrollTo(0,0)},
+  medone:()=>{const m=A.m;m.phase="start";m.edit=null;m.k=null;m.x=null;m.g=null;m.gs=[];m.open=null;m.filter="";render();window.scrollTo(0,0)},
   meset:async el=>{const l=+el.dataset.l;A.m.open=null;A.m.filter="";await setHeatLane(A.m.edit,l,el.dataset.id);render()},
   meclear:async el=>{const l=+el.dataset.l;A.m.open=null;await setHeatLane(A.m.edit,l,null);render()},
   raddlane:el=>{A.m.filter="";A.modal={t:"pickLane",race:recRace().race,l:+el.dataset.l};render()},
@@ -190,7 +193,7 @@ const ACT={
   stest:el=>{A.s.test=el.dataset.v;render()},
   soverall:()=>{const r=slipRace();if(r){A.modal={t:"overall",race:r.race};render()}},
   mtname:el=>{const M=A.mt;const id=el.dataset.id;M.picked=M.picked.includes(id)?M.picked.filter(x=>x!==id):M.picked.concat([id]);mtSave();render()},
-  mtadd:()=>{const r=slipRace();if(!r)return;A.modal={t:"addStudent",x:r.x,ages:agesFor(r.ev,r.g),then:async st=>{A.mt.picked=A.mt.picked.concat([st.id]);mtSave()}};render()},
+  mtadd:()=>{const r=slipRace();if(!r)return;A.modal={t:"addStudent",x:r.x,ages:agesFor(r.ev,r.gs||r.g),then:async st=>{A.mt.picked=A.mt.picked.concat([st.id]);mtSave()}};render()},
   mtnames:()=>mtNamesDone(),
   smode:el=>setSlipMode(el.dataset.v),
   mtrename:()=>{A.mt.phase="names";mtSave();render()},

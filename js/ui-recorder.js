@@ -25,6 +25,8 @@ function renderRecTrack(){
   if(!r)return recTabs()+waitingCard("Waiting for the first race","Race 1 appears here once the marshal sends it. Times arrive from the time slip photo, or you can type them.");
   const lk=lockedBy(r.race)||locked();const lkc=lk||r.cancelled;
   const G=A.R.groups.get(r.key);const max=latestRace();
+  /* a combined 800 m or 1500 m has a result for each age in it */
+  const Gs=(r.gs||[r.g]).map(g=>A.R.groups.get(groupKey(r.k,r.x,g))).filter(Boolean);
   let rows="";
   for(const l of r.filled){
     const id=r.lanes[l];const p=A.R.who(id);const v=r.times[l]||{};const e=r.eff[l];const jp=r.placeTaps[l];
@@ -64,9 +66,10 @@ function renderRecTrack(){
         ${r.cancelled?"":`<div class="row" style="gap:20px"><button type="button" class="linkbtn" data-act="rcancel" ${lk?"disabled":""}>Cancel this race (not run)</button><button type="button" class="linkbtn" data-act="rrerun" ${lk?"disabled":""}>Re-run this race</button></div>`}
       </div>
     </div>
-    <div class="stack"><div class="panel stack"><div class="row" style="justify-content:space-between"><h3>Race overall</h3>${G?`<span class="chip ${G.final?"final":"prov"}">${G.status}</span>`:""}</div>
+    <div class="stack">${Gs.length>1?Gs.map(g=>`<div class="panel stack"><div class="row" style="justify-content:space-between"><h3>Race overall: ${esc(grpName(g.g))}</h3><span class="chip ${g.final?"final":"prov"}">${g.status}</span></div>
+      <span class="muted" style="font-size:.86rem">${esc(g.label)} · ${raceRange(g.raceNos)}, ${plural(g.heats.length,"heat")}, timed final</span>${overallTable(g)}</div>`).join(""):`<div class="panel stack"><div class="row" style="justify-content:space-between"><h3>Race overall</h3>${G?`<span class="chip ${G.final?"final":"prov"}">${G.status}</span>`:""}</div>
       <span class="muted" style="font-size:.86rem">${esc(r.label)} · ${G?`${raceRange(G.raceNos)}, ${plural(G.heats.length,"heat")}, timed final`:"no heats run yet"}</span>
-      ${overallTable(G)}</div>
+      ${overallTable(G)}</div>`}
       ${slipPanel(r)}</div>
   </div>`;
 }
@@ -154,7 +157,7 @@ function slipPanel(r){
 MODALS.pickLane=M=>{const r=A.R.races.get(M.race);if(!r)return `<p>Race not found.</p><div class="acts"><button type="button" class="btn" data-act="closemodal">Close</button></div>`;
   const H=A.heats.find(h=>h.race===M.race)||{};const t=(r.times||{})[M.l];
   return `<h2>Add runner to lane ${M.l}</h2><p class="muted" style="margin:0">Race ${M.race}, ${esc(r.label)}, heat ${r.heat}.${t&&t.t!=null?` The slip time ${fmtTime(t.t)} becomes theirs.`:""}</p>
-  <div style="position:relative;min-height:320px">${laneList(M.l,r.ev,r.x,r.g,heatUsed(H),new Set(Object.values(H.lanes||{}).filter(Boolean)),null,"rsetlane",null,"Other heat").replace('class="picklist"','class="picklist" style="position:static;box-shadow:none"')}</div>`};
+  <div style="position:relative;min-height:320px">${laneList(M.l,r.ev,r.x,r.gs||r.g,heatUsed(H),new Set(Object.values(H.lanes||{}).filter(Boolean)),null,"rsetlane",null,"Other heat").replace('class="picklist"','class="picklist" style="position:static;box-shadow:none"')}</div>`};
 
 /* ---------- Recorder, field events ---------- */
 function recFieldRows(){

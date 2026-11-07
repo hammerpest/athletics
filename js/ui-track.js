@@ -6,7 +6,8 @@ function groupChoices(ev){
 function eligible(ev,x,g){
   if(ev.relay)return TEAMS.map(id=>({id,team:true,name:houseName(id[2]),h:id[2]}));
   let list=students().filter(s=>s.x===x);
-  if(ev.gk==="age")list=list.filter(s=>s.g===g);
+  /* g can be one age or a list of ages (a combined 800 m or 1500 m) */
+  if(ev.gk==="age"){const gl=Array.isArray(g)?g:[g];list=list.filter(s=>gl.includes(s.g))}
   return list.slice().sort((a,b)=>(a.s+" "+a.f).localeCompare(b.s+" "+b.f));
 }
 function mEv(){return eventOf(A.cfg,A.m.k)}
@@ -14,16 +15,19 @@ function mMissing(){
   const m=A.m,ev=mEv();const miss=[];
   if(!ev)miss.push("the race");
   if(!m.x)miss.push("boys or girls");
-  if(!m.g)miss.push(ev&&ev.gk!=="age"?"the group":"the age");
+  if(ev&&ev.run==="multi"){if(!(m.gs&&m.gs.length))miss.push("at least one age")}
+  else if(!m.g)miss.push(ev&&ev.gk!=="age"?"the group":"the age");
   return miss;
 }
 /* a race cancelled as not run frees its runners to be marshalled again */
 function usedInGroup(){
   const m=A.m;const key=groupKey(m.k,m.x,m.g);const used=new Set();
-  for(const h of A.heats)if(!h.cancelled&&groupKey(h.k,h.x,h.g)===key)for(const l in (h.lanes||{}))if(h.lanes[l])used.add(h.lanes[l]);
+  for(const h of A.heats)if(!h.cancelled&&heatGs(h).some(g=>groupKey(h.k,h.x,g)===key))for(const l in (h.lanes||{}))if(h.lanes[l])used.add(h.lanes[l]);
   return used;
 }
-function heatsSentFor(key){return Math.max(0,...A.heats.filter(h=>!h.cancelled&&groupKey(h.k,h.x,h.g)===key).map(h=>Number(h.heat)||0))}
+function heatsSentFor(key){return Math.max(0,...A.heats.filter(h=>!h.cancelled&&heatGs(h).some(g=>groupKey(h.k,h.x,g)===key)).map(h=>Number(h.heat)||0))}
+/* the ages ticked for an 800 m or 1500 m, in age order */
+function mGs(){const m=A.m;return AGE_GROUPS.filter(a=>(m.gs||[]).includes(a))}
 
 function renderMarshal(){
   const m=A.m;
@@ -33,18 +37,20 @@ function renderMarshal(){
   const row=(id,title,inner,isMiss)=>`<div class="mrow ${showMiss&&isMiss?"miss":""}" id="${id}"><span class="label">${title}</span><div class="choices">${inner}</div></div>`;
   const raceBtns=types.map(x=>`<button type="button" class="choice" data-act="mpick" data-f="k" data-v="${esc(x.k)}" aria-pressed="${m.k===x.k}">${esc(x.name)}</button>`).join("");
   const sexBtns=[["F","Girls"],["M","Boys"]].map(([v,l])=>`<button type="button" class="choice" data-act="mpick" data-f="x" data-v="${v}" aria-pressed="${m.x===v}">${l}</button>`).join("");
-  const gBtns=groupChoices(ev).map(c=>`<button type="button" class="choice" data-act="mpick" data-f="g" data-v="${c.g}" aria-pressed="${m.g===c.g}">${esc(c.l)}</button>`).join("");
-  const name=!miss.length?groupLabel(ev,m.x,m.g):"";
-  const note=!ev?"":ev.relay?"One team per house. Pick the house for each lane; no names.":ev.run==="multi"?"No lanes. The person with the multitimer enters the names and times this race on a phone.":"";
+  const multiAge=!!ev&&ev.run==="multi";
+  const gBtns=multiAge?`<button type="button" class="choice" data-act="mpickall" aria-pressed="${mGs().length===AGE_GROUPS.length}">All ages</button>`+groupChoices(ev).map(c=>`<button type="button" class="choice" data-act="mpick" data-f="gs" data-v="${c.g}" aria-pressed="${mGs().includes(c.g)}">${esc(c.l)}</button>`).join("")
+    :groupChoices(ev).map(c=>`<button type="button" class="choice" data-act="mpick" data-f="g" data-v="${c.g}" aria-pressed="${m.g===c.g}">${esc(c.l)}</button>`).join("");
+  const name=!miss.length?(multiAge?gsLabel(ev,m.x,mGs()):groupLabel(ev,m.x,m.g)):"";
+  const note=!ev?"":ev.relay?"One team per house. Pick the house for each lane; no names.":ev.run==="multi"?"Tick every age that runs in this race. They run together, and each age is scored on its own. No lanes: the person with the multitimer enters the names and times this race on a phone.":"";
   return `${lockBar()}<div class="stack" style="max-width:1040px;margin:0 auto">
     ${m.msg?`<div class="msg ok">${esc(m.msg)}</div>`:""}
     ${A.heats.length===0&&!students().length?`<div class="msg warn">No student list loaded yet. The Carnival Organiser loads it first.</div>`:""}
     ${row("mr-race","Race",raceBtns,!ev)}
     ${row("mr-sex","Boys or girls",sexBtns,!m.x)}
-    ${row("mr-age",ev&&ev.gk!=="age"?"Group":"Age",gBtns,!m.g)}
+    ${row("mr-age",multiAge?"Ages (tick as many as run in this race)":ev&&ev.gk!=="age"?"Group":"Age",gBtns,multiAge?!mGs().length:!m.g)}
     ${note?`<div class="msg info">${esc(note)}</div>`:""}
     <div class="checkline">${badge(A.counter,"xl")}
-      ${miss.length?`<div class="what not"><span class="label" style="color:var(--warn)">Not ready yet</span><br>Still to choose: ${esc(miss.join(", "))}</div>`:`<div class="what">${esc(name)}<br><span class="muted" style="font:600 .95rem var(--font-body)">Heat ${heatsSentFor(groupKey(m.k,m.x,m.g))+1}</span></div>`}
+      ${miss.length?`<div class="what not"><span class="label" style="color:var(--warn)">Not ready yet</span><br>Still to choose: ${esc(miss.join(", "))}</div>`:`<div class="what">${esc(name)}<br><span class="muted" style="font:600 .95rem var(--font-body)">Heat ${(multiAge?Math.max(...mGs().map(g=>heatsSentFor(groupKey(m.k,m.x,g)))):heatsSentFor(groupKey(m.k,m.x,m.g)))+1}</span></div>`}
       <button type="button" class="btn go big" data-act="mgo" ${locked()?"disabled":""}>Go</button>
     </div>
     ${A.heats.length&&!locked()?`<div style="text-align:center"><button type="button" class="linkbtn" data-act="medit">Change an earlier race</button></div>`:""}
@@ -53,18 +59,19 @@ function renderMarshal(){
 async function marshalGo(){
   const m=A.m;const miss=mMissing();
   if(miss.length){m.showMiss=true;A.modal={t:"info",title:"Not ready yet",body:`<p style="margin:0">You have not selected ${esc(miss.join(", ").replace(/, ([^,]*)$/," and $1"))}.</p><p style="margin:0">Go back and choose them (marked in yellow), then press Go.</p>`,ok:"OK, go back"};render();return}
-  const ev=mEv();const key=groupKey(m.k,m.x,m.g);
-  if(otherPeers().some(p=>p.mk===key)){A.modal={t:"info",title:"Already selected",body:`<p style="margin:0">${esc(groupLabel(ev,m.x,m.g))} has already been selected on another iPad. Please go back and choose another race or group.</p>`,ok:"Back"};render();return}
-  const sent=heatsSentFor(key);
+  const ev=mEv();const multiAge=ev.run==="multi";const gsSel=multiAge?mGs():[m.g];const key=groupKey(m.k,m.x,gsSel[0]);
+  const nameSel=multiAge?gsLabel(ev,m.x,gsSel):groupLabel(ev,m.x,m.g);
+  if(otherPeers().some(p=>p.mk===key)){A.modal={t:"info",title:"Already selected",body:`<p style="margin:0">${esc(nameSel)} has already been selected on another iPad. Please go back and choose another race or group.</p>`,ok:"Back"};render();return}
+  const sent=Math.max(...gsSel.map(g=>heatsSentFor(groupKey(m.k,m.x,g))));
   if(ev.relay&&sent){A.modal={t:"info",title:"Relay already sent",body:`<p style="margin:0">${esc(groupLabel(ev,m.x,m.g))} has been sent. Use Change an earlier race to change its lanes.</p>`,ok:"Back"};render();return}
   /* 800 m and 1500 m: no lanes here. The race gets its number now, and the multitimer phone enters the names */
   if(ev.run==="multi"){
     if(locked()||m.sending)return;m.sending=true;
     try{
       const n=await A.store.nextRace();
-      const doc={race:n,k:m.k,x:m.x,g:m.g,heat:sent+1,multi:true,lanes:{},at:Date.now(),dev:DEV};
+      const doc={race:n,k:m.k,x:m.x,g:gsSel[0],gs:gsSel,heat:sent+1,multi:true,lanes:{},at:Date.now(),dev:DEV};
       const r=await w(()=>A.store.set("heats/"+rid(n),doc));
-      if(r){A.heats=A.heats.filter(h=>h.race!==n).concat([Object.assign({_id:rid(n)},doc)]);m.msg=`Race ${n} (${groupLabel(ev,m.x,m.g)}, Heat ${sent+1}) sent to the multitimer phone.`;recompute()}
+      if(r){A.heats=A.heats.filter(h=>h.race!==n).concat([Object.assign({_id:rid(n)},doc)]);m.msg=`Race ${n} (${nameSel}, Heat ${sent+1}) sent to the multitimer phone.`;recompute()}
     }catch(e){toast("Not sent. A race number needs a connection. Try again.")}
     m.sending=false;render();return;
   }
@@ -112,8 +119,8 @@ function laneList(l,ev,x,g,used,inHeat,id,setAct,clearAct,usedLabel){
 /* change who is in a lane on a race already sent. Saves straight away; a time already in the lane stays
    with the lane; a race already checked goes back to "To check" */
 function heatUsed(H){
-  const key=groupKey(H.k,H.x,H.g);const used=new Set();
-  for(const h of A.heats)if(h.race!==H.race&&!h.cancelled&&groupKey(h.k,h.x,h.g)===key)for(const l in (h.lanes||{}))if(h.lanes[l])used.add(h.lanes[l]);
+  const gl=heatGs(H);const used=new Set();
+  for(const h of A.heats)if(h.race!==H.race&&!h.cancelled&&h.k===H.k&&h.x===H.x&&heatGs(h).some(g=>gl.includes(g)))for(const l in (h.lanes||{}))if(h.lanes[l])used.add(h.lanes[l]);
   return used;
 }
 async function setHeatLane(race,l,id){
@@ -133,11 +140,11 @@ function renderMarshalEdit(){
   const used=heatUsed(H);const inHeat=new Set(Object.values(ln).filter(Boolean));
   const filled=Object.keys(ln).filter(l=>ln[l]).length;
   let lanes="";
-  for(let l=1;l<=L;l++){const id=ln[l];lanes+=laneRow(l,id,false,false,m.open===l?laneList(l,ev,H.x,H.g,used,inHeat,id,"meset","meclear","Other heat"):"",ev.relay?"house":"runner")}
+  for(let l=1;l<=L;l++){const id=ln[l];lanes+=laneRow(l,id,false,false,m.open===l?laneList(l,ev,H.x,heatGs(H),used,inHeat,id,"meset","meclear","Other heat"):"",ev.relay?"house":"runner")}
   return `${lockBar()}<div class="racebar">
       <button type="button" class="btn navy big" data-act="medone">Done</button>
       ${badge(H.race,"xl")}
-      <div class="info"><b>${esc(groupLabel(ev,H.x,H.g))}</b><span>Heat ${H.heat} · ${filled} of ${L} lanes filled</span></div>
+      <div class="info"><b>${esc(heatGs(H).length>1?gsLabel(ev,H.x,heatGs(H)):groupLabel(ev,H.x,H.g))}</b><span>Heat ${H.heat} · ${filled} of ${L} lanes filled</span></div>
     </div>
     <div class="msg warn" style="margin-bottom:12px">Changing Race ${H.race}. Changes save straight away. A time already in a lane stays with that lane.</div>
     <div class="pool track">${lanes}</div>`;
@@ -172,7 +179,7 @@ async function sendHeat(){
 function finishMarshalRace(){
   const m=A.m;
   m.msg=m.sent.length?`${raceRange(m.sent)} sent to the starter (${plural(m.sent.length,"heat")}). Choose the new race below.`:"";
-  m.phase="start";m.k=null;m.x=null;m.g=null;m.lanes={};m.open=null;m.bar="";
+  m.phase="start";m.k=null;m.x=null;m.g=null;m.gs=[];m.lanes={};m.open=null;m.bar="";
   announce();render();window.scrollTo(0,0);
 }
 MODALS.confirmHeat=M=>{const m=A.m;const L=Number(A.cfg.lanes)||8;const f=Object.keys(m.lanes).filter(l=>m.lanes[l]).length;
@@ -185,7 +192,7 @@ MODALS.addStudent=M=>{
   <label>House<select id="nsH">${HOUSES.map(h=>`<option value="${h.c}">${h.n}</option>`).join("")}</select></label>
   <label>Age group<select id="nsG">${ages.map(a=>`<option value="${a}">${esc(grpName(a))}</option>`).join("")}</select></label></div>
   <div class="acts"><button type="button" class="btn" data-act="closemodal">Cancel</button><button type="button" class="btn primary" data-act="addstudent">Add</button></div>`};
-function agesFor(ev,g){return ev.gk==="age"?[g]:AGE_GROUPS}
+function agesFor(ev,g){return ev.gk==="age"?(Array.isArray(g)?g:[g]):AGE_GROUPS}
 async function addStudent(){
   const M=A.modal;
   const s=document.getElementById("nsS").value.trim(),f=document.getElementById("nsF").value.trim();

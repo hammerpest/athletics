@@ -12,7 +12,7 @@ const A={
   store:null,cfg:Object.assign({},DEFAULT_CONFIG),roster:{F:[],M:[]},extras:[],heats:[],times:{},finish:{},slips:{},field:{},records:[],counter:1,
   peers:[],R:null,loaded:false,
   role:ssGet("aths_role",null),job:ssGet("aths_job",null),pin:"",pinErr:false,
-  m:{phase:"start",k:null,x:null,g:null,lanes:{},heat:1,cur:1,open:null,filter:"",sent:[],msg:""},
+  m:{phase:"start",k:null,x:null,g:null,gs:[],lanes:{},heat:1,cur:1,open:null,filter:"",sent:[],msg:""},
   j:{race:null},r:{race:null,since:Date.now(),errs:{},tab:"track",fkey:null,ovr:false},s:{race:null,test:null,flash:null,err:null},
   f:Object.assign({station:null,gid:null,i:0,typed:"",undo:[],filter:""},jsonGet("aths_field")),
   a:{idx:null,key:null},res:{tab:"res",view:"all"},o:{sec:"details",preview:null,text:"",load:false},

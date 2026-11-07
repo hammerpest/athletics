@@ -156,7 +156,7 @@ function renderHouses(){
       <div class="panel stack"><h3>Points by age group</h3><div class="tablewrap"><table><thead><tr><th>Age group</th>${HOUSES.map(h=>`<th class="num">${hdot(h.c)}</th>`).join("")}</tr></thead><tbody>${rowsAge}
         <tr><td>Relays</td>${HOUSES.map(h=>`<td class="num">${fmtPts(R.house[h.c].relay)}</td>`).join("")}</tr>
         <tr><td><b>Total</b></td>${HOUSES.map(h=>`<td class="num"><b>${fmtPts(R.house[h.c].total)}</b></td>`).join("")}</tr></tbody></table></div>
-        <span class="muted" style="font-size:.85rem">Girls and boys together. Relays count for houses only. The 1500 m: ${qchip(14)}</span></div>
+        <span class="muted" style="font-size:.85rem">Girls and boys together. Relays count for houses only.</span></div>
       <div class="stack"><h3>Age champions</h3><div class="grid2">${champ}</div>
         <span class="muted" style="font-size:.85rem">Most points, counting only 1st, 2nd and 3rd place. Relays do not count. Joint champions have no runner up.</span></div>
     </div></div>`;

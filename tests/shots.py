@@ -65,7 +65,7 @@ async def run(pw,dev,theme):
     await O.click('[data-act=osec][data-v=program]')
     await O.click('[data-act=oevdel]'); await O.wait_for_timeout(150)
     await O.click('[aria-label="Javelin on the program"]'); await O.wait_for_timeout(150)
-    assert await O.evaluate("A.R.events.length")==104
+    assert await O.evaluate("A.R.events.length")==114
     # records list, to show a new record
     await O.click('[data-act=osec][data-v=records]'); await O.click('[data-act=orecload]')
     await O.evaluate(f"document.getElementById('rcPaste').value='{RECS}'")
@@ -93,7 +93,7 @@ async def run(pw,dev,theme):
     await M.click('[data-act=mlane][data-l="5"]'); await pick(M)
     await M.click('[data-act=mnew]'); await M.click('[data-act=mconfirm]'); await M.wait_for_timeout(200)
     # 800 m goes to the multitimer phone
-    await M.click('[data-act=mpick][data-f=k][data-v="800"]'); await M.click('[data-act=mpick][data-v=F]'); await M.click('[data-act=mpick][data-f=g][data-v="16"]'); await shot(M,"marshal-800-ready")
+    await M.click('[data-act=mpick][data-f=k][data-v="800"]'); await M.click('[data-act=mpick][data-v=F]'); await M.click('[data-act=mpick][data-f=gs][data-v="15"]'); await M.click('[data-act=mpick][data-f=gs][data-v="16"]'); await shot(M,"marshal-800-ready")
     await M.click('[data-act=mgo]'); await M.wait_for_timeout(200); await shot(M,"marshal-800-sent")
     # ---- place judge ----
     J=await page("2222")

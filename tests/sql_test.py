@@ -231,6 +231,10 @@ d = pr(); raw = _json.dumps(d)
 check(not d.get("off") and len(d["heats"]) == 1, "parents: on, heats come through")
 check("Fisher-Xavier-2010" not in raw and "Hall-Reuben-2010" not in raw and "Late-Lee-2010" not in raw, "parents: no student id anywhere (ids hold the full name)")
 check("Ghost-Removed-1999" not in raw and "Ghost" not in raw, "parents: an id the roster does not know is hashed, never passed on (heats and field)")
+admin.execute("insert into heats (id, doc) values ('r0008', %s)", (_json.dumps({"race": 8, "k": "800", "x": "M", "g": "14", "gs": ["14", "15"], "heat": 1, "multi": True, "lanes": {}}),))
+d_ = pr(); gsr = [h for h in d_["heats"] if h["_id"] == "r0008"]
+check(len(gsr) == 1 and gsr[0]["gs"] == ["14", "15"], "parents: a combined 800 m or 1500 m keeps its list of ages (gs)")
+admin.execute("delete from heats where id = 'r0008'")
 check("secret-device" not in raw and "Jordan Dennis" not in raw and '"pins"' not in raw and "runId" not in raw, "parents: no device ids, chief name, PINs or run id")
 codes = {x["id"] for x in d["students"]}
 check(len(codes) == 2 and all(c.startswith("p") for c in codes), "parents: a code for each student in a heat or on a field list; students with no entry stay home")

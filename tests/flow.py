@@ -113,7 +113,7 @@ async def main():
     ok("Bring back lets the Recorder fix that athlete again",await O.evaluate("!A.R.fgroups.length||!fieldDocOf(A.R.fgroups.find(f=>f.key==='LJ|M|17')).marks[window.__eid]?.fin")==True and await O.locator('[data-act=rfback]').count()==0)
     await O.evaluate("A.f.gid=null;A.r.ovr=false;A.job='organiser';render()")
     # multitimer survives a reload mid race
-    await M.evaluate("(async()=>{const m=A.m;m.k='800';m.x='F';m.g='16';m.phase='start';await marshalGo()})()"); await M.wait_for_timeout(150)
+    await M.evaluate("(async()=>{const m=A.m;m.k='800';m.x='F';m.gs=['16'];m.phase='start';await marshalGo()})()"); await M.wait_for_timeout(150)
     n=await M.evaluate("A.heats.filter(h=>h.multi)[0].race")
     await S.evaluate(f"A.s.race={n};render()"); await S.wait_for_timeout(100)
     await S.click('.namebtn >> nth=0'); await S.click('.namebtn >> nth=1'); await S.click('[data-act=mtnames]'); await S.wait_for_timeout(100)
@@ -267,7 +267,7 @@ async def main():
     await ph.close()
     # A1.5 every runner placed, each with a time (decision 45)
     M=await page("1111"); R=await page("3333"); S=await page("4444")
-    await M.evaluate("(async()=>{const m=A.m;m.k='800';m.x='F';m.g='16';m.phase='start';await marshalGo()})()"); await M.wait_for_timeout(200)
+    await M.evaluate("(async()=>{const m=A.m;m.k='800';m.x='F';m.gs=['16'];m.phase='start';await marshalGo()})()"); await M.wait_for_timeout(200)
     for i in range(5): await S.click(f'.namebtn >> nth={i}')
     await S.click('[data-act=mtnames]'); await S.wait_for_timeout(100); await S.click('[data-act=mtgo]'); await S.wait_for_timeout(40)
     for i in range(3): await S.click('[data-act=mtsplit]'); await S.wait_for_timeout(30)
@@ -329,7 +329,9 @@ async def main():
     await S.click('[data-act=mtnew]'); await S.wait_for_timeout(100)
     ok("New age or event shows race, boys or girls, age and Take names",await S.locator('[data-f=k]').count()==2 and await S.locator('[data-f=x]').count()==2 and await S.locator('[data-f=g]').count()>=1 and await S.locator('[data-act=mttake]').count()==1 and await S.locator('[data-act=mtmarshal]').count()==1)
     await S.click('[data-f=k][data-v="1500"]'); await S.click('[data-f=x][data-v=M]'); await S.wait_for_timeout(60)
-    ok("1500 m is open age",await S.locator('[data-f=g]').count()==1)
+    ok("1500 m lists every age, to tick as many as run together (decision 102)",await S.locator('[data-f=g]').count()==6 and await S.locator('[data-f=all]').count()==1)
+    await S.click('[data-f=g][data-v="15"]'); await S.wait_for_timeout(60)  # the age of the race just sent (16) is already ticked
+    ok("two ages ticked name the race with both",await S.locator('[data-f=g][aria-pressed=true]').count()==2 and "15, 16" in await S.inner_text('.racebar'))
     await S.click('[data-act=mttake]'); await S.wait_for_timeout(100)
     ok("Take names opens the names for the new race with no job change",await S.locator('.namebtn').count()>0 and "1500" in await S.inner_text('.racebar') and "Heat 1" in await S.inner_text('.racebar') and await S.evaluate("A.job")=="slips")
     ok("nothing is stored before Names done",await S.evaluate("A.counter")==c2 and await S.evaluate("A.heats.length")==h2)

@@ -103,6 +103,10 @@ async def main():
     req("/rest/v1/heats", [{"id": "r0002", "doc": {"race": 2, "k": "100", "x": "M", "g": "17", "heat": 1, "lanes": {"1": "Nobody-Known-1980"}}}], org)
     s_, d = anon(); raw = json.dumps(d)
     check("Nobody-Known-1980" not in raw and "Nobody" not in raw, "parents: an id the roster does not know is hashed, never passed on")
+    req("/rest/v1/heats", [{"id": "r0009", "doc": {"race": 9, "k": "800", "x": "M", "g": "14", "gs": ["14", "15"], "heat": 1, "multi": True, "lanes": {}}}], org)
+    s_, dg = anon(); gsr = [h for h in dg.get("heats", []) if h.get("_id") == "r0009"]
+    check(len(gsr) == 1 and gsr[0].get("gs") == ["14", "15"], "parents: a combined 800 m or 1500 m keeps its list of ages")
+    req("/rest/v1/heats?id=eq.r0009", tok=org, method="DELETE")
     req("/rest/v1/heats?id=eq.r0002", tok=org, method="DELETE"); req("/rest/v1/extras?id=eq.clk", tok=org, method="DELETE")
     s_, d = anon(); raw = json.dumps(d)
     check(s_ == 200 and isinstance(d, dict) and len(d.get("heats", [])) == 1, "parents: on, results come through with no sign-in")

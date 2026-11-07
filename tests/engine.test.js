@@ -22,26 +22,26 @@ function fieldDoc(S,k,x,g,marks,final){
 }
 
 /* ---- the program (2.1, decisions 2, 27, 30, 31) ---- */
-t("default program is 104 events: 56 track and 48 field",()=>{
-  const ev=E.programEvents(DEFAULT_CONFIG);eq(ev.length,104);
-  eq(ev.filter(e=>e.kind==="track").length,56);eq(ev.filter(e=>e.kind==="field").length,48);
+t("default program is 114 events: 66 track and 48 field (the 1500 m is by age, decision 103)",()=>{
+  const ev=E.programEvents(DEFAULT_CONFIG);eq(ev.length,114);
+  eq(ev.filter(e=>e.kind==="track").length,66);eq(ev.filter(e=>e.kind==="field").length,48);
 });
 t("Javelin is built in and off",()=>{
   eq(E.eventOf(DEFAULT_CONFIG,"J").on,false);
   const events=DEFAULT_CONFIG.events.map(e=>e.k==="J"?Object.assign({},e,{on:true}):e);
-  eq(E.programEvents(cfgWith({events})).length,116);
+  eq(E.programEvents(cfgWith({events})).length,126);
 });
 t("adding an event gives each age, boys and girls; removing it takes them away",()=>{
   const ev=E.newEvent(DEFAULT_CONFIG.events,"Triple Jump","field");
   eq(ev.gk,"age");eq(ev.own,true);
   const events=DEFAULT_CONFIG.events.concat([ev]);
-  eq(E.programEvents(cfgWith({events})).length,116);
+  eq(E.programEvents(cfgWith({events})).length,126);
   const tr=E.newEvent(events,"Triple Jump","track");assert.notStrictEqual(tr.k,ev.k);eq(tr.run,"lanes");
-  eq(E.programEvents(cfgWith({events:events.filter(e=>e.k!==ev.k)})).length,104);
+  eq(E.programEvents(cfgWith({events:events.filter(e=>e.k!==ev.k)})).length,114);
 });
 t("an event turned off is hidden from the program",()=>{
   const events=DEFAULT_CONFIG.events.map(e=>e.k==="D"?Object.assign({},e,{on:false}):e);
-  const c=cfgWith({events});eq(E.programEvents(c).length,92);
+  const c=cfgWith({events});eq(E.programEvents(c).length,102);
   assert(!E.stationsOf(c).some(s=>s.k==="D"));assert(!E.fieldGroups(c).some(f=>f.k==="D"));
 });
 t("7 stations for 2027",()=>{
@@ -440,15 +440,56 @@ t("field points count for champions",()=>{
   const S={students:[st("a","B","M","16")]};fieldDoc(S,"LJ","M","16",{a:{a:{0:"500"}}},true);
   eq(compute(S).champs["16|M"].winners[0].pts,10);
 });
-t("the 1500 m follows the question 14 settings",()=>{
-  const mk=open=>{const S={config:cfgWith({open}),students:[st("a","B","F","15")]};run(S,1,"1500","F","O",1,{1:"a"},{1:{t:36000,st:"ok",src:"multi"}},[],{multi:true});return compute(S)};
-  let R=mk({house:true,champ:false});eq(R.house.B.total,10);eq(R.house.B.byAge["15"],10);eq(R.champs["15|F"].winners.length,0);
-  R=mk({house:false,champ:true});eq(R.house.B.total,0);eq(R.champs["15|F"].winners[0].pts,10);
+t("the 1500 m is scored by age like the 800 m, for the house and the age champion (decisions 95, 103)",()=>{
+  const S={students:[st("a","B","F","15")]};run(S,1,"1500","F","15",1,{1:"a"},{1:{t:36000,st:"ok",src:"multi"}},[],{multi:true});
+  const R=compute(S);eq(R.house.B.total,10);eq(R.house.B.byAge["15"],10);eq(R.champs["15|F"].winners[0].pts,10);
 });
-t("the 1500 m counts for the house and the age champion by default (decision 95)",()=>{
-  const S={students:[st("a","B","F","15")]};run(S,1,"1500","F","O",1,{1:"a"},{1:{t:36000,st:"ok",src:"multi"}},[],{multi:true});
-  const R=compute(S);eq(R.house.B.total,10);eq(R.champs["15|F"].winners[0].pts,10);
+t("an old program with an Open 1500 m is read by age",()=>{
+  const events=E.DEFAULT_EVENTS.map(e=>e.k==="1500"?Object.assign({},e,{gk:"open"}):e);
+  eq(E.eventsOf({events}).find(e=>e.k==="1500").gk,"age");eq(E.programEvents(cfgWith({events})).length,114);
 });
+t("a combined 800 m: every age ticked is scored on its own (decisions 102, 103)",()=>{
+  const S={students:[st("a","B","F","14"),st("b","J","F","14"),st("c","N","F","15"),st("d","B","F","15"),st("e","J","F","13")]};
+  run(S,1,"800","F","13",1,{1:"a",2:"b",3:"c",4:"d",5:"e"},{1:{t:21000,st:"ok",src:"multi"},2:{t:21500,st:"ok",src:"multi"},3:{t:20500,st:"ok",src:"multi"},4:{t:22000,st:"ok",src:"multi"},5:{t:23000,st:"ok",src:"multi"}},[],{multi:true,gs:["13","14","15"]});
+  const R=compute(S);
+  const rows=k=>R.groups.get(k).rows.map(r=>[r.id,r.place,r.pts]);
+  eq(rows("800|F|14"),[["a",1,10],["b",2,8]]);
+  eq(rows("800|F|15"),[["c",1,10],["d",2,8]]);
+  eq(rows("800|F|13"),[["e",1,10]]);
+  eq(R.races.get(1).label,"800 m, Girls 12 & 13, 14, 15");
+  eq(R.races.get(1).gs,["13","14","15"]);
+});
+t("a second heat of one age joins the combined race's results for that age",()=>{
+  const S={students:[st("a","B","F","14"),st("b","J","F","14"),st("c","N","F","15"),st("x","N","F","14")]};
+  run(S,1,"800","F","14",1,{1:"a",2:"c"},{1:{t:21000,st:"ok",src:"multi"},2:{t:21500,st:"ok",src:"multi"}},[],{multi:true,gs:["14","15"]});
+  run(S,2,"800","F","14",2,{1:"b",2:"x"},{1:{t:20800,st:"ok",src:"multi"},2:{t:23000,st:"ok",src:"multi"}},[],{multi:true});
+  const R=compute(S);const rows=k=>R.groups.get(k).rows.map(r=>[r.id,r.place]);
+  eq(rows("800|F|14"),[["b",1],["a",2],["x",3]]);eq(rows("800|F|15"),[["c",1]]);
+});
+t("an age ticked with nobody in it gets no result of its own (no empty Final)",()=>{
+  const S={students:[st("a","B","F","14"),st("b","J","F","14")]};
+  run(S,1,"800","F","14",1,{1:"a",2:"b"},{1:{t:21000,st:"ok",src:"multi"},2:{t:21500,st:"ok",src:"multi"}},[],{multi:true,gs:["14","15"]});
+  const R=compute(S);eq(R.groups.has("800|F|15"),false);eq(R.groups.get("800|F|14").rows.length,2);
+});
+t("a combined race with no names yet shows in the first age only",()=>{
+  const S={students:[]};S.heats=[{race:1,k:"800",x:"F",g:"14",gs:["14","15","16"],heat:1,multi:true,lanes:{}}];
+  const R=compute(S);eq(R.groups.has("800|F|14"),true);eq(R.groups.has("800|F|15"),false);eq(R.groups.has("800|F|16"),false);
+});
+t("a runner outside the ticked ages is counted once, in the first age",()=>{
+  const S={students:[st("a","B","F","14"),st("z","J","F","17")]};
+  run(S,1,"800","F","14",1,{1:"a",2:"z"},{1:{t:21000,st:"ok",src:"multi"},2:{t:21500,st:"ok",src:"multi"}},[],{multi:true,gs:["14","15"]});
+  const R=compute(S);eq(R.groups.get("800|F|14").rows.map(r=>r.id),["a","z"]);eq(R.groups.has("800|F|15"),false);
+});
+t("races of different combinations: each age has its own heats",()=>{
+  const S={students:[st("a","B","F","14"),st("b","J","F","15"),st("c","N","F","14"),st("d","B","F","15"),st("e","J","F","16")]};
+  run(S,1,"800","F","14",1,{1:"a",2:"b"},{1:{t:21000,st:"ok",src:"multi"},2:{t:21500,st:"ok",src:"multi"}},[],{multi:true,gs:["14","15"]});
+  run(S,2,"800","F","14",2,{1:"c"},{1:{t:20800,st:"ok",src:"multi"}},[],{multi:true,gs:["14"]});
+  run(S,3,"800","F","15",2,{1:"d",2:"e"},{1:{t:22000,st:"ok",src:"multi"},2:{t:22500,st:"ok",src:"multi"}},[],{multi:true,gs:["15","16"]});
+  const R=compute(S);
+  eq(R.groups.get("800|F|14").heats.map(h=>h.race),[1,2]);eq(R.groups.get("800|F|15").heats.map(h=>h.race),[1,3]);eq(R.groups.get("800|F|16").heats.map(h=>h.race),[3]);
+  eq(R.groups.get("800|F|14").rows.map(r=>[r.id,r.place]),[["c",1],["a",2]]);eq(R.groups.get("800|F|15").rows.map(r=>[r.id,r.place]),[["b",1],["d",2]]);
+});
+t("heatGs: a race with no list has its one age",()=>{eq(E.heatGs({g:"16"}),["16"]);eq(E.heatGs({g:"16",gs:["15","16"]}),["15","16"]);eq(E.heatGs({g:"16",gs:[]}),["16"])});
 t("every house total adds up by age plus relays",()=>{
   const S={students:["a","b"].map(i=>st(i,"J","M","13"))};
   run(S,1,"100","M","13",1,{1:"a",2:"b"},{1:1500,2:1600},[1,2]);

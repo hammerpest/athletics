@@ -119,7 +119,8 @@ async function sendSlip(key,img,meta,lanes){
 }
 MODALS.replaceSlip=M=>`<h2>Replace the Race ${M.race} slip?</h2><p style="margin:0">Race ${M.race} already has a slip. This photo will replace its times.</p><p style="margin:0">Check the race number on the paper slip says ${M.race}.</p><div class="acts"><button type="button" class="btn" data-act="closemodal">&lt; Back</button><button type="button" class="btn go" data-act="sreplace">Replace the slip</button></div>`;
 MODALS.overall=M=>{const r=A.R.races.get(M.race);const G=r&&A.R.groups.get(r.key);
-  return `<h2>Race overall</h2><div class="muted">${esc(r?r.label:"")}</div>${overallTable(G)}<div class="acts"><button type="button" class="btn primary" data-act="closemodal">Close</button></div>`};
+  const Gs=r?(r.gs||[r.g]).map(g=>A.R.groups.get(groupKey(r.k,r.x,g))).filter(Boolean):[];
+  return `<h2>Race overall</h2><div class="muted">${esc(r?r.label:"")}</div>${Gs.length>1?Gs.map(g=>`<h3 style="margin:10px 0 4px">${esc(grpName(g.g))}</h3>${overallTable(g)}`).join(""):overallTable(G)}<div class="acts"><button type="button" class="btn primary" data-act="closemodal">Close</button></div>`};
 
 /* ---------- Multitimer (800 m and 1500 m, decisions 20 and 45) ----------
    One person enters the names, then START on the gun, SPLIT as each runner finishes, STOP. The names run down
@@ -152,9 +153,12 @@ function mtNow(at){const M=A.mt;return Math.max(0,Math.floor(((M.phase==="run"?a
 function mtFmt(cs){const m=Math.floor(cs/6000),s=Math.floor((cs%6000)/100),h=cs%100;return m+":"+String(s).padStart(2,"0")+"."+String(h).padStart(2,"0")}
 function mtSplitList(sp){return `<ol class="splits">${sp.map((t,i)=>({i:i+1,t})).slice(-5).reverse().map(x=>`<li><b>${x.i}</b><span>${mtFmt(x.t)}</span></li>`).join("")}</ol>`}
 function mtList(ev,x,g,r){
-  /* everyone who can run, less those already in another heat of this group */
-  const H=r.draft?{race:-1,k:r.k,x,g}:A.heats.find(h=>h.race===r.race)||{};const used=heatUsed(H);
-  return eligible(ev,x,g).filter(s=>!used.has(s.id));
+  /* everyone who can run, less those already in another heat of these ages (a combined race lists every age ticked) */
+  const gl=r.gs||[g];
+  const H=r.draft?{race:-1,k:r.k,x,g,gs:gl}:A.heats.find(h=>h.race===r.race)||{};const used=heatUsed(H);
+  const seen=new Set();const list=[];
+  for(const a of gl)for(const s of eligible(ev,x,a))if(!seen.has(s.id)){seen.add(s.id);list.push(s)}
+  return list.filter(s=>!used.has(s.id));
 }
 function renderMulti(r,top,sw){
   const M=mtFor(r);const lk=locked();const n=M.picked.length;
@@ -225,36 +229,38 @@ async function mtNamesDone(){
 function mtNext(){
   const r=slipRace();if(!r)return;
   const n=nextRaceAfter(A.s.race);A.s.err=null;
-  if(n!=null){A.s.race=n}else if(r.multi){A.mt=mtBlank(null);A.mt.draft={k:r.k,x:r.x,g:r.g,run:A.cfg.runId||"",after:r.race};mtSave()}
+  if(n!=null){A.s.race=n}else if(r.multi){A.mt=mtBlank(null);A.mt.draft={k:r.k,x:r.x,g:r.g,gs:r.gs||[r.g],run:A.cfg.runId||"",after:r.race};mtSave()}
   render();window.scrollTo(0,0);
 }
 /* New age or event (decision 49): pick the race, boys or girls and age on the phone, then Take names.
    The race number is taken only when Names done is pressed, the same safe way as Next heat. */
 function mtNew(){
   const r=slipRace();if(!r)return;
-  A.mt=mtBlank(null);A.mt.draft={pick:true,k:r.k,x:r.x,g:r.g,run:A.cfg.runId||"",after:Math.max(r.race,...liveRaces().map(x=>x.race))};mtSave();
+  A.mt=mtBlank(null);A.mt.draft={pick:true,k:r.k,x:r.x,g:r.g,gs:(r.gs||[r.g]).slice(),run:A.cfg.runId||"",after:Math.max(r.race,...liveRaces().map(x=>x.race))};mtSave();
   render();window.scrollTo(0,0);
 }
 function mtPick(f,v){
   const d=A.mt.draft;if(!d||!d.pick)return;
-  d[f]=v;
-  if(f==="k"){const ev=eventOf(A.cfg,v);if(ev&&!groupsOf(ev).includes(d.g))d.g=groupsOf(ev)[0]}
+  if(f==="g"){const cur=d.gs||[];d.gs=cur.includes(v)?cur.filter(a=>a!==v):cur.concat([v]);d.gs=AGE_GROUPS.filter(a=>d.gs.includes(a));d.g=d.gs[0]||null}
+  else if(f==="all"){d.gs=(d.gs||[]).length===AGE_GROUPS.length?[]:AGE_GROUPS.slice();d.g=d.gs[0]||null}
+  else d[f]=v;
   mtSave();render();
 }
 function mtTake(){
-  const d=A.mt.draft;if(!d||!d.pick||!eventOf(A.cfg,d.k)||!d.x||!d.g)return;
-  A.mt.draft={k:d.k,x:d.x,g:d.g,run:d.run,after:d.after};mtSave();render();window.scrollTo(0,0);
+  const d=A.mt.draft;if(!d||!d.pick||!eventOf(A.cfg,d.k)||!d.x||!(d.gs&&d.gs.length))return;
+  A.mt.draft={k:d.k,x:d.x,g:d.gs[0],gs:d.gs.slice(),run:d.run,after:d.after};mtSave();render();window.scrollTo(0,0);
 }
 function renderMultiPick(){
   const d=A.mt.draft;const evs=trackEvents(A.cfg).filter(e=>e.run==="multi");const ev=eventOf(A.cfg,d.k);
   const row=(t,inner)=>`<div class="mrow" style="padding:0"><span class="label">${t}</span><div class="choices">${inner}</div></div>`;
   const ch=(f,v,l,on)=>`<button type="button" class="choice" data-act="mtpick" data-f="${f}" data-v="${esc(v)}" aria-pressed="${on}">${esc(l)}</button>`;
-  const head=`<div class="racebar ph" style="margin:0">${badge(A.counter,"sm")}<div class="info"><b>${esc(ev&&d.x&&d.g?groupLabel(ev,d.x,d.g):"New race")}</b><span>No lanes · 0 runners</span></div></div>`;
+  const head=`<div class="racebar ph" style="margin:0">${badge(A.counter,"sm")}<div class="info"><b>${esc(ev&&d.x&&d.gs&&d.gs.length?gsLabel(ev,d.x,d.gs):"New race")}</b><span>No lanes · 0 runners</span></div></div>`;
   return `${lockBar()}<div class="phone" style="gap:10px">${head}
     ${row("Race",evs.map(e=>ch("k",e.k,e.name,d.k===e.k)).join(""))}
     ${row("Boys or girls",[["F","Girls"],["M","Boys"]].map(([v,l])=>ch("x",v,l,d.x===v)).join(""))}
-    ${row("Age",groupChoices(ev).map(c=>ch("g",c.g,c.l,d.g===c.g)).join(""))}
-    <button type="button" class="btn navy big" data-act="mttake" ${locked()?"disabled":""}>Take names</button>
+    ${row("Ages (tick as many as run in this race)",`<button type="button" class="choice" data-act="mtpick" data-f="all" data-v="1" aria-pressed="${(d.gs||[]).length===AGE_GROUPS.length}">All ages</button>`+groupChoices(ev).map(c=>ch("g",c.g,c.l,(d.gs||[]).includes(c.g))).join(""))}
+    <button type="button" class="btn navy big" data-act="mttake" ${locked()||!(d.gs&&d.gs.length)?"disabled":""}>Take names</button>
+    ${d.gs&&d.gs.length?"":`<div class="muted" style="font-size:.85rem;text-align:center">Tick at least one age.</div>`}
     <button type="button" class="linkbtn" style="text-align:center" data-act="mtmarshal">Another race: go to the Track Marshal</button><button type="button" class="linkbtn" style="text-align:center" data-act="mtnoheatok">Back</button></div>`;
 }
 /* the next heat as a race, for the screen. A race the marshal sends meanwhile takes over, unless names are in */
@@ -263,8 +269,8 @@ function mtDraftRace(){
   const live=nextRaceAfter(d.after)!=null;
   const ev=eventOf(A.cfg,d.k);
   if(!ev||(d.run!==(A.cfg.runId||""))||(live&&!A.mt.picked.length)){A.mt=mtBlank(null);mtSave();return null}
-  const key=groupKey(d.k,d.x,d.g);
-  return {draft:true,race:A.counter,heat:heatsSentFor(key)+1,k:d.k,x:d.x,g:d.g,key,ev,multi:true,label:groupLabel(ev,d.x,d.g),lanes:{},filled:[],hasSlip:false};
+  const gs=d.gs&&d.gs.length?d.gs:[d.g];const key=groupKey(d.k,d.x,gs[0]);
+  return {draft:true,race:A.counter,heat:Math.max(...gs.map(g=>heatsSentFor(groupKey(d.k,d.x,g))))+1,k:d.k,x:d.x,g:gs[0],gs,key,ev,multi:true,label:gs.length>1?gsLabel(ev,d.x,gs):groupLabel(ev,d.x,gs[0]),lanes:{},filled:[],hasSlip:false};
 }
 function mtDraftDrop(){A.mt=mtBlank(null);mtSave();render()}
 MODALS.mtNoHeat=M=>`<h2>No more heats?</h2><p style="margin:0">The ${plural(M.n,"name")} picked for this heat will be cleared.</p><div class="acts"><button type="button" class="btn" data-act="closemodal">&lt; Back</button><button type="button" class="btn redfill" data-act="mtnoheatok">Clear the names</button></div>`;
@@ -274,7 +280,7 @@ async function mtDraftDone(){
   try{
     const n=await A.store.nextRace();
     const lanes={};M.picked.forEach((id,i)=>{lanes[i+1]=id});
-    const doc={race:n,k:r.k,x:r.x,g:r.g,heat:r.heat,multi:true,lanes,at:Date.now(),dev:DEV};
+    const doc={race:n,k:r.k,x:r.x,g:r.g,gs:r.gs,heat:r.heat,multi:true,lanes,at:Date.now(),dev:DEV};
     if(await w(()=>A.store.set("heats/"+rid(n),doc))){
       A.heats=A.heats.filter(h=>h.race!==n).concat([Object.assign({_id:rid(n)},doc)]);recompute();
       A.s.race=n;const keep=M.picked;A.mt=mtBlank(n,mtSig(A.R.races.get(n)));A.mt.picked=keep;A.mt.phase="ready";mtSave();

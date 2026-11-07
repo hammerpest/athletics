@@ -80,7 +80,7 @@ begin
     'v', v,
     'config', cfg - 'pins' - 'chief' - 'runId' - 'lockedBy',
     'heats', coalesce((select jsonb_agg(jsonb_build_object('_id', h.id, 'race', h.doc->'race', 'heat', h.doc->'heat',
-        'k', h.doc->'k', 'x', h.doc->'x', 'g', h.doc->'g', 'gen', h.doc->'gen', 'cancelled', h.doc->'cancelled',
+        'k', h.doc->'k', 'x', h.doc->'x', 'g', h.doc->'g', 'gs', h.doc->'gs', 'gen', h.doc->'gen', 'cancelled', h.doc->'cancelled',
         'edited', h.doc->'edited', 'at', h.doc->'at', 'multi', h.doc->'multi',
         'lanes', coalesce((select jsonb_object_agg(e.key, private.pcode(e.value, ids, salt)) from jsonb_each_text(case when jsonb_typeof(h.doc->'lanes') = 'object' then h.doc->'lanes' else '{}'::jsonb end) e), '{}'::jsonb)))
       from public.heats h), '[]'::jsonb),

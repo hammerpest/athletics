@@ -15,7 +15,7 @@ const DEFAULT_EVENTS=[
   {k:"200",name:"200 m",kind:"track",run:"lanes",gk:"age",dist:200,on:true},
   {k:"400",name:"400 m",kind:"track",run:"lanes",gk:"age",dist:400,on:true},
   {k:"800",name:"800 m",kind:"track",run:"multi",gk:"age",dist:800,on:true},
-  {k:"1500",name:"1500 m",kind:"track",run:"multi",gk:"open",dist:1500,on:true},
+  {k:"1500",name:"1500 m",kind:"track",run:"multi",gk:"age",dist:1500,on:true},
   {k:"R",name:"4 x 100 m relay",kind:"track",run:"lanes",gk:"band",dist:400,relay:true,on:true},
   {k:"HJ",name:"High Jump",kind:"field",style:"height",gk:"age",on:true},
   {k:"LJ",name:"Long Jump",kind:"field",style:"distance",gk:"age",on:true},
@@ -56,11 +56,12 @@ const DEFAULT_CONFIG={
   events:DEFAULT_EVENTS,timetable:DEFAULT_TIMETABLE,locs:{HJ:2,LJ:2,SP:1,D:2,J:1},rules:{},sheet:DEFAULT_SHEET,
   /* marks to the nearest centimetre (decision 38) */
   markDp:2,
-  /* question 14 (answered 6 November 2026, decision 95): the Open 1500 m counts for the houses and for the athlete's own age champion */
+  /* the 1500 m is scored by age (decision 103), so this old Open 1500 m setting is no longer used */
   open:{house:true,champ:true},
   limits:{},locked:false,lockedAt:null,notRun:[]
 };
-function eventsOf(cfg){return (cfg&&cfg.events)||DEFAULT_EVENTS}
+/* decision 103: the 1500 m is scored by age like the 800 m. A program saved earlier with an Open 1500 m is read by age. */
+function eventsOf(cfg){const L=(cfg&&cfg.events)||DEFAULT_EVENTS;return L.some(e=>e.k==="1500"&&e.gk==="open")?L.map(e=>e.k==="1500"&&e.gk==="open"?Object.assign({},e,{gk:"age"}):e):L}
 function eventOf(cfg,k){return eventsOf(cfg).find(e=>e.k===k)||null}
 function eventsOn(cfg){return eventsOf(cfg).filter(e=>e.on)}
 function trackEvents(cfg){return eventsOn(cfg).filter(e=>e.kind==="track")}
@@ -76,6 +77,9 @@ function teamId(h){return "T-"+h}
 function evLabel(ev){if(!ev)return "";if(ev.kind!=="field")return ev.name;const n=ev.name;return n[0]+n.slice(1).toLowerCase()}
 function groupLabel(ev,x,g){return evLabel(ev)+", "+sexName(x)+" "+grpName(g)}
 function groupKey(k,x,g){return k+"|"+x+"|"+g}
+/* decision 102: a combined 800 m or 1500 m has a list of ages (gs); every other race has its one age (g) */
+function heatGs(h){return Array.isArray(h.gs)&&h.gs.length?h.gs:[h.g]}
+function gsLabel(ev,x,gs){return evLabel(ev)+", "+sexName(x)+" "+gs.map(grpName).join(", ")}
 function splitKey(key){const [k,x,g]=key.split("|");return {k,x,g}}
 function fieldId(key){return key.replace(/[^A-Za-z0-9]/g,"-")}
 function groupsOf(ev){return ev.gk==="band"?BANDS:ev.gk==="open"?["O"]:AGE_GROUPS}
@@ -412,7 +416,7 @@ function compute(S){
   };
   for(const h of heats){
     const ev=eventOf(cfg,h.k);if(!ev||!ev.on)continue;
-    const key=groupKey(h.k,h.x,h.g);
+    const gsL=heatGs(h);const key=groupKey(h.k,h.x,gsL[0]);
     const id="r"+String(h.race).padStart(4,"0");
     /* a re-run race keeps its number: times and places from an earlier run (an older gen) no longer count */
     const gen=h.gen||0;const cur=d=>d&&(d.gen||0)===gen?d:null;
@@ -448,16 +452,21 @@ function compute(S){
     if(h.cancelled)tstatus="Cancelled";
     else if(nTimes)tstatus=checked?"Checked":"To check";
     const doneAt=Math.max(h.at||0,T.at||0,T.checkedAt||0,F.at||0,(slip&&slip.at)||0);
-    const r={race:h.race,heat:h.heat,k:h.k,x:h.x,g:h.g,key,ev,label:groupLabel(ev,h.x,h.g),lanes,filled,times:lt,eff,placeTaps,multi,
+    const r={race:h.race,heat:h.heat,k:h.k,x:h.x,g:gsL[0],gs:gsL,key,ev,label:gsL.length>1?gsLabel(ev,h.x,gsL):groupLabel(ev,h.x,h.g),lanes,filled,times:lt,eff,placeTaps,multi,
       tstatus,checked,checkedAt:T.checkedAt||0,nTimes,nOk,flagged,need,tapped,placesIn,allIn,done,doneAt,differs,extra,src:T.src||null,hasSlip:!!slip,
       gen,T,F,slip,cancelled:!!h.cancelled};
     races.set(h.race,r);
     if(h.cancelled)continue;
-    ensure(key,ev).heats.push(r);
+    /* a combined race is in the results of each age that has a runner in it; each runner counts only in their own age.
+       An age ticked with nobody in it gets no result of its own. With no names yet, only the first age shows. */
+    let gl=gsL;
+    if(gsL.length>1){const ages=new Set();for(const l of filled){const sg=(who(lanes[l])||{}).g;ages.add(gsL.includes(sg)?sg:gsL[0])}gl=ages.size?gsL.filter(a=>ages.has(a)):[gsL[0]]}
+    for(const gg of gl)ensure(groupKey(h.k,h.x,gg),ev).heats.push(r);
   }
   for(const G of groups.values()){
     const relay=!!G.ev.relay;const Q=relay?PR:P;const rows=[];
     for(const r of G.heats)for(const ln of r.filled){
+      if(r.gs.length>1){const sg=(who(r.lanes[ln])||{}).g;const tgt=r.gs.includes(sg)?sg:r.gs[0];if(tgt!==G.g)continue}
       const v=r.times[ln]||{};const e=r.eff[ln];
       rows.push({id:r.lanes[ln],p:who(r.lanes[ln]),race:r.race,heat:r.heat,lane:+ln,st:v.st||(v.t!=null||e?"ok":"wait"),rec:v.t!=null?v.t:null,eff:e?e.eff:null,pink:!!(e&&e.pink),auto:!!(e&&e.auto),judge:r.placeTaps[ln]||v.o||null,place:null,pts:0});
     }
@@ -650,7 +659,7 @@ function parseRecordRows(text,cfg){
   });
   return {out,bad};
 }
-if(typeof module!=="undefined")module.exports={AGE_GROUPS,AGES_DOWN,HOUSES,TEAMS,DEFAULT_EVENTS,DEFAULT_TIMETABLE,DEFAULT_CONFIG,RULE_DIST,RULE_THROW,RULE_HIGH,
+if(typeof module!=="undefined")module.exports={eventsOf,heatGs,gsLabel,AGE_GROUPS,AGES_DOWN,HOUSES,TEAMS,DEFAULT_EVENTS,DEFAULT_TIMETABLE,DEFAULT_CONFIG,RULE_DIST,RULE_THROW,RULE_HIGH,
   eventOf,programEvents,newEvent,stationsOf,fieldGroups,fieldId,fieldRule,heightSeq,hjClosed,hjOutBy,hjOutAt,hjPlan,hjStart,weightFor,fieldTurn,fieldStarted,keepTop,roundDone,mtTimeAt,sheetPair,groupKey,groupLabel,grpName,teamId,
   parseTime,fmtTime,oddTime,markCm,markOk,fmtMark,fmtCell,cleanMark,heatEffective,lateSlip,pointsFor,compute,blockNow,hrisList,resultText,
   parseStudents,parseRecordRows,ageOn,ageGroup};
