@@ -279,6 +279,11 @@ def multitimer(dark):
 <div class="prompt {{{{doneC}}}}" style="margin:0">{{{{prompt}}}}</div>
 <div class="pool ph track"><sc-for list="{{{{toPlace}}}}" as="p" hint-placeholder-count="15"><div class="lane" style="grid-template-columns:minmax(0,1fr) auto"><div class="body" style="cursor:default"><span class="nm"><span class="hdot h{{{{p.h}}}}">{{{{p.h}}}}</span><span>{{{{p.n}}}}</span></span></div>
 <div class="wall mt"><button type="button" class="spot {{{{p.c}}}}" onClick="{{{{p.tap}}}}" aria-label="{{{{p.aria}}}}">{{{{p.pl}}}}</button><span class="mtt" style="display:block;min-height:18px;min-width:62px;box-sizing:border-box;text-align:center;border-radius:4px;{{{{p.ts}}}}">{{{{p.t}}}}</span></div></div></sc-for></div>
+<sc-if value="{{{{notAddingRunner}}}}" hint-placeholder-val="{{{{true}}}}"><button type="button" class="btn big" onClick="{{{{startAddRunner}}}}">Add a runner who ran</button></sc-if>
+<sc-if value="{{{{addingRunner}}}}" hint-placeholder-val="{{{{false}}}}"><div class="panel stack" style="gap:8px"><b>Who ran but was not named?</b>
+<label class="label" style="display:flex;flex-direction:column;gap:4px">Find a runner<input type="search" placeholder="Type part of a name"></label>
+<div class="namegrid"><sc-for list="{{{{addList}}}}" as="p" hint-placeholder-count="2"><button type="button" class="namebtn" onClick="{{{{p.tap}}}}"><span class="hdot h{{{{p.h}}}}">{{{{p.h}}}}</span><span class="t">{{{{p.n}}}}</span></button></sc-for></div>
+<button type="button" class="btn" onClick="{{{{closeAdd}}}}">Not on the list</button><button type="button" class="linkbtn" style="text-align:center" onClick="{{{{closeAdd}}}}">Close</button></div></sc-if>
 </sc-if>
 <sc-if value="{{{{isSent}}}}" hint-placeholder-val="{{{{false}}}}">
 <div class="msg ok">Race {{{{raceNo}}}} times sent to the Recorder.</div><button type="button" class="btn navy big" onClick="{{{{again}}}}">Next heat, {{{{label}}}}</button><button type="button" class="btn big" onClick="{{{{newGroup}}}}">New age or event</button>
@@ -302,6 +307,8 @@ def multitimer(dark):
     const timeAt = (k) => k < sp.length ? sp[k] : sp[sp.length - 1] + (k - sp.length + 1) * 100;
     const O = (x) => x + (x % 100 > 10 && x % 100 < 14 ? 'th' : (['th','st','nd','rd'][x % 10] || 'th'));
     out = { isNames: ph === 'names', isClock: ph === 'ready' || ph === 'run', isReady: ph === 'ready', isRun: ph === 'run', isPlace: ph === 'place', isSent: ph === 'sent', isPick: ph === 'pick', raceNo: st.race, label: st.e + ', ' + st.x + ' ' + st.gs.join(', '),
+      notAddingRunner: !st.adding, addingRunner: !!st.adding, startAddRunner: () => set({ adding: true }), closeAdd: () => set({ adding: false }),
+      addList: roster.map((r, i) => ({ r, i })).filter((x) => !st.picked.includes(x.i)).map((x) => ({ n: x.r.n, h: x.r.h, tap: () => set({ picked: st.picked.concat([x.i]), adding: false }) })),
       newGroup: () => set({ ph: 'pick' }), backSent: () => set({ ph: 'sent' }),
       cEv: ['800 m','1500 m'].map((l) => ({ l, on: st.e === l, tap: () => set({ e: l }) })), cX: ['Girls','Boys'].map((l) => ({ l, on: st.x === l, tap: () => set({ x: l }) })),
       cG: [{ l: 'All ages', on: st.gs.length === 6, tap: () => set({ gs: st.gs.length === 6 ? [] : ['12 & 13','14','15','16','17','18+'] }) }].concat(['12 & 13','14','15','16','17','18+'].map((l) => ({ l, on: st.gs.includes(l), tap: () => set({ gs: st.gs.includes(l) ? st.gs.filter((a) => a !== l) : st.gs.concat([l]) }) }))),
@@ -319,7 +326,7 @@ def multitimer(dark):
       again: () => set({ ph: 'names', taps: [], splits: st.seed, race: st.race + 1 }) };
 '''
     seed = [15120+337*i+(i*i*7)%90 for i in range(10)]
-    return body, logic, "{ e: '800 m', x: 'Girls', g: '16', gs: ['15','16'], race: 35, ph: 'names', picked: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], taps: [4,9,1,12,0,7,3], splits: " + J(seed) + ", seed: " + J(seed) + " }"
+    return body, logic, "{ adding: false, e: '800 m', x: 'Girls', g: '16', gs: ['15','16'], race: 35, ph: 'names', picked: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], taps: [4,9,1,12,0,7,3], splits: " + J(seed) + ", seed: " + J(seed) + " }"
 
 # ---------- A1.17 Track Marshal: relay ----------
 def marshal_relay(dark):
