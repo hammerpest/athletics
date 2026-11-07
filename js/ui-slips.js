@@ -11,12 +11,13 @@ function slipRace(){
    It is kept for each race. With no choice yet, a race with no lanes (800 m, 1500 m) opens on Multi and any other race on Take photo. */
 const SM_KEY="aths_slipmodes";
 function slipModes(){try{return JSON.parse(localStorage.getItem(SM_KEY)||"{}")}catch(e){return {}}}
-function slipModeKey(r){return r.draft?"d"+r.race:String(r.race)}
+function slipModeKey(r){return (A.cfg.runId||"")+"/"+(r.draft?"d":"")+r.race}
 function slipMode(r){return slipModes()[slipModeKey(r)]||(r.multi?"multi":"photo")}
 function setSlipMode(v){const r=mtDraftRace()||slipRace();if(!r||(v!=="photo"&&v!=="multi"))return;const m=slipModes();m[slipModeKey(r)]=v;try{localStorage.setItem(SM_KEY,JSON.stringify(m))}catch(e){}render();window.scrollTo(0,0)}
 function slipSwitch(mode){
-  const running=!!(A.mt&&A.mt.phase==="run");
-  return `<div class="tabs" role="group" aria-label="How to time this race" style="margin:0">${[["photo","Take photo"],["multi","Multi"]].map(([k,l])=>`<button type="button" data-act="smode" data-v="${k}" aria-pressed="${mode===k}" ${running&&mode!==k?"disabled":""}>${l}</button>`).join("")}</div>`;
+  /* while a race is being timed or placed on the multitimer, the choice is locked until it is sent */
+  const running=!!(A.mt&&(A.mt.phase==="run"||A.mt.phase==="place"));
+  return `<div class="tabs" role="group" aria-label="How to time this race" style="margin:0">${[["photo","Take photo"],["multi","Multi"]].map(([k,l])=>`<button type="button" data-act="smode" data-v="${k}" aria-pressed="${mode===k}" ${running&&mode!==k?"disabled":""}>${l}</button>`).join("")}</div>${running?`<div class="muted" style="font-size:.85rem">Send or clear this race before you switch.</div>`:""}`;
 }
 function slipQueued(){return A.s.queued||0}
 function slipWaiting(race){return !!(A.s.waiting&&A.s.waiting[race])}
@@ -140,9 +141,12 @@ function mtFor(r){const M=A.mt;
   if((M.phase==="run"||M.phase==="place")&&A.R.races.has(M.race)&&M.race!==r.race)return M;
   if(M.race!==r.race||(M.sig&&M.sig!==mtSig(r))){
     A.mt=mtBlank(r.race,mtSig(r));
-    if(r.filled.length){A.mt.picked=r.filled.map(l=>r.lanes[l]);A.mt.phase=r.hasSlip?"sent":"ready"}
+    /* a photo slip alone does not mean the multitimer has run: it opens ready, and sending asks before it replaces anything */
+    if(r.filled.length){A.mt.picked=r.filled.map(l=>r.lanes[l]);A.mt.phase=r.hasSlip&&r.src==="multi"?"sent":"ready"}
     mtSave();
   }
+  /* a race with lanes: the runners follow the lanes until the clock starts (the Marshal may have changed them) */
+  if(!r.multi&&M.phase==="ready"&&r.filled.length){const cur=r.filled.map(l=>r.lanes[l]);if(JSON.stringify(cur)!==JSON.stringify(A.mt.picked)){A.mt.picked=cur;mtSave()}}
   return A.mt}
 /* hand timing drops the thousandths, it never rounds up */
 function mtNow(at){const M=A.mt;return Math.max(0,Math.floor(((M.phase==="run"?at||Date.now():M.stopAt)-M.t0)/10))}
@@ -300,12 +304,14 @@ async function mtSend(force){
   if(!force&&(r.hasSlip||r.nTimes>0)){A.modal={t:"mtReplace",race:r.race};render();return}
   A.modal=null;
   const laneOf=id=>Object.keys(r.lanes).find(l=>r.lanes[l]===id);
+  if(M.taps.some(id=>!laneOf(id))){toast("A runner is no longer in a lane. Check the race first.");return}
   const lanes={},read={};
   M.taps.forEach((id,i)=>{const l=laneOf(id);if(!l)return;const t=mtTimeAt(M.splits,i);lanes[l]={t,st:"ok",src:"multi",keep:false,chk:false,o:i+1,auto:i>=M.splits.length};read[l]=t});
   const meta={race:r.race,multi:true,splits:M.splits.slice(),read,gen:r.gen,at:Date.now(),dev:DEV,test:false};
   A.slips[key]=meta;A.times[key]={lanes,src:"multi",checked:false,gen:r.gen};
   /* a race with lanes (a normal race timed on the multitimer) also needs its places, as the Place Judge would give them */
-  let fdoc=null;if(!r.multi){const order=M.taps.map(id=>[laneOf(id)]).filter(g=>g[0]);fdoc={order,seq:order.flat(),undo:[],gen:r.gen||0,ck:0,ok:true,at:Date.now(),dev:DEV};A.finish[key]=fdoc}
+  /* a Place Judge's places are never overwritten */
+  let fdoc=null;if(!r.multi&&!(r.F&&r.F.order&&r.F.order.length)){const order=M.taps.map(id=>[laneOf(id)]).filter(g=>g[0]);fdoc={order,seq:order.flat(),undo:[],gen:r.gen||0,ck:0,ok:true,at:Date.now(),dev:DEV};A.finish[key]=fdoc}
   recompute();
   M.phase="sent";mtSave();
   A.s.flash={c:"green",t:`Race ${r.race} sent to the Recorder`};render();

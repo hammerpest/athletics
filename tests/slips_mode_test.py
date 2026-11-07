@@ -33,6 +33,7 @@ async def main():
         for _ in range(3):
             await S.click('[data-act=mtsplit]'); await S.wait_for_timeout(250)
         await S.click('[data-act=mtstop]'); await S.wait_for_timeout(250)
+        ok("while the places are being tapped the other choice stays locked, with a note", await S.locator('[data-act=smode][data-v=photo]').is_disabled() and "Send or clear" in await S.inner_text('#main'))
         ids = await O.evaluate("window.__ids")
         # tap the runners in finish order: second, first, third
         for i in (1, 0, 2):

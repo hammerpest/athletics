@@ -210,6 +210,7 @@ tr.flagrow td{background:var(--warn-bg)}
 .tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
 .tabs button{border:1px solid var(--line);background:var(--surface);border-radius:999px;padding:8px 16px;font-weight:700;cursor:pointer;min-height:48px}
 .tabs button[aria-pressed="true"]{background:var(--navy);border-color:var(--navy);color:#ffffff}
+.tabs button:disabled{opacity:.45;cursor:not-allowed}
 .gcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;overflow:hidden}
 .ghead{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;padding:12px 14px;background:var(--navy);color:#ffffff}
 .ghead h3{flex:1 1 220px}
