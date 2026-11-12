@@ -138,10 +138,20 @@ function programTab(){
 /* a soft fade on the right edge tells a parent there are more tabs to scroll to */
 function hint(row){if(row)row.classList.toggle("more",row.scrollWidth>row.clientWidth+row.scrollLeft+4)}
 document.addEventListener("scroll",e=>{if(e.target&&e.target.classList&&e.target.classList.contains("ptabs"))hint(e.target)},true);
+/* Aths Opt 2.2: the ticker under the brand bar (decorative, hidden from screen readers) */
+function pTicker(c){
+  const t=$("ptick");if(!t)return;let day="";
+  if(c&&c.date){const d=new Date(c.date+"T00:00:00");if(!isNaN(d))day=d.toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
+  const words=[(c&&c.name)||"Athletics Carnival",c&&c.venue,day,"Results for parents","Bradman","Jackson","Newcombe"].filter(Boolean);
+  const html=`<div>${words.map(w=>esc(w)+" &nbsp;/&nbsp; ").join("")}</div>`;
+  if(t.dataset.w!==html){t.dataset.w=html;t.innerHTML=html}
+}
 function render(){
   const main=$("pmain");
-  if(!D||!R){main.innerHTML=`<div class="pcard poff"><h2>Results will be here on the day</h2><p class="muted" style="margin:0">The school has not turned the results page on yet. Check back during the carnival.</p></div>`;$("ptitle").textContent="Athletics Carnival";setStatus(null);return}
-  $("ptitle").textContent=R.cfg.name||"Athletics Carnival";
+  if(!D||!R){main.innerHTML=`<div class="pcard poff"><h2>Results will be here on the day</h2><p class="muted" style="margin:0">The school has not turned the results page on yet. Check back during the carnival.</p></div>`;$("ptitle").innerHTML=`Athletics <span class="y">Carnival</span>`;pTicker(null);setStatus(null);return}
+  /* Aths Opt 2.2 (the swimming S1.46 look): big heading with the last word yellow, and the ticker */
+  {const t=String(R.cfg.name||"Athletics Carnival").trim().split(/\s+/),last=t.pop();$("ptitle").innerHTML=(t.length?esc(t.join(" "))+" ":"")+`<span class="y">${esc(last)}</span>`;}
+  pTicker(R.cfg);
   const tabs=tabsOn();
   if(!tabs.length){main.innerHTML=`<div class="pcard poff"><h2>Nothing to show yet</h2></div>`;return}
   if(!tab||!tabs.some(t=>t[0]===tab))tab=tabs[0][0];
