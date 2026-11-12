@@ -149,6 +149,11 @@ function renderHeader(){
     :A.job==="results"?`<button type="button" class="hlink" data-act="goto" data-job="houses">Houses</button><button type="button" class="hlink" data-act="goto" data-job="announcer">Back to Announcer</button>`
     :A.job==="houses"?`<button type="button" class="hlink" data-act="goto" data-job="results">Results</button><button type="button" class="hlink" data-act="goto" data-job="announcer">Back to Announcer</button>`:"";
   const jobs=A.role==="org"?[...JOBS,ORG_JOB]:[];
+  /* Aths Opt 2.2 (the swimming S1.46 look): the PIN, Which carnival and Choose your job screens take the landing look
+     and the ticker (html.homes); every job screen takes the lane look under the navy header (html.jobs) */
+  document.documentElement.classList.toggle("homes",!j);
+  document.documentElement.classList.toggle("jobs",!!j);
+  if(!j)renderTicker();
   const slim=slimHdr();h.classList.toggle("slim",slim);h.classList.toggle("unstick",A.job==="results"||A.job==="houses");
   if(slim){h.innerHTML=`<div class="wrap"><div class="topin"><span class="live ${cls}"><i></i>${esc(s&&s.mode==="local"&&!s.pending()?"Test mode":live)}</span>${jobPill(jobs)}</div></div>`;return}
   h.innerHTML=`<div class="wrap"><div class="topin">
@@ -167,11 +172,35 @@ function jobPill(jobs){
 }
 
 /* ---------- home ---------- */
+/* Aths Opt 2.2: the ticker above the header on the home screens. Built once; rebuilt only when its words change. */
+function renderTicker(){
+  const t=document.getElementById("tick");if(!t)return;
+  const c=A.cfg||{};let day="";
+  if(c.date){const d=new Date(c.date+"T00:00:00");if(!isNaN(d))day=d.toLocaleDateString("en-AU",{weekday:"long",day:"numeric",month:"long",year:"numeric"})}
+  const words=[c.name||"CCAS Athletics Carnival",c.venue,day,"Staff sign in with your job PIN","Bradman","Jackson","Newcombe"].filter(Boolean);
+  const html=`<div>${words.map(w=>esc(w)+" &nbsp;/&nbsp; ").join("")}</div>`;
+  if(t.dataset.w!==html){t.dataset.w=html;t.innerHTML=html}
+}
+/* Aths Opt 2.2: on a Mac the job names scramble in the first time Choose your job shows, and again when the pointer
+   comes onto a lane (the landing page's effect). Each tile keeps its real words as its name for screen readers. */
+const MAC_FX=matchMedia("(hover:hover) and (pointer:fine)");
+const CALM=matchMedia("(prefers-reduced-motion:reduce)");
+function tilesFx(first){
+  if(!MAC_FX.matches||CALM.matches)return;
+  const C="ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789#%&";
+  const sc=el=>{const t=el.dataset.t||(el.dataset.t=el.textContent);let i=0;clearInterval(el._i);
+    el._i=setInterval(()=>{el.textContent=t.split("").map((c,k)=>c===" "||k<i?c:C[Math.floor(Math.random()*C.length)]).join("");
+      if(i++>=t.length){clearInterval(el._i);el.textContent=t}},38)};
+  document.querySelectorAll(".tiles .tile").forEach((tile,n)=>{const b=tile.querySelector("b");if(!b)return;
+    tile.setAttribute("aria-label",[...tile.children].map(e=>e.textContent.trim()).filter(Boolean).join(" "));
+    if(first)setTimeout(()=>sc(b),300+n*120);
+    tile.addEventListener("pointerenter",()=>sc(b));tile.addEventListener("focus",()=>sc(b))});
+}
 function renderHome(){
-  if(A.role==="org"&&!A.yearPicked)return renderYearPick();
-  if(!A.role){
+  if(A.role==="org"&&!A.yearPicked){A.tilesSeen=false;return renderYearPick()}
+  if(!A.role){A.tilesSeen=false;
     const keys=["1","2","3","4","5","6","7","8","9","Clear","0","Back"];
-    return `<div class="home"><h1>Athletics Carnival</h1><p class="muted" style="margin:0">Enter your PIN.</p>
+    return `<div class="home"><h1>Athletics <span class="y">Carnival</span></h1><p class="muted" style="margin:0">Enter your PIN.</p>
       <div class="dots" aria-label="PIN digits typed">${[0,1,2,3].map(i=>`<i class="${A.pin.length>i?"on":""}"></i>`).join("")}</div>
       <div class="keypad">${keys.map(l=>`<button type="button" data-act="key" data-k="${l}" aria-label="${/^[0-9]$/.test(l)?"Digit "+l:l}">${l}</button>`).join("")}</div>
       ${A.pinErr?`<div class="msg bad" role="alert">That PIN is not right. Try again.</div>`:""}
@@ -179,13 +208,15 @@ function renderHome(){
     </div>`;
   }
   const tiles=JOBS.map(j=>`<button type="button" class="tile" data-act="goto" data-job="${j.k}"><span class="n">${j.n}</span><b>${j.name}</b><span>${esc(j.desc)}</span></button>`).join("");
-  return `<div class="home"><h1>Athletics Carnival</h1><p class="muted" style="margin:0">Choose your job.</p>
-    <div class="tiles">${tiles}${A.role==="org"?`<button type="button" class="tile orgtile" style="grid-column:1/-1;min-height:96px" data-act="goto" data-job="organiser"><span class="n">7</span><b>Carnival Organiser</b><span>Organiser only</span></button>`:""}</div>
+  /* the lanes slide in only the first time this screen shows, not on every refresh */
+  const fx=!A.tilesSeen;A.tilesSeen=true;A.tilesFxFirst=fx;
+  return `<div class="home"><h1>Athletics <span class="y">Carnival</span></h1><p class="muted" style="margin:0">Choose your job.</p>
+    <div class="tiles${fx?" fx":""}">${tiles}${A.role==="org"?`<button type="button" class="tile orgtile" style="grid-column:1/-1;min-height:96px" data-act="goto" data-job="organiser"><span class="n">7</span><b>Carnival Organiser</b><span>Organiser only</span></button>`:""}</div>
     <button type="button" class="linkbtn" data-act="signout">Sign out (back to PIN)</button></div>`;
 }
 function renderYearPick(){
   const cur=curYear();
-  return `<div class="home"><h1>Which carnival?</h1><p class="muted" style="margin:0">Pick the year. Past years are look only.</p>
+  return `<div class="home"><h1>Which <span class="y">carnival?</span></h1><p class="muted" style="margin:0">Pick the year. Past years are look only.</p>
     <div class="stack" style="width:100%;max-width:520px">
       <button type="button" class="tile" style="min-height:0" data-act="year" data-v="current"><span class="row" style="justify-content:space-between;width:100%"><b>${esc(cur)}</b><span class="chip final">Current carnival</span></span><span>${esc(A.L.cfg?A.L.cfg.name:A.cfg.name)} · live</span></button>
       ${A.years.filter(y=>String(y.year)!==cur).map(y=>`<button type="button" class="tile" style="min-height:0" data-act="year" data-v="${esc(y.year)}"><span class="row" style="justify-content:space-between;width:100%"><b>${esc(y.year)}</b><span class="chip">Look only</span></span><span>${esc(y.name||"")} · ${y.heats||0} races, ${y.students||0} students</span></button>`).join("")}

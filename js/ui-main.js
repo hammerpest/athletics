@@ -12,6 +12,7 @@ function renderInner(){
   document.documentElement.style.setProperty("--hdrh",document.getElementById("hdr").offsetHeight+"px");
   const main=document.getElementById("main");
   let html="";
+  if(A.role&&A.job)A.tilesSeen=false;
   if(!A.role||!A.job)html=renderHome();
   else if(A.job==="marshal")html=renderMarshal();
   else if(A.job==="judge")html=renderJudge();
@@ -31,6 +32,7 @@ function renderInner(){
   window.scrollTo(sx,sy);
   wireInputs();
   fitPicklist();
+  if(document.querySelector(".tiles")){tilesFx(A.tilesFxFirst);A.tilesFxFirst=false}
   hjNowScroll();
   placePops();
 }
