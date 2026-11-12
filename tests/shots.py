@@ -22,6 +22,8 @@ async def run(pw,dev,theme):
         p.on("pageerror",lambda e:errs.append((dev,theme,str(e))))
         p.on("console",lambda m:errs.append((dev,theme,m.text)) if m.type=="error" and "fonts.g" not in m.text and "ERR_" not in m.text else None)
         await p.goto(URL); await p.wait_for_function("typeof A!=='undefined'&&!!A.store"); await p.wait_for_timeout(250)
+        # Aths Opt 2.2: hold the home screens' ticker still so shots show its words and match each run
+        await p.add_style_tag(content=".ticker div{animation:none!important;padding-left:16px!important}")
         if pin: await dopin(p,pin)
         return p
     async def dopin(p,c):
@@ -49,7 +51,8 @@ async def run(pw,dev,theme):
     O=await page()
     await shot(O,"home-pin")
     await dopin(O,"0000"); await shot(O,"home-wrongpin")
-    await dopin(O,"9999"); await shot(O,"home-orgtiles")
+    # Aths Opt 2.2: on a Mac-like browser the job lanes slide in and the names scramble; wait for them to settle, pointer off the lanes
+    await dopin(O,"9999"); await O.mouse.move(1,1); await O.wait_for_timeout(1800); await shot(O,"home-orgtiles")
     await O.click('.tile[data-job=organiser]')
     await O.click('[data-act=osec][data-v=students]'); await O.click('[data-act=oload]'); await O.click('[data-act=otest]'); await shot(O,"org-students-preview")
     await O.click('[data-act=oimport]'); await O.wait_for_timeout(200)
@@ -318,14 +321,14 @@ async def run(pw,dev,theme):
     PURL=URL.replace("index.html","parents/index.html") if "index.html" in URL else URL.split("?")[0].rstrip("/")+"/parents/index.html?"+(URL.split("?")[1] if "?" in URL else "")
     await O.click('[data-act=osec][data-v=parents]')
     PP=await ctx.new_page(); pages.append(PP); PP.on("pageerror",lambda e:errs.append((dev,theme,str(e))))
-    await PP.goto(PURL); await PP.wait_for_timeout(500); await shot(PP,"parents-off")
+    await PP.goto(PURL); await PP.wait_for_timeout(500); await PP.add_style_tag(content=".ticker div{animation:none!important;padding-left:16px!important}"); await shot(PP,"parents-off")  # Aths Opt 2.2: ticker held still
     await O.click('[data-act=ptog]'); await O.wait_for_timeout(250); await shot(O,"org-parents-on")
     await O.click('[data-act=pnames][data-v=short]'); await O.wait_for_timeout(250)
-    await PP.reload(); await PP.wait_for_timeout(500); await shot(PP,"parents-house")
+    await PP.reload(); await PP.wait_for_timeout(500); await PP.add_style_tag(content=".ticker div{animation:none!important;padding-left:16px!important}"); await shot(PP,"parents-house")
     for tab in ["age","events","champs","program"]:
         await PP.click(f'[data-tab={tab}]'); await PP.wait_for_timeout(150); await shot(PP,f"parents-{tab}")
     await PP.click('[data-tab=find]'); await PP.fill('#pfq','an'); await PP.wait_for_timeout(250); await shot(PP,"parents-find")
-    await O.click('[data-act=pnames][data-v=none]'); await O.wait_for_timeout(250); await PP.reload(); await PP.wait_for_timeout(500)
+    await O.click('[data-act=pnames][data-v=none]'); await O.wait_for_timeout(250); await PP.reload(); await PP.wait_for_timeout(500); await PP.add_style_tag(content=".ticker div{animation:none!important;padding-left:16px!important}")
     await PP.click('[data-tab=events]'); await PP.wait_for_timeout(150)
     if not await PP.evaluate("!!document.querySelector('.pgroup[open]')"): await PP.click('.pgroup summary >> nth=0'); await PP.wait_for_timeout(100)
     await shot(PP,"parents-nonames-events")

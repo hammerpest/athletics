@@ -11,6 +11,7 @@ async def hj(p,v):
 async def main():
   async with async_playwright() as pw:
     b=await pw.chromium.launch(); ctx=await b.new_context(viewport={"width":1180,"height":820},accept_downloads=True)
+    await ctx.add_init_script("document.addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='*{text-transform:none!important}';document.head.appendChild(s)})")  # Aths Opt 2.2: the new look shows some words in uppercase; tests read the words as written
     async def page(pin):
         p=await ctx.new_page(); p.on("pageerror",lambda e:errs.append(str(e)))
         await p.goto(URL); await p.wait_for_function("typeof A!=='undefined'&&!!A.store"); await p.wait_for_timeout(200)
@@ -137,6 +138,7 @@ async def main():
     ok("locked results cannot be changed",await R.evaluate("Object.values(Object.values(A.field)[0].marks)[0].a[0]")=="500")
     # ---- Aths Opt 1.1: a fresh carnival in its own browser profile ----
     ctx=await b.new_context(viewport={"width":1180,"height":820},accept_downloads=True)
+    await ctx.add_init_script("document.addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='*{text-transform:none!important}';document.head.appendChild(s)})")  # Aths Opt 2.2: the new look shows some words in uppercase; tests read the words as written
     O=await page("9999")
     ok("organiser PIN shows all the jobs",await O.locator('.tile').count()>=7)
     await O.click('.tile[data-job=organiser]'); await O.click('[data-act=osec][data-v=students]'); await O.click('[data-act=oload]'); await O.click('[data-act=otest]'); await O.click('[data-act=oimport]'); await O.wait_for_timeout(200)

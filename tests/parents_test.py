@@ -10,6 +10,7 @@ def ok(name, cond):
 async def main():
     async with async_playwright() as pw:
         b = await pw.chromium.launch(); ctx = await b.new_context(viewport={"width": 1512, "height": 982})
+        await ctx.add_init_script("document.addEventListener('DOMContentLoaded',()=>{const s=document.createElement('style');s.textContent='*{text-transform:none!important}';document.head.appendChild(s)})")  # Aths Opt 2.2: the new look shows some words in uppercase; tests read the words as written
         async def app(pin):
             p = await ctx.new_page(); p.on("pageerror", lambda e: errs.append(str(e)))
             await p.goto(ROOT + "index.html?mode=local"); await p.wait_for_function("typeof A!=='undefined'&&!!A.store"); await p.wait_for_timeout(200)
