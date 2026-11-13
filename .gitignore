@@ -1,3 +1,8 @@
 .DS_Store
 flow-shots/
 diff-report/
+__pycache__/
+*.pyc
+shots/
+shots-*/
+review-1.8/

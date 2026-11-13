@@ -1,0 +1,560 @@
+/* Engine tests. Run: node tests/engine.test.js */
+const assert=require("assert");
+const E=require("../js/engine.js");
+const {compute,groupKey,DEFAULT_CONFIG}=E;
+let n=0,fail=0;
+function t(name,fn){n++;try{fn();}catch(e){fail++;console.log("FAIL",name,"\n  ",e.message)}}
+const eq=assert.deepStrictEqual;
+const st=(id,h,x,g)=>({id,s:id,f:"T",h,x,g});
+const cfgWith=o=>Object.assign({},DEFAULT_CONFIG,o);
+/* a heat with times by lane and a judge order */
+function run(S,race,k,x,g,heat,lanes,times,order,extra){
+  S.heats=S.heats||[];S.times=S.times||{};S.finish=S.finish||{};
+  S.heats.push(Object.assign({race,k,x,g,heat,lanes},extra||{}));
+  const id="r"+String(race).padStart(4,"0");
+  const L={};for(const l in times)L[l]=typeof times[l]==="object"?times[l]:{t:times[l],st:"ok",src:"photo"};
+  S.times[id]={lanes:L,src:extra&&extra.multi?"multi":"photo"};
+  S.finish[id]={order:(order||[]).map(l=>[l]),ok:true};
+}
+function fieldDoc(S,k,x,g,marks,final){
+  S.field=S.field||{};const ath={};Object.keys(marks).forEach((id,i)=>ath[id]=i+1);
+  S.field[E.fieldId(groupKey(k,x,g))]={ath,marks,final:!!final,finalAt:final?5:0};
+}
+
+/* ---- the program (2.1, decisions 2, 27, 30, 31) ---- */
+t("default program is 114 events: 66 track and 48 field (the 1500 m is by age, decision 103)",()=>{
+  const ev=E.programEvents(DEFAULT_CONFIG);eq(ev.length,114);
+  eq(ev.filter(e=>e.kind==="track").length,66);eq(ev.filter(e=>e.kind==="field").length,48);
+});
+t("Javelin is built in and off",()=>{
+  eq(E.eventOf(DEFAULT_CONFIG,"J").on,false);
+  const events=DEFAULT_CONFIG.events.map(e=>e.k==="J"?Object.assign({},e,{on:true}):e);
+  eq(E.programEvents(cfgWith({events})).length,126);
+});
+t("adding an event gives each age, boys and girls; removing it takes them away",()=>{
+  const ev=E.newEvent(DEFAULT_CONFIG.events,"Triple Jump","field");
+  eq(ev.gk,"age");eq(ev.own,true);
+  const events=DEFAULT_CONFIG.events.concat([ev]);
+  eq(E.programEvents(cfgWith({events})).length,126);
+  const tr=E.newEvent(events,"Triple Jump","track");assert.notStrictEqual(tr.k,ev.k);eq(tr.run,"lanes");
+  eq(E.programEvents(cfgWith({events:events.filter(e=>e.k!==ev.k)})).length,114);
+});
+t("an event turned off is hidden from the program",()=>{
+  const events=DEFAULT_CONFIG.events.map(e=>e.k==="D"?Object.assign({},e,{on:false}):e);
+  const c=cfgWith({events});eq(E.programEvents(c).length,102);
+  assert(!E.stationsOf(c).some(s=>s.k==="D"));assert(!E.fieldGroups(c).some(f=>f.k==="D"));
+});
+t("7 stations for 2027",()=>{
+  eq(E.stationsOf(DEFAULT_CONFIG).map(s=>s.name),["High Jump 1","High Jump 2","Long Jump 1","Long Jump 2","Shot Put","Discus 1","Discus 2"]);
+});
+t("the stations list follows the ticks",()=>{
+  const c=cfgWith({locs:{HJ:1,LJ:2,SP:2,D:2,J:1}});
+  eq(E.stationsOf(c).map(s=>s.id),["HJ","LJ1","LJ2","SP1","SP2","D1","D2"]);
+  assert(E.fieldGroups(c).every(f=>E.stationsOf(c).some(s=>s.id===f.station)));
+});
+t("timetable has 48 field groups, each sex and age doing each sport once, 6 in a block",()=>{
+  const g=E.fieldGroups(DEFAULT_CONFIG);eq(g.length,48);eq(new Set(g.map(f=>f.key)).size,48);
+  const byBlock={};g.forEach(f=>byBlock[f.block]=(byBlock[f.block]||0)+1);
+  assert(Object.values(byBlock).every(v=>v===6));eq(Object.keys(byBlock).length,8);
+});
+t("Shot Put has two groups at once in four blocks",()=>{
+  const g=E.fieldGroups(DEFAULT_CONFIG).filter(f=>f.station==="SP");const by={};g.forEach(f=>(by[f.at]=by[f.at]||[]).push(f.g));
+  eq(Object.keys(by).filter(a=>by[a].length===2).sort(),["10:40 am","11:10 am","11:40 am","12:10 pm"].sort());
+});
+t("a turned-on sport with no timetable row waits for a time",()=>{
+  const events=DEFAULT_CONFIG.events.map(e=>e.k==="J"?Object.assign({},e,{on:true}):e);
+  const g=E.fieldGroups(cfgWith({events})).filter(f=>f.k==="J");
+  eq(g.length,12);assert(g.every(f=>f.block===null&&f.at==="Set a time"&&f.station==="J"));
+});
+
+/* ---- track ---- */
+t("times parse and print",()=>{
+  eq(E.parseTime("1284").cs,1284);eq(E.parseTime("10234").cs,6234);eq(E.fmtTime(1284),"12.84");eq(E.fmtTime(6234),"1:02.34");
+  assert(E.parseTime("7512").err);assert(E.parseTime("12").err);
+});
+t("heats run as finals: the fastest time over all heats wins, points 10 8 6 4 4",()=>{
+  const S={students:["a","b","c","d","e"].map(i=>st(i,"B","M","18"))};
+  run(S,1,"100","M","18",1,{1:"a",2:"b"},{1:1300,2:1250},[2,1]);
+  run(S,2,"100","M","18",2,{1:"c",2:"d",3:"e"},{1:1200,2:1400,3:1500},[1,2,3]);
+  const R=compute(S);const G=R.groups.get(groupKey("100","M","18"));
+  eq(G.rows.map(r=>[r.id,r.place,r.pts]),[["c",1,10],["b",2,8],["a",3,6],["d",4,4],["e",5,4]]);
+  assert(G.rows[0].hris&&G.rows[1].hris&&!G.rows[2].hris);eq(G.final,true);
+  eq(R.house.B.total,32);eq(R.house.B.track,32);
+});
+t("the judge's order moves the fastest times to the judged runners (pink)",()=>{
+  const e=E.heatEffective({1:{t:1292},5:{t:1291},4:{t:1261}},[[4],[1],[5]]);
+  eq(e["1"].eff,1291);eq(e["1"].pink,true);eq(e["5"].eff,1292);eq(e["4"].pink,false);
+});
+t("equal times in different heats share the place and points (decision 26)",()=>{
+  const S={students:["a","b","c"].map(i=>st(i,"J","F","15"))};
+  run(S,1,"200","F","15",1,{1:"a"},{1:3000},[1]);
+  run(S,2,"200","F","15",2,{1:"b",2:"c"},{1:3000,2:3100},[1,2]);
+  const G=compute(S).groups.get(groupKey("200","F","15"));
+  eq(G.rows.map(r=>[r.place,r.pts]),[[1,9],[1,9],[3,6]]);
+});
+t("DNS and DQ get 0 and no place",()=>{
+  const S={students:["a","b"].map(i=>st(i,"N","M","14"))};
+  run(S,1,"100","M","14",1,{1:"a",2:"b"},{1:{t:1400,st:"DQ"},2:1500},[2]);
+  const G=compute(S).groups.get(groupKey("100","M","14"));
+  eq(G.rows[0].id,"b");eq(G.rows[0].place,1);eq(G.rows[1].pts,0);eq(G.rows[1].place,null);
+});
+t("a cancelled race does not count; a re-run race ignores its old times",()=>{
+  const S={students:[st("a","B","M","14")]};
+  run(S,1,"100","M","14",1,{1:"a"},{1:1400},[1],{cancelled:true});
+  eq(compute(S).groups.has(groupKey("100","M","14")),false);
+  const S2={students:[st("a","B","M","14")]};
+  run(S2,1,"100","M","14",1,{1:"a"},{1:1400},[1],{gen:1});
+  const G=compute(S2).groups.get(groupKey("100","M","14"));eq(G.rows[0].eff,null);eq(G.final,false);
+});
+t("a heat is not final until every lane has a time",()=>{
+  const S={students:["a","b"].map(i=>st(i,"B","M","14"))};
+  run(S,1,"100","M","14",1,{1:"a",2:"b"},{1:1400},[1]);
+  eq(compute(S).groups.get(groupKey("100","M","14")).final,false);
+});
+t("a marshal still filling a group keeps it provisional",()=>{
+  const S={students:[st("a","B","M","14")],openGroups:new Set([groupKey("100","M","14")])};
+  run(S,1,"100","M","14",1,{1:"a"},{1:1400},[1]);
+  eq(compute(S).groups.get(groupKey("100","M","14")).final,false);
+});
+t("a late slip keeps a typed time and shows the difference",()=>{
+  const o=E.lateSlip({lanes:{1:{t:1300,st:"ok",src:"typed"}},checked:false},{lanes:{1:{t:1311,st:"ok",src:"photo"}}});
+  eq(o.lanes[1].t,1300);eq(o.lanes[1].slip,1311);
+});
+t("odd-time limits only check what the organiser set",()=>{
+  eq(E.oddTime("100",1000,{}),null);assert(E.oddTime("100",900,{100:[1000,2500]}));
+});
+
+/* ---- 800 m and 1500 m (decision 20) ---- */
+t("a runner with no time gets 1 second more than the place before, in list order, with points",()=>{
+  const S={students:["a","b","c","d"].map(i=>st(i,"B","F","16"))};
+  run(S,1,"800","F","16",1,{1:"a",2:"b",3:"c",4:"d"},{2:{t:18000,st:"ok",src:"multi"},4:{t:17000,st:"ok",src:"multi"}},[],{multi:true});
+  const G=compute(S).groups.get(groupKey("800","F","16"));
+  eq(G.rows.map(r=>[r.id,r.eff,r.auto,r.pts]),[["d",17000,false,10],["b",18000,false,8],["a",18100,true,6],["c",18200,true,4]]);
+  eq(G.final,true);
+});
+t("each place gets its split; past the last split, 1 second more than the place before (decision 45)",()=>{
+  const sp=[15000,15200,15300];
+  eq([0,1,2,3,4,5].map(k=>E.mtTimeAt(sp,k)),[15000,15200,15300,15400,15500,15600]);eq(E.mtTimeAt([],0),null);
+});
+t("the phone sends every place: auto places show +1 s and rank in that order",()=>{
+  const S={students:["a","b","c"].map(i=>st(i,"B","F","16"))};
+  run(S,1,"800","F","16",1,{1:"a",2:"b",3:"c"},{3:{t:17000,st:"ok",src:"multi",o:1},1:{t:17100,st:"ok",src:"multi",o:2,auto:true},2:{t:17200,st:"ok",src:"multi",o:3,auto:true}},[],{multi:true});
+  const G=compute(S).groups.get(groupKey("800","F","16"));
+  eq(G.rows.map(r=>[r.id,r.eff,r.auto,r.place]),[["c",17000,false,1],["a",17100,true,2],["b",17200,true,3]]);eq(G.final,true);
+});
+t("equal splits in one race: the place pressed on the phone decides",()=>{
+  const S={students:["a","b"].map(i=>st(i,"B","F","16"))};
+  run(S,1,"800","F","16",1,{1:"a",2:"b"},{1:{t:17000,st:"ok",src:"multi",o:2},2:{t:17000,st:"ok",src:"multi",o:1}},[],{multi:true});
+  eq(compute(S).groups.get(groupKey("800","F","16")).rows.map(r=>[r.id,r.place]),[["b",1],["a",2]]);
+});
+t("a time the Recorder types over an auto place loses the +1 s",()=>{
+  const S={students:["a","b"].map(i=>st(i,"B","F","16"))};
+  run(S,1,"800","F","16",1,{1:"a",2:"b"},{1:{t:17000,st:"ok",src:"multi"},2:{t:17100,st:"ok",src:"typed",auto:true}},[],{multi:true});
+  eq(compute(S).groups.get(groupKey("800","F","16")).rows[1].auto,false);
+});
+t("DNS in a multitimer race gets no automatic time",()=>{
+  const S={students:["a","b"].map(i=>st(i,"B","F","16"))};
+  run(S,1,"800","F","16",1,{1:"a",2:"b"},{1:{t:17000,st:"ok",src:"multi"},2:{st:"DNS"}},[],{multi:true});
+  const G=compute(S).groups.get(groupKey("800","F","16"));eq(G.rows[1].eff,null);eq(G.rows[1].pts,0);
+});
+t("a multitimer race with no names yet is not done",()=>{
+  const S={heats:[{race:1,k:"800",x:"F",g:"16",heat:1,multi:true,lanes:{}}]};
+  const R=compute(S);eq(R.races.get(1).done,false);eq(R.groups.get(groupKey("800","F","16")).final,false);
+});
+
+/* ---- relays (decisions 4, 16, 24) ---- */
+t("relays score 20 16 12, go to the house only, not HRIS, not champions",()=>{
+  const S={students:[]};
+  run(S,1,"R","F","J",1,{3:"T-J",4:"T-B",5:"T-N"},{3:5500,4:5400,5:5600},[4,3,5]);
+  const R=compute(S);const G=R.groups.get(groupKey("R","F","J"));
+  eq(G.rows.map(r=>[r.p.h,r.pts]),[["B",20],["J",16],["N",12]]);
+  assert(!G.rows.some(r=>r.hris));eq(R.house.B.relay,20);eq(R.house.B.total,20);eq(E.hrisList(R).length,0);
+  eq(Object.values(R.champs).every(c=>!c.winners.length),true);
+});
+
+/* ---- field (decisions 17, 23, placeholders for question 8) ---- */
+t("marks: 534 is 5.34 m, x is a foul, - a pass",()=>{
+  eq(E.markCm("534"),534);eq(E.markCm("x"),0);eq(E.fmtMark(534),"5.34");eq(E.fmtCell("x"),"X");eq(E.fmtCell("-"),"Pass");
+  eq(E.cleanMark("5.34"),"534");eq(E.cleanMark("X"),"x");eq(E.cleanMark("pass"),"-");
+});
+t("best of the attempts, 10 8 6 then 4 for everyone with a mark, 0 for no mark or no show",()=>{
+  const S={students:["a","b","c","d","e","f","g"].map(i=>st(i,"B","M","17"))};
+  fieldDoc(S,"LJ","M","17",{a:{a:{0:"534",1:"x",2:"541"}},b:{a:{0:"498",1:"502"}},c:{a:{0:"x",1:"x",2:"x"}},d:{a:{0:"561"}},e:{a:{0:"487",1:"-",2:"492"}},f:{ns:true},g:{a:{0:"515",1:"x"}}},true);
+  const R=compute(S);const G=R.groups.get(groupKey("LJ","M","17"));
+  eq(G.rows.map(r=>[r.id,r.best,r.place,r.pts]),[["d",561,1,10],["a",541,2,8],["g",515,3,6],["b",502,4,4],["e",492,5,4],["c",0,null,0],["f",0,null,0]]);
+  eq(G.rows[1].bestAt,3);eq(G.final,true);
+  assert(G.rows[0].hris&&G.rows[1].hris&&!G.rows[2].hris);
+  eq(R.house.B.fieldPts,32);
+});
+t("the attempts setting limits which attempts count",()=>{
+  const c=cfgWith({rules:{LJ:{attempts:2}}});
+  const S={config:c,students:[st("a","B","M","17")]};
+  fieldDoc(S,"LJ","M","17",{a:{a:{0:"400",1:"410",2:"500"}}});
+  eq(compute(S).groups.get(groupKey("LJ","M","17")).rows[0].best,410);
+});
+t("equal marks share the place and points (decision 36); next best jump stays a setting in the engine",()=>{
+  const marks={a:{a:{0:"500",1:"490"}},b:{a:{0:"500",1:"480"}},c:{a:{0:"400"}}};
+  const S={students:["a","b","c"].map(i=>st(i,"B","F","15"))};
+  fieldDoc(S,"LJ","F","15",marks);
+  eq(compute(S).groups.get(groupKey("LJ","F","15")).rows.map(r=>[r.place,r.pts,!!r.tie]),[[1,9,true],[1,9,true],[3,6,false]]);
+  S.config=cfgWith({rules:{LJ:{ties:"countback"}}});
+  eq(compute(S).groups.get(groupKey("LJ","F","15")).rows.map(r=>[r.id,r.place,r.pts]),[["a",1,10],["b",2,8],["c",3,6]]);
+});
+t("long jump: up to 3 jumps for everyone, once per round in number order (decisions 71, 72)",()=>{
+  const ev=E.eventOf(DEFAULT_CONFIG,"LJ");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
+  eq(rule.attempts,3);eq(rule.shortTop,undefined);
+  const rows=[{id:"a",m:{a:{0:"400"}}},{id:"b",m:{}},{id:"c",m:{}}];
+  let t=E.fieldTurn(ev,rule,rows,false,null);eq(t.up,1);eq(t.next,2);
+  rows[1].m.a={0:"410"};rows[2].m.a={0:"x"};t=E.fieldTurn(ev,rule,rows,false,null);eq(t.up,0);eq(t.next,1);
+});
+t("long jump: Finish ends an athlete; a finished athlete is skipped and keeps their mark (decision 73)",()=>{
+  const ev=E.eventOf(DEFAULT_CONFIG,"LJ");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
+  const rows=[{id:"a",m:{a:{0:"400"},fin:true}},{id:"b",m:{a:{0:"410"}}},{id:"c",m:{a:{0:"390"}}}];
+  const t=E.fieldTurn(ev,rule,rows,false,null);eq(t.up,1);eq(t.next,2);
+  const all=[{id:"a",m:{a:{0:"400"},fin:true}},{id:"b",m:{a:{0:"410"},fin:true}}];eq(E.fieldTurn(ev,rule,all,false,null).up,-1);
+  eq(E.fieldStarted({marks:{a:{fin:true}}}),true);
+});
+t("long jump: Keep top N finishes everyone below the Nth best; equal marks stay in; nothing with fewer than N marks",()=>{
+  const ev=E.eventOf(DEFAULT_CONFIG,"LJ");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
+  const row=(id,c)=>({id,best:c,m:{a:{0:c?String(c):"x"}}});
+  const rows=[row("a",534),row("b",498),row("c",0),row("d",561),row("e",498),row("f",515)];
+  eq(E.keepTop(rows,3,rule).sort(),["b","c","e"]);   /* top 3 are 561, 534, 515; 498 twice are below */
+  eq(E.keepTop(rows,5,rule).sort(),["c"]);            /* 5th best is 498: both 498s stay in, only no mark goes */
+  eq(E.keepTop(rows,9,rule),[]);
+  rows[1].m.fin=true;eq(E.keepTop(rows,3,rule).includes("b"),false);
+  rows[2].m.ns=true;eq(E.keepTop(rows,3,rule).includes("c"),false);
+});
+t("now up and next follow the arrival order, skipping a no show",()=>{
+  const ev=E.eventOf(DEFAULT_CONFIG,"SP");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
+  const rows=[{id:"a",m:{t:{0:"Fair"}}},{id:"b",m:{ns:true}},{id:"c",m:{}},{id:"d",m:{}}];
+  const t=E.fieldTurn(ev,rule,rows,false,null);eq(t.up,2);eq(t.next,3);
+  const done=E.fieldTurn(ev,rule,[{id:"a",m:{t:{0:"Fair",1:"Foul",2:"Pass"}}}],false,null);eq(done.up,-1);
+});
+t("throws: only measured athletes are placed; the rest are participation at the set distance (decisions 80, 81)",()=>{
+  const S={students:["a","b","c","d","e"].map(i=>st(i,"B","M","17"))};
+  fieldDoc(S,"SP","M","17",{a:{t:{0:"Fair",1:"Foul",2:"Fair"},best:"1124"},b:{t:{0:"Foul"}},c:{t:{0:"Fair"},best:"1287"},d:{t:{0:"Fair"}},e:{t:{0:"Fair"}}},true);
+  S.field[E.fieldId(groupKey("SP","M","17"))].setd="800";
+  let G=compute(S).groups.get(groupKey("SP","M","17"));
+  eq(G.rows.map(r=>[r.id,r.best,r.place,r.pts]),[["c",1287,1,10],["a",1124,2,8],["d",800,3,4],["e",800,3,4],["b",0,null,0]]);
+  eq(G.setd.ok,true);eq(G.setd.n,2);eq(G.rows[2].part,true);
+  /* not lower than the lowest measured mark: not accepted, so they have no mark yet */
+  S.field[E.fieldId(groupKey("SP","M","17"))].setd="1124";
+  G=compute(S).groups.get(groupKey("SP","M","17"));eq(G.setd.ok,false);eq(G.rows.filter(r=>r.part).every(r=>r.best===0),true);
+  S.field[E.fieldId(groupKey("SP","M","17"))].setd="";G=compute(S).groups.get(groupKey("SP","M","17"));eq(G.setd.ok,false);
+});
+t("participation gets a flat 4 points whatever the number measured (decision 81)",()=>{
+  for(const n of [0,1,2,3]){
+    const ids=["a","b","c","d","e","f"];const S={students:ids.map(i=>st(i,"B","M","17"))};
+    const marks={};ids.forEach((id,i)=>marks[id]={t:{0:"Fair"},best:i<n?String(1500-i*100):undefined});
+    fieldDoc(S,"SP","M","17",marks,true);S.field[E.fieldId(groupKey("SP","M","17"))].setd="400";
+    const G=compute(S).groups.get(groupKey("SP","M","17"));
+    const part=G.rows.filter(r=>r.part);eq(part.length,6-n);
+    eq(part.every(r=>r.pts===4&&r.place===n+1),true);
+    eq(G.rows.filter(r=>!r.part).map(r=>r.place),Array.from({length:n},(_,i)=>i+1));
+  }
+});
+t("Keep top N waits for the round: nobody who has not jumped yet is finished",()=>{
+  const ev=E.eventOf(DEFAULT_CONFIG,"LJ");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
+  const rows=[0,1,2,3,4,5,6,7].map(i=>({id:"p"+i,best:i<4?500-i*10:0,m:{a:i<4?{0:String(500-i*10)}:{}}}));
+  eq(E.keepTop(rows,2,rule),[]);eq(E.roundDone(rows,rule),false);
+  rows.forEach((r,i)=>{if(i>=4){r.m.a={0:"x"}}});eq(E.roundDone(rows,rule),true);
+  eq(E.keepTop(rows,2,rule).sort(),["p2","p3","p4","p5","p6","p7"]);
+});
+t("throws: 1st throw for everyone in number order, then the official picks who throws again (decisions 78, 79)",()=>{
+  const ev=E.eventOf(DEFAULT_CONFIG,"SP");const rule=E.fieldRule(DEFAULT_CONFIG,ev);
+  const rows=[{id:"a",m:{t:{0:"Fair"}}},{id:"b",m:{}},{id:"c",m:{ns:true}},{id:"d",m:{}}];
+  let t=E.fieldTurn(ev,rule,rows,false,null,{});eq(t.up,1);eq(t.next,3);
+  rows[1].m.t={0:"Foul"};rows[3].m.t={0:"Fair"};
+  t=E.fieldTurn(ev,rule,rows,false,null,{});eq(t.pick,true);eq(t.up,-1);
+  t=E.fieldTurn(ev,rule,rows,false,null,{tg:{a:true,d:true},tgo:true});eq(t.up,0);eq(t.next,3);
+  rows[0].m.t={0:"Fair",1:"Foul"};t=E.fieldTurn(ev,rule,rows,false,null,{tg:{a:true,d:true},tgo:true});eq(t.up,3);eq(t.next,0);
+  rows[3].m.t={0:"Fair",1:"Fair"};t=E.fieldTurn(ev,rule,rows,false,null,{tg:{a:true,d:true},tgo:true});eq(t.up,0);
+  rows[0].m.t={0:"Fair",1:"Foul",2:"Pass"};rows[3].m.t={0:"Fair",1:"Fair",2:"Fair"};
+  eq(E.fieldTurn(ev,rule,rows,false,null,{tg:{a:true,d:true},tgo:true}).over,true);
+  /* Finish ends an athlete early */
+  rows[0].m.t={0:"Fair"};rows[0].m.fin=true;rows[3].m.t={0:"Fair"};
+  eq(E.fieldTurn(ev,rule,rows,false,null,{tg:{a:true,d:true},tgo:true}).up,3);
+});
+t("a typed best with no fair throw does not count",()=>{
+  const S={students:[st("a","B","M","17")]};
+  fieldDoc(S,"D","M","17",{a:{t:{0:"Foul"},best:"3000"}},true);
+  eq(compute(S).groups.get(groupKey("D","M","17")).rows[0].best,0);
+});
+t("weights by age and sex, with 12 and 13 split where they differ",()=>{
+  eq(E.weightFor(DEFAULT_CONFIG,"SP","M","17"),"5 kg");eq(E.weightFor(DEFAULT_CONFIG,"SP","F","18"),"4 kg");eq(E.weightFor(DEFAULT_CONFIG,"SP","M","13"),"3 kg");
+  eq(E.weightFor(DEFAULT_CONFIG,"D","F","13"),"12 years 0.75 kg, 13 years 1 kg");
+  eq(E.weightFor(DEFAULT_CONFIG,"D","M","16"),"1.5 kg");eq(E.weightFor(DEFAULT_CONFIG,"J","M","18"),"800 g");
+});
+t("high jump start heights come from the sheet",()=>{
+  eq(E.hjStart(DEFAULT_CONFIG,"F","13"),105);eq(E.hjStart(DEFAULT_CONFIG,"M","13"),115);eq(E.hjStart(DEFAULT_CONFIG,"F","14"),110);eq(E.hjStart(DEFAULT_CONFIG,"M","14"),115);eq(E.hjStart(DEFAULT_CONFIG,"M","15"),120);eq(E.hjStart(DEFAULT_CONFIG,"F","18"),110);
+});
+const HJ=E.eventOf(DEFAULT_CONFIG,"HJ"),HR=E.fieldRule(DEFAULT_CONFIG,HJ);
+t("a box can be tapped through every result, with a pass after a miss (decisions 37, 41)",()=>{
+  eq(E.heightSeq(HR),["","O","X","XO","XX","XXO","XXX","-","X-","XX-"]);
+  eq(E.heightSeq(Object.assign({},HR,{pass:false})),["","O","X","XO","XX","XXO","XXX"]);
+});
+t("3 misses in a row is out, and a pass does not reset the count (decision 41)",()=>{
+  eq(E.hjOutBy({110:"XXX"},3,110),true);
+  eq(E.hjOutBy({110:"X-",115:"XX"},3,115),true);
+  eq(E.hjOutBy({110:"X-",115:"-",120:"XX"},3,120),true);
+  eq(E.hjOutBy({110:"XX-",115:"X"},3,115),true);
+  eq(E.hjOutBy({110:"X-",115:"X"},3,115),false);
+  eq(E.hjOutBy({110:"XXO",115:"XXO",120:"XX"},3,120),false);
+  eq(E.hjOutBy({110:"X-",115:"XO",120:"XX"},3,120),false);
+  eq(E.hjOutBy({110:"X-",115:"XX"},3,110),false);
+});
+t("a pass closes the box; a miss alone does not",()=>{
+  ["O","XO","XXO","-","X-","XX-"].forEach(v=>eq(E.hjClosed(v),true));
+  ["","X","XX"].forEach(v=>eq(E.hjClosed(v),false));
+});
+t("the bar: X- carries on, and misses at the next height finish the athlete",()=>{
+  const ids=["a","b"];const m={a:{h:{110:"O"}},b:{h:{110:"XX-"}}};
+  let p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m);eq(p.cur,113);eq(p.left,2);
+  m.a.h[113]="O";m.b.h[113]="X";
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m);eq(p.cur,116);eq(p.left,1);eq(p.out,1);
+});
+function hjRows(m){return Object.keys(m).map(id=>({id,m:m[id]}))}
+t("Now up: everyone's 1st try, then 2nd tries, in arrival order, with the try number (decision 40)",()=>{
+  const m={a:{h:{110:""}},b:{h:{}},c:{h:{}}};const ids=["a","b","c"];
+  const turn=()=>{const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m);return E.fieldTurn(HJ,HR,hjRows(m),false,p)};
+  let t1=turn();eq([t1.up,t1.next,t1.tryNo],[0,1,1]);
+  m.a.h[110]="X";t1=turn();eq([t1.up,t1.next,t1.tryNo],[1,2,1]);
+  m.b.h[110]="O";t1=turn();eq([t1.up,t1.next,t1.tryNo],[2,0,1]);
+  m.c.h[110]="-";t1=turn();eq([t1.up,t1.next,t1.tryNo],[0,-1,2]);
+  m.a.h[110]="XO";t1=turn();eq(t1.up,0);eq(t1.tryNo,1);
+});
+t("an athlete out on carried misses is not up again",()=>{
+  const m={a:{h:{110:"O",115:"O"}},b:{h:{110:"X-",115:"XX"}},c:{h:{110:"O",115:"X"}}};const ids=["a","b","c"];
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m);eq(p.cur,115);
+  const t1=E.fieldTurn(HJ,HR,hjRows(m),false,p);eq(t1.up,2);eq(t1.next,-1);eq(t1.tryNo,2);
+});
+t("all out: no one is up",()=>{
+  const m={a:{h:{110:"XXX"}},b:{h:{110:"X-",113:"XX"}}};
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b"],m);eq(p.cur,null);eq(E.fieldTurn(HJ,HR,hjRows(m),false,p).up,-1);
+});
+t("a pass after a miss counts in the misses overall for a tie (decisions 35, 41)",()=>{
+  const S={students:["a","b"].map(i=>st(i,"B","F","18"))};
+  fieldDoc(S,"HJ","F","18",{a:{h:{110:"X-",115:"O",120:"XXX"}},b:{h:{110:"O",115:"O",120:"XXX"}}});
+  eq(compute(S).groups.get(groupKey("HJ","F","18")).rows.map(r=>[r.id,r.place]),[["b",1],["a",2]]);
+});
+t("a field group starts on Take Names; marks or final mean it has started (decision 44)",()=>{
+  eq(E.fieldStarted(null),false);eq(E.fieldStarted({ath:{a:5}}),false);eq(E.fieldStarted({ath:{a:5},marks:{a:{a:{0:""}}}}),false);
+  eq(E.fieldStarted({started:true}),true);eq(E.fieldStarted({final:true}),true);
+  eq(E.fieldStarted({marks:{a:{a:{0:"534"}}}}),true);eq(E.fieldStarted({marks:{a:{h:{110:"X"}}}}),true);eq(E.fieldStarted({marks:{a:{t:{0:"Foul"}}}}),true);eq(E.fieldStarted({marks:{a:{ns:true}}}),true);
+});
+t("taken off on Take Names: the numbers close up",()=>{
+  const S={students:["a","b","c"].map(i=>st(i,"B","M","17"))};
+  S.field={};const id=E.fieldId(groupKey("LJ","M","17"));S.field[id]={k:"LJ",x:"M",g:"17",ath:{a:1,b:0,c:3},marks:{}};
+  eq(compute(S).groups.get(groupKey("LJ","M","17")).arrival.map(r=>[r.id,r.no]),[["a",1],["c",2]]);
+});
+t("girls: up 5 cm until 3 remain, then 3 cm",()=>{
+  const ids=["a","b","c","d","e"];
+  let p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,{});eq(p.cur,110);eq(p.heights.slice(0,3),[110,115,120]);eq(p.left,5);
+  const m={a:{h:{110:"O"}},b:{h:{110:"O"}},c:{h:{110:"XO"}},d:{h:{110:"O"}},e:{h:{110:"XXX"}}};
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m);eq(p.cur,115);eq(p.left,4);
+  m.a.h[115]="O";m.b.h[115]="XXX";m.c.h[115]="O";m.d.h[115]="O";
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m);eq(p.cur,118);eq(p.left,3);
+});
+t("boys: 10 cm first, then 5 cm until 3 remain, then 3 cm",()=>{
+  const ids=["a","b","c","d","e"];const m={};ids.forEach(i=>m[i]={h:{120:"O"}});
+  let p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"M","17",ids,m);eq(p.cur,130);
+  ids.forEach(i=>m[i].h[130]="O");p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"M","17",ids,m);eq(p.cur,135);
+  m.a.h[135]="XXX";m.b.h[135]="XXX";m.c.h[135]="O";m.d.h[135]="XO";m.e.h[135]="O";
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"M","17",ids,m);eq(p.cur,138);eq(p.left,3);
+});
+t("the last athlete keeps jumping until 3 misses; a pass moves on with the round; all out ends it",()=>{
+  const m={a:{h:{110:"XXX"}},b:{h:{110:"-"}}};
+  let p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b"],m);eq(p.cur,113);eq(p.left,1);
+  m.b.h[113]="O";p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b"],m);eq(p.cur,116);
+  m.b.h[116]="XXX";p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b"],m);eq(p.cur,null);eq(p.left,0);
+});
+t("a box on a height that later moved keeps its column",()=>{
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a"],{a:{h:{110:"O",117:"O"}}});
+  assert(p.heights.includes(117));
+});
+t("high jump: best height cleared; ties by misses at the height, then overall, then share (decision 35)",()=>{
+  const S={students:["a","b","c","d","e","f"].map(i=>st(i,"J","F","18"))};
+  fieldDoc(S,"HJ","F","18",{a:{h:{110:"O",115:"XO",120:"XXX"}},b:{h:{110:"XO",115:"O",120:"XXX"}},c:{h:{110:"O",115:"O",120:"XXX"}},d:{h:{110:"O",115:"O",120:"XXX"}},e:{h:{110:"-",115:"O",118:"XO"}},f:{h:{110:"XXX"}}});
+  const G=compute(S).groups.get(groupKey("HJ","F","18"));
+  eq(G.rows.map(r=>[r.id,r.best,r.place]),[["e",118,1],["c",115,2],["d",115,2],["b",115,4],["a",115,5],["f",0,null]]);
+  eq(G.rows[1].pts,7);eq(G.rows[5].pts,0);
+});
+t("marks print to 2 decimals; 1 decimal rounds down as an engine setting (decision 38)",()=>{
+  eq(E.fmtMark(534),"5.34");
+  const S={config:cfgWith({markDp:1}),students:[]};compute(S);eq(E.fmtMark(539),"5.3");
+  compute({students:[]});eq(E.fmtMark(539),"5.39");
+});
+t("a group with athletes but no Group finished stays provisional; final counts",()=>{
+  const S={students:[st("a","B","M","14")]};fieldDoc(S,"SP","M","14",{a:{t:{0:"Fair"},best:"700"}});
+  const R=compute(S);eq(R.groups.get(groupKey("SP","M","14")).status,"Provisional");eq(R.finalCount,0);
+  S.field[E.fieldId(groupKey("SP","M","14"))].final=true;eq(compute(S).finalCount,1);
+});
+t("blockNow moves on as groups go final",()=>{
+  const S={students:[]};const c=compute(S);eq(E.blockNow(c),1);
+  S.field={};for(const f of E.fieldGroups(DEFAULT_CONFIG).filter(f=>f.block===1))S.field[f.id]={ath:{},final:true};
+  eq(E.blockNow(compute(S)),2);
+});
+
+t("a late athlete does not move the bar; the bar stays where the boxes show",()=>{
+  const m={a:{h:{110:"O",115:"O",120:"O"}},b:{h:{110:"O",115:"O",120:"O"}},c:{h:{110:"O",115:"O",120:"O"}},d:{h:{110:"O",115:"O",120:"O"}}};
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b","c","d"],m);eq(p.cur,125);
+  const q=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b","c","d","late"],m);eq(q.cur,125);
+  m.a.h[125]="O";m.b.h[125]="XXX";m.c.h[125]="XXX";m.d.h[125]="O";
+  const r=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b","c","d","late"],m);eq(r.cur,128);eq(r.left,3);
+  m.late={h:{128:"O"}};
+  const s=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",["a","b","c","d","late"],m);eq(s.cur,128);eq(s.heights.includes(120),true);
+});
+t("a mark typed with the point is metres; too few digits is refused",()=>{
+  eq(E.cleanMark("5.3"),"530");eq(E.cleanMark("5.34"),"534");eq(E.cleanMark("534"),"534");eq(E.markOk("53"),false);eq(E.markOk("534"),true);eq(E.markOk("x"),true);eq(E.markOk(""),true);eq(E.markOk("0.95"),true);eq(E.cleanMark("0.95"),"95");eq(E.markCm("95"),95);eq(E.markOk("5.3m"),false);
+  eq(E.markOk("0.0"),false);eq(E.markOk(".0"),false);eq(E.markOk("0.004"),false);eq(E.markOk("000"),false);eq(E.markOk("12345"),false);eq(E.markOk("100.00"),false);eq(E.markOk("00095"),true);
+  eq(E.cleanMark("5.345"),"534");eq(E.cleanMark("5.29"),"529");
+});
+t("equal multitimer splits keep the tap order inside a heat",()=>{
+  const S={students:["a","b"].map(i=>st(i,"B","F","16"))};
+  run(S,1,"800","F","16",1,{1:"a",2:"b"},{1:{t:15000,st:"ok",src:"multi",o:2},2:{t:15000,st:"ok",src:"multi",o:1}},[],{multi:true});
+  const G=compute(S).groups.get(groupKey("800","F","16"));eq(G.rows.map(r=>[r.id,r.place,r.pts]),[["b",1,10],["a",2,8]]);
+});
+
+t("an athlete taken off keeps everyone else's number",()=>{
+  const S={students:["a","b","c"].map(i=>st(i,"B","M","14"))};
+  S.field={[E.fieldId(groupKey("LJ","M","14"))]:{ath:{a:10,b:-20,c:30},marks:{}}};
+  eq(compute(S).groups.get(groupKey("LJ","M","14")).arrival.map(r=>[r.id,r.no]),[["a",1],["c",3]]);
+});
+
+/* ---- houses and champions (decisions 5, 15) ---- */
+t("age champion counts only 1st to 3rd; 4th-and-below points still go to the house",()=>{
+  const S={students:["a","b","c","d"].map(i=>st(i,"N","M","15"))};
+  run(S,1,"100","M","15",1,{1:"a",2:"b",3:"c",4:"d"},{1:1200,2:1300,3:1400,4:1500},[1,2,3,4]);
+  run(S,2,"200","M","15",1,{1:"d",2:"a",3:"b",4:"c"},{1:2500,2:2600,3:2700,4:2800},[1,2,3,4]);
+  const R=compute(S);const c=R.champs["15|M"];
+  eq(c.winners.map(w=>[w.id,w.pts]),[["a",18]]);eq(c.runners.map(w=>[w.id,w.pts]),[["b",14]]);
+  eq(R.house.N.total,56);
+});
+t("joint champions have no runner up",()=>{
+  const S={students:["a","b","c"].map(i=>st(i,"N","F","14"))};
+  run(S,1,"100","F","14",1,{1:"a",2:"b",3:"c"},{1:1200,2:1300,3:1400},[1,2,3]);
+  run(S,2,"200","F","14",1,{1:"b",2:"a",3:"c"},{1:2500,2:2600,3:2700},[1,2,3]);
+  const c=compute(S).champs["14|F"];eq(c.winners.length,2);eq(c.runners.length,0);
+});
+t("field points count for champions",()=>{
+  const S={students:[st("a","B","M","16")]};fieldDoc(S,"LJ","M","16",{a:{a:{0:"500"}}},true);
+  eq(compute(S).champs["16|M"].winners[0].pts,10);
+});
+t("the 1500 m is scored by age like the 800 m, for the house and the age champion (decisions 95, 103)",()=>{
+  const S={students:[st("a","B","F","15")]};run(S,1,"1500","F","15",1,{1:"a"},{1:{t:36000,st:"ok",src:"multi"}},[],{multi:true});
+  const R=compute(S);eq(R.house.B.total,10);eq(R.house.B.byAge["15"],10);eq(R.champs["15|F"].winners[0].pts,10);
+});
+t("an old program with an Open 1500 m is read by age",()=>{
+  const events=E.DEFAULT_EVENTS.map(e=>e.k==="1500"?Object.assign({},e,{gk:"open"}):e);
+  eq(E.eventsOf({events}).find(e=>e.k==="1500").gk,"age");eq(E.programEvents(cfgWith({events})).length,114);
+});
+t("a combined 800 m: every age ticked is scored on its own (decisions 102, 103)",()=>{
+  const S={students:[st("a","B","F","14"),st("b","J","F","14"),st("c","N","F","15"),st("d","B","F","15"),st("e","J","F","13")]};
+  run(S,1,"800","F","13",1,{1:"a",2:"b",3:"c",4:"d",5:"e"},{1:{t:21000,st:"ok",src:"multi"},2:{t:21500,st:"ok",src:"multi"},3:{t:20500,st:"ok",src:"multi"},4:{t:22000,st:"ok",src:"multi"},5:{t:23000,st:"ok",src:"multi"}},[],{multi:true,gs:["13","14","15"]});
+  const R=compute(S);
+  const rows=k=>R.groups.get(k).rows.map(r=>[r.id,r.place,r.pts]);
+  eq(rows("800|F|14"),[["a",1,10],["b",2,8]]);
+  eq(rows("800|F|15"),[["c",1,10],["d",2,8]]);
+  eq(rows("800|F|13"),[["e",1,10]]);
+  eq(R.races.get(1).label,"800 m, Girls 12 & 13, 14, 15");
+  eq(R.races.get(1).gs,["13","14","15"]);
+});
+t("a second heat of one age joins the combined race's results for that age",()=>{
+  const S={students:[st("a","B","F","14"),st("b","J","F","14"),st("c","N","F","15"),st("x","N","F","14")]};
+  run(S,1,"800","F","14",1,{1:"a",2:"c"},{1:{t:21000,st:"ok",src:"multi"},2:{t:21500,st:"ok",src:"multi"}},[],{multi:true,gs:["14","15"]});
+  run(S,2,"800","F","14",2,{1:"b",2:"x"},{1:{t:20800,st:"ok",src:"multi"},2:{t:23000,st:"ok",src:"multi"}},[],{multi:true});
+  const R=compute(S);const rows=k=>R.groups.get(k).rows.map(r=>[r.id,r.place]);
+  eq(rows("800|F|14"),[["b",1],["a",2],["x",3]]);eq(rows("800|F|15"),[["c",1]]);
+});
+t("an age ticked with nobody in it gets no result of its own (no empty Final)",()=>{
+  const S={students:[st("a","B","F","14"),st("b","J","F","14")]};
+  run(S,1,"800","F","14",1,{1:"a",2:"b"},{1:{t:21000,st:"ok",src:"multi"},2:{t:21500,st:"ok",src:"multi"}},[],{multi:true,gs:["14","15"]});
+  const R=compute(S);eq(R.groups.has("800|F|15"),false);eq(R.groups.get("800|F|14").rows.length,2);
+});
+t("a combined race with no names yet shows in the first age only",()=>{
+  const S={students:[]};S.heats=[{race:1,k:"800",x:"F",g:"14",gs:["14","15","16"],heat:1,multi:true,lanes:{}}];
+  const R=compute(S);eq(R.groups.has("800|F|14"),true);eq(R.groups.has("800|F|15"),false);eq(R.groups.has("800|F|16"),false);
+});
+t("a runner outside the ticked ages is counted once, in the first age",()=>{
+  const S={students:[st("a","B","F","14"),st("z","J","F","17")]};
+  run(S,1,"800","F","14",1,{1:"a",2:"z"},{1:{t:21000,st:"ok",src:"multi"},2:{t:21500,st:"ok",src:"multi"}},[],{multi:true,gs:["14","15"]});
+  const R=compute(S);eq(R.groups.get("800|F|14").rows.map(r=>r.id),["a","z"]);eq(R.groups.has("800|F|15"),false);
+});
+t("races of different combinations: each age has its own heats",()=>{
+  const S={students:[st("a","B","F","14"),st("b","J","F","15"),st("c","N","F","14"),st("d","B","F","15"),st("e","J","F","16")]};
+  run(S,1,"800","F","14",1,{1:"a",2:"b"},{1:{t:21000,st:"ok",src:"multi"},2:{t:21500,st:"ok",src:"multi"}},[],{multi:true,gs:["14","15"]});
+  run(S,2,"800","F","14",2,{1:"c"},{1:{t:20800,st:"ok",src:"multi"}},[],{multi:true,gs:["14"]});
+  run(S,3,"800","F","15",2,{1:"d",2:"e"},{1:{t:22000,st:"ok",src:"multi"},2:{t:22500,st:"ok",src:"multi"}},[],{multi:true,gs:["15","16"]});
+  const R=compute(S);
+  eq(R.groups.get("800|F|14").heats.map(h=>h.race),[1,2]);eq(R.groups.get("800|F|15").heats.map(h=>h.race),[1,3]);eq(R.groups.get("800|F|16").heats.map(h=>h.race),[3]);
+  eq(R.groups.get("800|F|14").rows.map(r=>[r.id,r.place]),[["c",1],["a",2]]);eq(R.groups.get("800|F|15").rows.map(r=>[r.id,r.place]),[["b",1],["d",2]]);
+});
+t("heatGs: a race with no list has its one age",()=>{eq(E.heatGs({g:"16"}),["16"]);eq(E.heatGs({g:"16",gs:["15","16"]}),["15","16"]);eq(E.heatGs({g:"16",gs:[]}),["16"])});
+t("every house total adds up by age plus relays",()=>{
+  const S={students:["a","b"].map(i=>st(i,"J","M","13"))};
+  run(S,1,"100","M","13",1,{1:"a",2:"b"},{1:1500,2:1600},[1,2]);
+  run(S,2,"R","M","J",1,{1:"T-J"},{1:6000},[1]);
+  const h=compute(S).house.J;eq(h.total,h.byAge["13"]+h.relay);eq(h.total,38);
+});
+t("HRIS list has the top 2 of each individual event, track and field",()=>{
+  const S={students:["a","b","c"].map(i=>st(i,"B","M","18"))};
+  run(S,1,"100","M","18",1,{1:"a",2:"b",3:"c"},{1:1200,2:1300,3:1400},[1,2,3]);
+  fieldDoc(S,"SP","M","18",{a:{t:{0:"Fair"},best:"900"},b:{t:{0:"Fair"},best:"950"},c:{t:{0:"Fair"},best:"800"}},true);
+  const L=E.hrisList(compute(S));eq(L.length,4);eq(L.map(x=>x.val),["12.00","13.00","9.50 m","9.00 m"]);
+});
+t("records: lower wins on the track, higher in the field, equal is noted",()=>{
+  const S={students:["a","b"].map(i=>st(i,"B","M","18")),records:[{key:groupKey("100","M","18"),v:1250,holders:[{n:"X"}]},{key:groupKey("SP","M","18"),v:900,holders:[{n:"Y"}]}]};
+  run(S,1,"100","M","18",1,{1:"a"},{1:1200},[1]);
+  fieldDoc(S,"SP","M","18",{b:{t:{0:"Fair"},best:"900"}},true);
+  const R=compute(S);
+  eq(R.groups.get(groupKey("100","M","18")).recordNote.kind,"new");
+  eq(R.groups.get(groupKey("SP","M","18")).recordNote.kind,"equal");
+});
+t("records list parses track and field rows",()=>{
+  const p=E.parseRecordRows("Event,Sex,Group,Result,Holder,House,Year\n100 m,M,18+,12.10,A B,J,2019\nLong Jump,F,12 & 13,4.55,C D,N,2020\nNope,M,18,1,,,",DEFAULT_CONFIG);
+  eq(p.out.map(r=>[r.key,r.v]),[["100|M|18",1210],["LJ|F|13",455]]);eq(p.bad,[4]);
+});
+
+/* ---- students: DOB is never kept ---- */
+t("age group as at 31 December 2027, and no DOB in the result",()=>{
+  const p=E.parseStudents("Surname,Firstname,House,Sex,DOB\nSmith,Amy,B,F,2014-12-31\nJones,Bo,J,M,1/1/2015\nLee,Cy,N,M,2009-06-01\nBad,,X,Z,\n",DEFAULT_CONFIG.ageDate);
+  eq(p.ok.map(s=>s.g),["13","13","18"]);eq(p.bad.length,1);
+  assert(!JSON.stringify(p.ok).includes("dob"));
+});
+t("high jump: the person running the event types the start height and each next height (decisions 53 to 58)",()=>{
+  const ids=["a","b","c","d"];const m={a:{h:{}},b:{h:{}},c:{h:{}},d:{h:{}}};
+  let p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{});eq(p.cur,110);eq(p.sheetStart,110);eq(p.locked,false);eq(p.nextSheet,115);
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{hs:105});eq(p.cur,105);eq(p.sheetStart,110);eq(p.heights[1],110);
+  ids.forEach(i=>m[i].h[110]="O");
+  /* start 1.10, then 1.20, then 1.23 */
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{hn:{1:120}});eq(p.cur,120);eq(p.locked,true);eq(p.nextTyped,false);
+  ids.forEach(i=>m[i].h[120]="O");
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{hn:{1:120,2:123}});eq(p.cur,123);
+  eq(p.heights.slice(0,3),[110,120,123]);
+  /* a typed height that is not above the bar is ignored */
+  p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{hn:{1:120,2:118}});eq(p.cur,125);
+});
+t("high jump has no limit on rounds: heights keep coming until everyone is out (decision 67)",()=>{
+  const ids=["a","b"];const m={a:{h:{}},b:{h:{}}};
+  let h=110,n=0;
+  for(let r=0;r<25;r++){
+    const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{});
+    if(p.cur==null)break;
+    eq(p.heights.length>=Math.max(7,p.heights.indexOf(p.cur)+3),true);
+    ids.forEach(i=>{m[i].h[p.cur]="O"});n++;
+  }
+  eq(n,25);
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{});eq(p.heights.length>=27,true);
+  ids.forEach(i=>{m[i].h[p.cur]="XXX"});
+  const q=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{});eq(q.cur,null);eq(q.left,0);
+});
+t("high jump: 3 left is shown as plan.left, and the sheet's next raise drops to 3 cm",()=>{
+  const ids=["a","b","c","d"];const m={a:{h:{110:"O"}},b:{h:{110:"XXX"}},c:{h:{110:"O"}},d:{h:{110:"O"}}};
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{});eq(p.left,3);eq(p.cur,113);
+});
+t("high jump: an ended athlete leaves the bar and the count, and keeps the best height",()=>{
+  const ids=["a","b","c","d"];const m={a:{h:{110:"O"}},b:{h:{110:"O"},fin:true},c:{h:{110:"XXX"}},d:{h:{110:"O"}}};
+  const p=E.hjPlan(DEFAULT_CONFIG,HJ,HR,"F","18",ids,m,{});eq(p.left,2);eq(p.cur,113);eq(p.isIn("b",113),false);
+});
+console.log(`${n-fail} of ${n} engine tests passed`);
+process.exit(fail?1:0);

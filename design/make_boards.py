@@ -129,7 +129,11 @@ def home(dark):
              ("4","Time Slips","Photograph each printed time slip","TimeSlips"),
              ("5","Field Station","Enter attempts and marks at your station","FieldStart"),
              ("6","Announcer","Read results, records and house points","Announcer")]
-    t = "".join(f'<a class="tile" href="{lnk(f,dark)}"><span class="n">{n}</span><b>{a}</b><span>{b}</span></a>\n' for n,a,b,f in tiles)
+    jobs = [(1,1,"Track Marshal","Put runners in lanes and send each heat","MarshalPick",""),(2,2,"Place Judge","Tap the top places in each heat","PlaceJudge",""),
+            (3,3,"Recorder","Check times and marks","Recorder",""),(4,4,"Time Slips","Photograph each printed time slip","TimeSlips",""),
+            (5,6,"Field Station","Enter attempts and marks at your station","FieldStart",""),(6,5,"Announcer","Read results, records and house points","Announcer",""),
+            (7,9,"Carnival Organiser","Organiser only","Organiser"," orgtile")]
+    tiles = "".join(f'<sc-if value="{{{{show.j{pin}}}}}" hint-placeholder-val="{{{{true}}}}"><a class="tile{c}" href="{lnk(f,dark)}"><span class="n">{n}</span><b>{l}</b><span>{d}</span></a></sc-if>\n' for n,pin,l,d,f,c in jobs)
     body = f'''<header class="top"><div class="wrap"><div class="topin"><div class="ttl"><b>Athletics Carnival 2027</b><small>CCAS Athletics Carnival 2027</small></div><span class="live"><i></i>Live, 9 devices</span></div></div></header>
 <div class="scroll"><main class="wrap">
 <sc-if value="{{{{showPin}}}}" hint-placeholder-val="{{{{true}}}}">
@@ -137,26 +141,27 @@ def home(dark):
 <div class="dots"><sc-for list="{{{{dots}}}}" as="d" hint-placeholder-count="4"><i class="{{{{d.c}}}}"></i></sc-for></div>
 <div class="keypad"><sc-for list="{{{{keys}}}}" as="k" hint-placeholder-count="12"><button type="button" onClick="{{{{k.press}}}}" aria-label="{{{{k.aria}}}}">{{{{k.label}}}}</button></sc-for></div>
 <sc-if value="{{{{wrong}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg bad" role="alert">That PIN is not right. Try again.</div></sc-if>
-<button type="button" class="btn primary big" style="width:276px" onClick="{{{{start}}}}">Start</button>
+<sc-if value="{{{{direct}}}}" hint-placeholder-val="{{{{false}}}}"><a class="btn primary big" style="width:276px" href="{{{{href}}}}">Start</a></sc-if><sc-if value="{{{{notDirect}}}}" hint-placeholder-val="{{{{true}}}}"><button type="button" class="btn primary big" style="width:276px" onClick="{{{{start}}}}">Start</button></sc-if>
 </div>
 </sc-if>
 <sc-if value="{{{{showJobs}}}}" hint-placeholder-val="{{{{false}}}}">
-<div class="home"><h1>Athletics Carnival</h1><p class="muted" style="margin:0">Choose your job.</p>
-<div class="tiles">{t}
-<sc-if value="{{{{org}}}}" hint-placeholder-val="{{{{false}}}}"><a class="tile orgtile" style="grid-column:1/-1;min-height:96px" href="{lnk("Organiser",dark)}"><span class="n">7</span><b>Carnival Organiser</b><span>Organiser only</span></a></sc-if>
-</div>
+<div class="home"><h1>Athletics Carnival</h1><p class="muted" style="margin:0">{{{{jobsLine}}}}</p>
+<div class="tiles">{tiles}</div>
 <button type="button" class="linkbtn" onClick="{{{{signout}}}}">Sign out (back to PIN)</button>
 </div>
 </sc-if>
 </main></div>'''
-    logic = r'''
+    links = {str(pin): lnk(f, dark) for n, pin, l, d, f, c in jobs if pin != 9}
+    logic = "const JL = " + J(links) + r'''
     const labels = ['1','2','3','4','5','6','7','8','9','Clear','0','Back'];
     const keys = labels.map((l) => ({ label: l, aria: /^[0-9]$/.test(l) ? 'Digit ' + l : l, press: () => {
       if (/^[0-9]$/.test(l)) { if (st.pin.length < 4) set({ pin: st.pin + l, wrong: false }); }
       else if (l === 'Clear') set({ pin: '' }); else set({ pin: st.pin.slice(0, -1) }); } }));
-    out = { showPin: !st.ok, showJobs: st.ok, wrong: st.wrong, org: st.org, keys,
+    const show = {}; [1,2,3,4,5,6,9].forEach((k) => { show['j' + k] = st.org ? true : k === Number(st.pin[0]); });
+    const direct = st.pin.length === 4 && !!JL[st.pin[0]];
+    out = { showPin: !st.ok, showJobs: st.ok, wrong: st.wrong, keys, show, direct, notDirect: !direct, href: direct ? JL[st.pin[0]] : '', jobsLine: st.org ? 'Choose your job.' : 'Your job.',
       dots: [0,1,2,3].map((i) => ({ c: i < st.pin.length ? 'on' : '' })),
-      start: () => { if (st.pin.length < 4) return; if (st.pin === '0000') set({ pin: '', wrong: true }); else set({ ok: true, org: st.pin === '9999' }); },
+      start: () => { if (st.pin.length < 4) return; if (st.pin !== '9999' && !(Number(st.pin[0]) >= 1 && Number(st.pin[0]) <= 6)) set({ pin: '', wrong: true }); else set({ ok: true, org: st.pin === '9999' }); },
       signout: () => set({ ok: false, pin: '', org: false }) };
 '''
     return body, logic, "{ pin: '', ok: false, org: false, wrong: false }"
@@ -179,20 +184,22 @@ def marshal_pick(dark):
     const evs = ['100 m','200 m','400 m','800 m','1500 m','4 x 100 m relay'];
     const age = ['12 & 13','14','15','16','17','18+'];
     const band = ['Junior','Intermediate','Senior'];
-    const isRelay = st.e === '4 x 100 m relay', is1500 = st.e === '1500 m';
-    const groups = isRelay ? band : (is1500 ? ['Open'] : age);
-    const g = groups.includes(st.g) ? st.g : (is1500 ? 'Open' : null);
-    const miss = [st.e ? null : 'the race', st.x ? null : 'boys or girls', g ? null : (isRelay ? 'the group' : 'the age')].filter(Boolean);
+    const isRelay = st.e === '4 x 100 m relay', multi = st.e === '800 m' || st.e === '1500 m';
+    const groups = isRelay ? band : age;
+    const gs = age.filter((a) => st.gs.includes(a));
+    const g = multi ? (gs.length ? gs.join(', ') : null) : (groups.includes(st.g) ? st.g : null);
+    const toggle = (l) => () => set({ gs: gs.includes(l) ? gs.filter((a) => a !== l) : gs.concat([l]) });
+    const miss = [st.e ? null : 'the race', st.x ? null : 'boys or girls', g ? null : (isRelay ? 'the group' : (multi ? 'at least one age' : 'the age'))].filter(Boolean);
     out = { ev: evs.map((l) => ({ l, on: st.e === l, tap: () => set({ e: l }) })),
       sex: ['Girls','Boys'].map((l) => ({ l, on: st.x === l, tap: () => set({ x: l }) })),
-      grp: groups.map((l) => ({ l, on: g === l, tap: () => set({ g: l }) })),
-      showSex: true, gLabel: isRelay ? 'Group' : 'Age', showNote: isRelay || st.e === '800 m' || is1500,
-      note: isRelay ? 'One team per house. Pick the house for each lane; no names.' : 'No lanes. The person with the multitimer enters the names and times this race on a phone.',
-      go: isRelay ? F.r : ((st.e === '800 m' || is1500) ? F.m : F.l),
+      grp: multi ? [{ l: 'All ages', on: gs.length === age.length, tap: () => set({ gs: gs.length === age.length ? [] : age.slice() }) }].concat(age.map((l) => ({ l, on: gs.includes(l), tap: toggle(l) }))) : groups.map((l) => ({ l, on: g === l, tap: () => set({ g: l }) })),
+      showSex: true, gLabel: isRelay ? 'Group' : (multi ? 'Ages (tick as many as run in this race)' : 'Age'), showNote: isRelay || multi,
+      note: isRelay ? 'One team per house. Pick the house for each lane; no names.' : 'Tick every age that runs in this race. They run together, and each age is scored on its own. No lanes: the person with the multitimer enters the names and times this race on a phone.',
+      go: isRelay ? F.r : (multi ? F.m : F.l),
       notReady: miss.length > 0, ready: miss.length === 0, miss: miss.join(', '),
       name: (st.e || '') + ', ' + (st.x || '') + ' ' + (g || '') };
 '''
-    return body, logic, "{ e: '100 m', x: 'Boys', g: '18+' }"
+    return body, logic, "{ e: '800 m', x: 'Girls', g: '18+', gs: ['12 & 13','14','15'] }"
 
 # ---------- A1.3 Track Marshal: lanes ----------
 def marshal_lanes(dark):
@@ -254,7 +261,8 @@ def multitimer(dark):
     roster = names("F","16",17,5)
     body = header("TIME SLIPS","Time Slips",dark,slim=True) + f'''
 <div class="scroll"><main class="wrap" style="padding-top:10px;padding-bottom:96px"><div class="phone" style="gap:10px">
-<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>RACE</small><b>35</b></span><div class="info"><b>800 m, Girls 16</b><span>{{{{sub}}}}</span></div></div>
+<div class="tabs" style="margin:0"><a class="btn" style="border-radius:999px" href="{lnk("TimeSlips",dark)}">Take photo</a><button type="button" aria-pressed="true">Multi</button></div>
+<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>RACE</small><b>{{{{raceNo}}}}</b></span><div class="info"><b>{{{{label}}}}</b><span>{{{{sub}}}}</span></div></div>
 <sc-if value="{{{{isNames}}}}" hint-placeholder-val="{{{{true}}}}">
 <div class="prompt" style="margin:0">Tap each runner on the start line.</div>
 <label class="label" style="display:flex;flex-direction:column;gap:4px">Find a runner<input type="search" placeholder="Type part of a name"></label>
@@ -269,39 +277,56 @@ def multitimer(dark):
 </sc-if>
 <sc-if value="{{{{isPlace}}}}" hint-placeholder-val="{{{{false}}}}">
 <div class="prompt {{{{doneC}}}}" style="margin:0">{{{{prompt}}}}</div>
-<sc-if value="{{{{picking}}}}" hint-placeholder-val="{{{{true}}}}"><div class="namegrid"><sc-for list="{{{{toPlace}}}}" as="p" hint-placeholder-count="15"><button type="button" class="namebtn" aria-pressed="{{{{p.on}}}}" onClick="{{{{p.tap}}}}"><sc-if value="{{{{p.on}}}}" hint-placeholder-val="{{{{false}}}}"><span class="medal {{{{p.c}}}}" style="width:30px;height:30px">{{{{p.pl}}}}</span></sc-if><sc-if value="{{{{p.off}}}}" hint-placeholder-val="{{{{true}}}}"><span class="hdot h{{{{p.h}}}}">{{{{p.h}}}}</span></sc-if><span class="t">{{{{p.n}}}}</span></button></sc-for></div></sc-if>
-<sc-if value="{{{{placed}}}}" hint-placeholder-val="{{{{false}}}}"><div class="panel" style="padding:0;overflow:hidden"><table><thead><tr><th>Place</th><th>Runner</th><th class="num">Time</th></tr></thead><tbody><sc-for list="{{{{final}}}}" as="r" hint-placeholder-count="15"><tr><td style="text-align:center;font-weight:800">{{{{r.p}}}}</td><td class="nmcell"><span class="htag"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span>{{{{r.n}}}}</span></td><td class="num"><b>{{{{r.t}}}}</b><sc-if value="{{{{r.auto}}}}" hint-placeholder-val="{{{{false}}}}"><span class="under">+1 s</span></sc-if></td></tr></sc-for></tbody></table></div></sc-if>
+<div class="pool ph track"><sc-for list="{{{{toPlace}}}}" as="p" hint-placeholder-count="15"><div class="lane" style="grid-template-columns:minmax(0,1fr) auto"><div class="body" style="cursor:default"><span class="nm"><span class="hdot h{{{{p.h}}}}">{{{{p.h}}}}</span><span>{{{{p.n}}}}</span></span></div>
+<div class="wall mt"><button type="button" class="spot {{{{p.c}}}}" onClick="{{{{p.tap}}}}" aria-label="{{{{p.aria}}}}">{{{{p.pl}}}}</button><span class="mtt" style="display:block;min-height:18px;min-width:62px;box-sizing:border-box;text-align:center;border-radius:4px;{{{{p.ts}}}}">{{{{p.t}}}}</span></div></div></sc-for></div>
+<sc-if value="{{{{notAddingRunner}}}}" hint-placeholder-val="{{{{true}}}}"><button type="button" class="btn big" onClick="{{{{startAddRunner}}}}">Add a runner who ran</button></sc-if>
+<sc-if value="{{{{addingRunner}}}}" hint-placeholder-val="{{{{false}}}}"><div class="panel stack" style="gap:8px"><b>Who ran but was not named?</b>
+<label class="label" style="display:flex;flex-direction:column;gap:4px">Find a runner<input type="search" placeholder="Type part of a name"></label>
+<div class="namegrid"><sc-for list="{{{{addList}}}}" as="p" hint-placeholder-count="2"><button type="button" class="namebtn" onClick="{{{{p.tap}}}}"><span class="hdot h{{{{p.h}}}}">{{{{p.h}}}}</span><span class="t">{{{{p.n}}}}</span></button></sc-for></div>
+<button type="button" class="btn" onClick="{{{{closeAdd}}}}">Not on the list</button><button type="button" class="linkbtn" style="text-align:center" onClick="{{{{closeAdd}}}}">Close</button></div></sc-if>
 </sc-if>
 <sc-if value="{{{{isSent}}}}" hint-placeholder-val="{{{{false}}}}">
-<div class="msg ok">Race 35 times sent to the Recorder.</div><button type="button" class="btn navy big" onClick="{{{{again}}}}">Next race</button>
+<div class="msg ok">Race {{{{raceNo}}}} times sent to the Recorder.</div><button type="button" class="btn navy big" onClick="{{{{again}}}}">Next heat, {{{{label}}}}</button><button type="button" class="btn big" onClick="{{{{newGroup}}}}">New age or event</button>
 <div class="row" style="flex-wrap:nowrap"><a class="btn" style="flex:1" href="{lnk("Recorder",dark)}">Check race</a><a class="btn" style="flex:1" href="{lnk("Recorder",dark)}">Race overall</a></div>
+</sc-if>
+<sc-if value="{{{{isPick}}}}" hint-placeholder-val="{{{{false}}}}">
+<div class="mrow" style="padding:0"><span class="label">Race</span><div class="choices"><sc-for list="{{{{cEv}}}}" as="c" hint-placeholder-count="2"><button type="button" class="choice" aria-pressed="{{{{c.on}}}}" onClick="{{{{c.tap}}}}">{{{{c.l}}}}</button></sc-for></div></div>
+<div class="mrow" style="padding:0"><span class="label">Boys or girls</span><div class="choices"><sc-for list="{{{{cX}}}}" as="c" hint-placeholder-count="2"><button type="button" class="choice" aria-pressed="{{{{c.on}}}}" onClick="{{{{c.tap}}}}">{{{{c.l}}}}</button></sc-for></div></div>
+<div class="mrow" style="padding:0"><span class="label">Ages (tick as many as run in this race)</span><div class="choices"><sc-for list="{{{{cG}}}}" as="c" hint-placeholder-count="6"><button type="button" class="choice" aria-pressed="{{{{c.on}}}}" onClick="{{{{c.tap}}}}">{{{{c.l}}}}</button></sc-for></div></div>
+<button type="button" class="btn navy big" onClick="{{{{again}}}}">Take names</button>
+<button type="button" class="btn" onClick="{{{{backSent}}}}">Back</button>
+<a class="linkbtn" style="text-align:center" href="{lnk("MarshalPick",dark)}">Another race: go to the Track Marshal</a>
 </sc-if>
 </div></main></div>
 <sc-if value="{{{{hasBar}}}}" hint-placeholder-val="{{{{true}}}}">''' + pbar('<button type="button" class="btn" onClick="{{undo}}">{{undoL}}</button><button type="button" class="btn navy" onClick="{{main}}">{{mainL}}</button>') + '''</sc-if>'''
     logic = "const roster = " + J(roster) + r''';
     const fmt = (cs) => Math.floor(cs / 6000) + ':' + String(Math.floor(cs % 6000 / 100)).padStart(2, '0') + '.' + String(cs % 100).padStart(2, '0');
     const sp = st.splits, n = st.picked.length, ph = st.ph, tp = st.taps;
-    const allDone = tp.length >= sp.length;
-    const rest = st.picked.filter((i) => !tp.includes(i));
-    const final = tp.map((i, k) => ({ p: k + 1, n: roster[i].n, h: roster[i].h, t: fmt(sp[k]), auto: false }))
-      .concat(rest.map((i, k) => ({ p: tp.length + k + 1, n: roster[i].n, h: roster[i].h, t: fmt(sp[sp.length - 1] + (k + 1) * 100), auto: true })));
+    const allDone = tp.length >= n;
+    // a place past the last split gets 1 second more than the place before
+    const timeAt = (k) => k < sp.length ? sp[k] : sp[sp.length - 1] + (k - sp.length + 1) * 100;
     const O = (x) => x + (x % 100 > 10 && x % 100 < 14 ? 'th' : (['th','st','nd','rd'][x % 10] || 'th'));
-    out = { isNames: ph === 'names', isClock: ph === 'ready' || ph === 'run', isReady: ph === 'ready', isRun: ph === 'run', isPlace: ph === 'place', isSent: ph === 'sent',
+    out = { isNames: ph === 'names', isClock: ph === 'ready' || ph === 'run', isReady: ph === 'ready', isRun: ph === 'run', isPlace: ph === 'place', isSent: ph === 'sent', isPick: ph === 'pick', raceNo: st.race, label: st.e + ', ' + st.x + ' ' + st.gs.join(', '),
+      notAddingRunner: !st.adding, addingRunner: !!st.adding, startAddRunner: () => set({ adding: true }), closeAdd: () => set({ adding: false }),
+      addList: roster.map((r, i) => ({ r, i })).filter((x) => !st.picked.includes(x.i)).map((x) => ({ n: x.r.n, h: x.r.h, tap: () => set({ picked: st.picked.concat([x.i]), adding: false }) })),
+      newGroup: () => set({ ph: 'pick' }), backSent: () => set({ ph: 'sent' }),
+      cEv: ['800 m','1500 m'].map((l) => ({ l, on: st.e === l, tap: () => set({ e: l }) })), cX: ['Girls','Boys'].map((l) => ({ l, on: st.x === l, tap: () => set({ x: l }) })),
+      cG: [{ l: 'All ages', on: st.gs.length === 6, tap: () => set({ gs: st.gs.length === 6 ? [] : ['12 & 13','14','15','16','17','18+'] }) }].concat(['12 & 13','14','15','16','17','18+'].map((l) => ({ l, on: st.gs.includes(l), tap: () => set({ gs: st.gs.includes(l) ? st.gs.filter((a) => a !== l) : st.gs.concat([l]) }) }))),
       hasBar: ph === 'names' || ph === 'place' || ph === 'run', sub: 'No lanes · ' + n + ' runners',
       ppl: roster.map((r, i) => { const on = st.picked.includes(i); return { n: r.n, h: r.h, on, c: on ? 'sel' : '', tap: () => set({ picked: on ? st.picked.filter((x) => x !== i) : st.picked.concat([i]) }) }; }),
       clock: fmt(ph === 'ready' ? 0 : (sp.length ? sp[sp.length - 1] + 212 : 15120)), runC: ph === 'run' ? 'run' : '',
       go: () => set({ ph: 'run' }), stop: () => set({ ph: 'place' }), split: () => { if (ph === 'run') set({ splits: sp.concat([(sp[sp.length - 1] || 15000) + 337]) }); },
       nSp: sp.length, nRun: n, last: sp.map((t, i) => ({ i: i + 1, t: fmt(t) })).slice(-5).reverse(),
-      picking: !allDone, placed: allDone, doneC: allDone ? 'done' : '', final,
-      prompt: allDone ? (rest.length ? sp.length + ' times for ' + n + ' runners. The other ' + rest.length + ' each get 1 second more than the place before, so they still get points.' : 'All ' + n + ' placed. Check the times, then send.') : 'Tap the name that finished ' + O(tp.length + 1) + ' (' + fmt(sp[tp.length]) + ').',
-      toPlace: st.picked.map((i) => { const p = tp.indexOf(i) + 1; return { n: roster[i].n, h: roster[i].h, on: p > 0, off: !p, pl: p, c: 'm' + Math.min(p || 4, 4), tap: () => set({ taps: p ? tp.filter((x) => x !== i) : tp.concat([i]) }) }; }),
+      doneC: allDone ? 'done' : '',
+      prompt: allDone ? 'All ' + n + ' placed. Check the times, then send.' : 'Tap the button next to the runner who finished ' + O(tp.length + 1) + (tp.length < sp.length ? ' (' + fmt(sp[tp.length]) + ').' : ' (no split: 1 second after the place before).'),
+      toPlace: st.picked.map((i) => { const p = tp.indexOf(i) + 1; return { n: roster[i].n, h: roster[i].h, on: p > 0, pl: p || '', t: p ? fmt(timeAt(p - 1)) : ' ', ts: p ? 'background:#1d3160;color:#ffffff' : '', c: p ? (p <= 4 ? 'p' + p : 'px') : '', aria: p ? roster[i].n + ', place ' + p + '. Tap to remove' : roster[i].n + ', tap for place ' + (tp.length + 1), tap: () => set({ taps: p ? tp.filter((x) => x !== i) : tp.concat([i]) }) }; }),
       undoL: ph === 'names' ? 'Add not on list' : (ph === 'run' ? 'Undo last split' : 'Undo last'), undo: () => { if (ph === 'run') set({ splits: sp.slice(0, -1) }); if (ph === 'place') set({ taps: tp.slice(0, -1) }); },
       mainL: ph === 'names' ? 'Names done' : (ph === 'run' ? 'Fix splits' : 'Send to Recorder'),
       main: () => { if (ph === 'names') set({ ph: 'ready' }); if (ph === 'place' && allDone) set({ ph: 'sent' }); },
-      again: () => set({ ph: 'names', taps: [], splits: st.seed }) };
+      again: () => set({ ph: 'names', taps: [], splits: st.seed, race: st.race + 1 }) };
 '''
     seed = [15120+337*i+(i*i*7)%90 for i in range(10)]
-    return body, logic, "{ ph: 'names', picked: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], taps: [4,9,1,12,0,7,3], splits: " + J(seed) + ", seed: " + J(seed) + " }"
+    return body, logic, "{ adding: false, e: '800 m', x: 'Girls', g: '16', gs: ['15','16'], race: 35, ph: 'names', picked: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14], taps: [4,9,1,12,0,7,3], splits: " + J(seed) + ", seed: " + J(seed) + " }"
 
 # ---------- A1.17 Track Marshal: relay ----------
 def marshal_relay(dark):
@@ -334,6 +359,7 @@ def slips(dark):
     CAM = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8a2 2 0 0 1 2-2h2l2-2h6l2 2h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><circle cx="12" cy="13" r="4"></circle></svg>'
     body = header("TIME SLIPS","Time Slips",dark,slim=True) + f'''
 <div class="scroll"><main class="wrap" style="padding-top:12px"><div class="phone">
+<div class="tabs" style="margin:0"><button type="button" aria-pressed="true">Take photo</button><a class="btn" style="border-radius:999px" href="{lnk("Multitimer",dark)}">Multi</a></div>
 <div class="racebar" style="margin:0"><span class="racebadge xl"><small>RACE</small><b>3</b></span><div class="info"><b>100 m, Boys 18+</b><span>Heat 1</span></div></div>
 <sc-if value="{{{{before}}}}" hint-placeholder-val="{{{{true}}}}"><button type="button" class="cam" onClick="{{{{shoot}}}}">{CAM}Take photo of the slip</button>
 <div class="msg info">Race 3 is ready. Hold the phone flat over the printed slip.</div></sc-if>
@@ -341,7 +367,6 @@ def slips(dark):
 <button type="button" class="btn navy big">Next race</button>
 <button type="button" class="btn big" onClick="{{{{again}}}}">Replace this slip with a new photo</button>
 <div class="row" style="flex-wrap:nowrap"><a class="btn big" style="flex:1" href="{lnk("Recorder",dark)}">Check race</a><a class="btn big" style="flex:1" href="{lnk("Recorder",dark)}">Race overall</a></div></sc-if>
-<div class="row"><span class="qchip">QUESTION 19</span><span class="muted" style="font-size:.86rem;flex:1 1 200px">Drawn as the pool slip: one slip per heat, a time per lane. To confirm from a photo of a track slip.</span></div>
 </div></main></div>'''
     logic = "out = { before: !st.done, after: st.done, shoot: () => set({ done: true }), again: () => set({ done: false }) };"
     return body, logic, "{ done: false }"
@@ -357,117 +382,551 @@ def field_start(dark):
 <a class="btn {{{{r.btn}}}} small" href="{{{{r.href}}}}">Open</a></div></sc-for></div>
 </div></main></div>'''
     blocks = [{"t":b[0],"x":b[3],"f":b[4]} for b in BLOCKS]
-    logic = "const blocks = " + J(blocks) + "; const ages = " + J(AGES) + "; const stn = " + J(STN) + f"; const markF = {J(lnk('FieldMarks',dark))}, highF = {J(lnk('FieldHigh',dark))};" + r'''
+    logic = "const blocks = " + J(blocks) + "; const ages = " + J(AGES) + "; const stn = " + J(STN) + f"; const markF = {J(lnk('FieldMarks',dark))}, highF = {J(lnk('FieldHigh',dark))}, throwF = {J(lnk('FieldThrows',dark))}, namesF = {J(lnk('FieldNames',dark))};" + r'''
     const rows = [];
     blocks.forEach((b, bi) => b.f.forEach((s, i) => { if (s === st.s) rows.push({ bi, t: b.t, g: b.x + ' ' + ages[i] }); }));
     rows.forEach((r, i) => { r.done = r.bi < st.now; r.isNow = r.bi === st.now; });
     out = { title: stn[st.s], count: rows.length, shared: st.s === 'SP',
       stn: Object.keys(stn).map((k) => ({ l: stn[k], on: st.s === k, tap: () => set({ s: k }) })),
-      rows: rows.map((r) => ({ t: r.t, g: r.g, c: r.isNow ? 'now' : '', st: r.done ? 'Finished' : (r.isNow ? 'Now' : 'Later'), chip: r.done ? 'final' : (r.isNow ? 'prov' : ''), btn: r.isNow ? 'go' : '', href: st.s.startsWith('HJ') ? highF : markF })) };
+      rows: rows.map((r) => ({ t: r.t, g: r.g, c: r.isNow ? 'now' : '', st: r.done ? 'Finished' : (r.isNow ? 'Now' : 'Later'), chip: r.done ? 'final' : (r.isNow ? 'prov' : ''), btn: r.isNow ? 'go' : '', href: namesF })) };
 '''
     return body, logic, "{ s: 'LJ1', now: 1 }"
 
-# ---------- A1.8 Field Station: distance marks ----------
+PTSJS = "const PTS = [10, 8, 6]; const ptsFor = (pl, c) => { let t = 0; for (let i = 0; i < c; i++) t += PTS[pl - 1 + i] || 4; return t / c; };"
+ROW_PLACE = '''<td><sc-if value="{{{{r.medal}}}}" hint-placeholder-val="{{{{true}}}}"><span class="medal {{{{r.mc}}}}">{{{{r.pl}}}}</span></sc-if><sc-if value="{{{{r.plain}}}}" hint-placeholder-val="{{{{false}}}}"><span>{{{{r.pl}}}}</span></sc-if></td>
+<td class="num"><b>{{{{r.pts}}}}</b></td>'''
+ROW_NAME = '''<td style="text-align:center;font-weight:800">{{{{r.no}}}}</td><td class="nmcell"><span class="htag"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span><b>{{{{r.n}}}}</b></span><sc-if value="{{{{r.up}}}}" hint-placeholder-val="{{{{false}}}}"> <span class="chip info">{{{{r.upL}}}}</span></sc-if></td>'''
+def field_top(code, title, sub, dark, extra=""):
+    return f'''<div class="racebar"><span class="racebadge"><small>FIELD</small><b>{code}</b></span><div class="info"><b>{title}</b><span>{sub}</span></div>
+{extra}<button type="button" class="btn">Add an athlete</button><a class="btn" href="{lnk("FieldStart",dark)}">All groups</a><button type="button" class="btn navy big" onClick="{{{{finish}}}}">{{{{finLabel}}}}</button></div>'''
+
+# ---------- A1.8 Field Station: long jump ----------
 def field_marks(dark):
     roster = names("M","17",7,8)
-    init = [["534","x","541"],["498","502","x"],["x","x","x"],["561","","" ],["487","-","492"],["",""," "],["515","x",""]]
-    init = [[c.strip() for c in r] for r in init]
+    init = [["534","x",""],["498","502",""],["x","x",""],["561","558",""],["487","",""],["","",""],["515","",""]]
     body = header("FIELD STATION","Field Station",dark,sub="Long Jump 1") + f'''
 <div class="scroll"><main class="wrap">
-<div class="racebar"><span class="racebadge"><small>FIELD</small><b>LJ1</b></span><div class="info"><b>Long jump, Boys 17</b><span>Long Jump 1 · 9:55 am block · 2 teachers</span></div>
-<button type="button" class="btn">Add an athlete</button><a class="btn" href="{lnk("FieldStart",dark)}">All groups</a><button type="button" class="btn navy big" onClick="{{{{finish}}}}">{{{{finLabel}}}}</button></div>
-<div class="todo" style="margin-bottom:12px">Placeholder until Jordan sets the rules: <b>[ATTEMPTS: 3 DRAWN]</b> <b>[FINAL ROUND?]</b> <b>[COUNTBACK ON TIES?]</b> <b>[MARKS TO 2 DECIMALS?]</b> <span class="qchip">QUESTION 8</span></div>
-<div class="panel" style="padding:0;overflow:hidden"><div class="tablewrap"><table>
-<thead><tr><th>Athlete</th><th class="todoh">Attempt 1</th><th class="todoh">Attempt 2</th><th class="todoh">Attempt 3</th><th class="num">Best</th><th>Place</th><th class="num">Points</th><th>No show</th></tr></thead>
-<tbody><sc-for list="{{{{rows}}}}" as="r" hint-placeholder-count="7"><tr>
-<td class="nmcell"><span class="htag"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span><b>{{{{r.n}}}}</b></span></td>
-<sc-for list="{{{{r.cells}}}}" as="c" hint-placeholder-count="3"><td><input class="markin {{{{c.c}}}}" aria-label="{{{{c.aria}}}}" value="{{{{c.v}}}}" onChange="{{{{c.chg}}}}" placeholder="metres"></td></sc-for>
+{field_top("LJ1","Long jump, Boys 17","Long Jump 1 · 9:55 am block · 2 teachers",dark)}
+<div class="row" style="margin-bottom:12px;gap:12px;align-items:center"><span class="chip">Up to 3 jumps each</span><span class="chip">{{{{left}}}} still jumping</span>
+<label class="label" for="keepn" style="display:flex;align-items:center;gap:8px;margin-left:auto">Keep top<input id="keepn" class="markin hjin" style="width:72px" inputmode="numeric" value="{{{{keepN}}}}" onChange="{{{{keepType}}}}"></label><button type="button" class="btn" onClick="{{{{keepApply}}}}">Keep top {{{{keepN}}}}</button>
+<sc-if value="{{{{canUndoKeep}}}}" hint-placeholder-val="{{{{false}}}}"><button type="button" class="btn" onClick="{{{{keepUndo}}}}">Undo Keep top</button></sc-if></div>
+<sc-if value="{{{{keepMsg}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg ok" style="margin-bottom:12px">{{{{keepMsg}}}}</div></sc-if>
+<div class="panel" style="padding:0"><div class="tablewrap" style="overflow:visible"><table>
+<thead><tr><th>No.</th><th>Athlete</th><th style="text-align:center">Jump 1</th><th style="text-align:center">Jump 2</th><th style="text-align:center">Jump 3</th><th class="num">Best</th><th>Place</th><th class="num">Points</th><th>END</th></tr></thead>
+<tbody><sc-for list="{{{{rows}}}}" as="r" hint-placeholder-count="7"><tr class="{{{{r.c}}}}">
+{ROW_NAME.format()}
+<sc-for list="{{{{r.cells}}}}" as="c" hint-placeholder-count="3"><td style="text-align:center;padding:5px;position:relative"><button type="button" class="hjc {{{{c.c}}}}" style="min-width:84px" disabled="{{{{c.dis}}}}" aria-label="{{{{c.aria}}}}" onClick="{{{{c.tap}}}}">{{{{c.v}}}}</button>
+<sc-if value="{{{{c.pop}}}}" hint-placeholder-val="{{{{false}}}}"><div class="hjpop ljpop {{{{c.where}}}}" role="group" aria-label="Record a jump"><div class="markshow" aria-live="polite">{{{{c.show}}}}</div>
+<div class="keypad fp"><sc-for list="{{{{c.keys}}}}" as="k" hint-placeholder-count="12"><button type="button" class="{{{{k.c}}}}" onClick="{{{{k.press}}}}" aria-label="{{{{k.aria}}}}">{{{{k.label}}}}</button></sc-for></div>
+<div class="row" style="flex-wrap:nowrap"><button type="button" class="btn redfill big" style="flex:1" onClick="{{{{c.foul}}}}">Foul</button><button type="button" class="btn big" style="flex:1" onClick="{{{{c.pass}}}}">Pass</button></div>
+<div class="row" style="flex-wrap:nowrap"><button type="button" class="btn" style="flex:1" onClick="{{{{c.cancel}}}}">Cancel</button><button type="button" class="btn navy" style="flex:1" onClick="{{{{c.save}}}}">Save mark</button></div></div></sc-if></td></sc-for>
 <td class="num"><span class="bestm">{{{{r.best}}}}</span></td>
-<td><sc-if value="{{{{r.medal}}}}" hint-placeholder-val="{{{{true}}}}"><span class="medal {{{{r.mc}}}}">{{{{r.pl}}}}</span></sc-if><sc-if value="{{{{r.plain}}}}" hint-placeholder-val="{{{{false}}}}"><span>{{{{r.pl}}}}</span></sc-if></td>
-<td class="num"><b>{{{{r.pts}}}}</b></td>
-<td><button type="button" class="stbtn" aria-pressed="{{{{r.ns}}}}" onClick="{{{{r.tapNs}}}}">NS</button></td>
+{ROW_PLACE.format()}
+<td><button type="button" class="stbtn endbtn" style="min-width:84px" aria-pressed="{{{{r.fin}}}}" onPointerDown="{{{{r.endDown}}}}" onPointerUp="{{{{r.endUp}}}}" onPointerLeave="{{{{r.endUp}}}}" onClick="{{{{r.tapFin}}}}">{{{{r.finL}}}}</button></td>
 </tr></sc-for></tbody></table></div></div>
-<p class="muted" style="font-size:.9rem;margin:10px 0 0">Type digits only: 534 is 5.34 m. Type x for a foul and - for a pass. Open entry: use Add an athlete for anyone not on the list. Everyone with a valid mark gets points; no valid mark gets 0.</p>
+<p class="muted" style="font-size:.9rem;margin:10px 0 0">Tap the highlighted box for the athlete who is up. Type the distance (534 is 5.34 m), or tap Foul or Pass. Everyone can take up to 3 jumps, in the same order each round. END ends an athlete's jumping at once (press and hold ENDED to bring them back), and Keep top N finishes everyone below the Nth best mark. The official decides. Everyone with a valid mark gets points; no valid mark gets 0.</p>
 <sc-if value="{{{{sent}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg ok" style="margin-top:10px">Final. Results are in. Only the event coordinator can change them now.</div></sc-if>
 </main></div>'''
-    logic = "const roster = " + J(roster) + r''';
+    logic = "const roster = " + J(roster) + "; " + PTSJS + r'''
     const fmt = (v) => { const d = String(v).replace(/[^0-9]/g, ''); return d.length >= 3 ? d.slice(0, -2) + '.' + d.slice(-2) : d; };
-    const best = (r, i) => st.ns[i] ? 0 : Math.max(0, ...r.map((v) => /^[0-9]+$/.test(v) ? Number(v) : 0));
-    const bests = st.m.map(best);
+    const val = (v) => /^[0-9]+$/.test(v) ? Number(v) : 0;
+    const fin = st.fin || {};
+    const best = (r, i) => st.ns[i] ? 0 : Math.max(0, ...r.map(val));
+    const bests = st.m.map((r, i) => best(r, i));
     const sorted = bests.filter((b) => b > 0).sort((a, b) => b - a);
-    const PTS = { 1: 10, 2: 8, 3: 6 };
-    out = { sent: st.sent, finLabel: st.sent ? 'Final' : 'Group finished', finish: () => set({ sent: true }),
-      rows: roster.map((r, i) => { const b = bests[i], pl = b ? sorted.indexOf(b) + 1 : 0;
-        return { n: r.n, h: r.h, ns: !!st.ns[i], tapNs: () => { const ns = Object.assign({}, st.ns); ns[i] = !ns[i]; set({ ns }); },
-          best: b ? fmt(b) : '–', pl: pl || '–', medal: pl > 0 && pl <= 3, plain: !(pl > 0 && pl <= 3), mc: 'm' + pl, pts: b ? (PTS[pl] || 4) : 0,
-          cells: st.m[i].map((v, a) => ({ v: /^[0-9]+$/.test(v) ? fmt(v) : (v === 'x' ? 'X' : v), c: v === 'x' ? 'foul' : (v === '-' ? 'pass' : ''), aria: r.n + ' attempt ' + (a + 1),
-            chg: (e) => { const nv = String(e.target.value).trim().toLowerCase().replace('.', ''); const m = st.m.map((x) => x.slice()); m[i][a] = nv; set({ m }); } })) }; }) };
+    const firstEmpty = (r) => { const k = r.findIndex((v) => v === ''); return k < 0 ? 3 : k; };
+    const active = (i) => !st.ns[i] && !fin[i] && firstEmpty(st.m[i]) < 3;
+    const used = st.m.map((r, i) => active(i) ? firstEmpty(r) : 9);
+    const round = Math.min(...used), up = round < 3 ? used.indexOf(round) : -1, nx = round < 3 ? used.indexOf(round, up + 1) : -1;
+    const left = st.m.filter((r, i) => active(i)).length;
+    const keys = (i, a) => ['1','2','3','4','5','6','7','8','9','Clear','0','Back'].map((l) => ({ label: l, aria: l, c: /^[0-9]$/.test(l) ? '' : 'w', press: () => {
+      if (/^[0-9]$/.test(l)) { if (st.typed.length < 4) set({ typed: st.typed + l }); } else if (l === 'Back') set({ typed: st.typed.slice(0, -1) }); else set({ typed: '' }); } }));
+    const show = (t) => t.length ? (t.length > 2 ? t.slice(0, -2) + '.' + t.slice(-2) : '0.' + t.padStart(2, '0')) + ' m' : '0.00 m';
+    const put = (i, a, v) => { const m = st.m.map((x) => x.slice()); m[i][a] = v; set({ m, pop: null, typed: '' }); };
+    const nKeep = Math.max(1, parseInt(st.keepN, 10) || 4);
+    out = { sent: st.sent, finLabel: st.sent ? 'Final' : 'Group finished', finish: () => set({ sent: true }), left, keepN: String(nKeep), keepMsg: st.keepMsg, canUndoKeep: !!st.finPrev,
+      keepType: (e) => set({ keepN: String(Math.max(1, parseInt(e.target.value, 10) || 4)) }),
+      keepApply: () => { if (sorted.length < nKeep) { set({ keepMsg: 'Only ' + sorted.length + ' marks so far. No one is finished.' }); return; }
+        const thr = sorted[nKeep - 1]; const nf = Object.assign({}, fin); let c = 0;
+        st.m.forEach((r, i) => { if (!st.ns[i] && !fin[i] && firstEmpty(r) < 3 && bests[i] < thr) { nf[i] = true; c++; } });
+        set({ finPrev: fin, fin: nf, keepMsg: 'Kept the top ' + nKeep + ' (equal marks stay in). ' + c + ' athletes finished. Press and hold ENDED on an athlete to bring them back.' }); },
+      keepUndo: () => set({ fin: st.finPrev || {}, finPrev: null, keepMsg: '' }),
+      rows: roster.map((r, i) => { const b = bests[i], pl = b ? sorted.indexOf(b) + 1 : 0, ties = sorted.filter((x) => x === b).length, live = round < 3, nj = st.m[i].filter((v) => v !== '').length;
+        return { no: i + 1, n: r.n, h: r.h, c: live && i === up ? 'selrow' : '', up: live && (i === up || i === nx), upL: i === up ? 'Now up' : 'Next', ns: !!st.ns[i], tapNs: () => { const ns = Object.assign({}, st.ns); ns[i] = !ns[i]; set({ ns }); },
+          fin: !!fin[i], finL: fin[i] ? 'ENDED' : 'END', jumps: nj + (nj === 1 ? ' jump' : ' jumps'), conf: st.conf === i, where: i >= 4 ? 'above' : 'below',
+          tapFin: () => { if (window.__held) { window.__held = false; return; } if (!fin[i]) set({ fin: Object.assign({}, fin, { [i]: true }) }); },
+          endDown: () => { window.__held = false; if (fin[i]) { clearTimeout(window.__et); window.__et = setTimeout(() => { window.__held = true; const nf = Object.assign({}, fin); delete nf[i]; set({ fin: nf }); }, 900); } }, endUp: () => clearTimeout(window.__et),
+          best: b ? fmt(b) : '–', pl: pl ? (ties > 1 ? '=' : '') + pl : '–', medal: pl > 0 && pl <= 3, plain: !(pl > 0 && pl <= 3), mc: 'm' + pl, pts: b ? ptsFor(pl, ties) : 0,
+          cells: st.m[i].map((v, a) => { const isUp = live && i === up && a === round, isPop = !!st.pop && st.pop.i === i && st.pop.a === a, dis = v === '' && (fin[i] || st.ns[i]);
+            return { dis, v: dis ? '–' : (/^[0-9]+$/.test(v) ? fmt(v) : (v === 'x' ? 'X' : (v === '-' ? 'Pass' : ' '))), c: (v === 'x' ? 'foul' : (v === '-' ? 'pass' : '')) + (isUp ? ' upc' : ''), aria: r.n + ' jump ' + (a + 1) + (isUp ? ', up now' : ''),
+              tap: () => set({ pop: isPop ? null : { i, a }, typed: /^[0-9]+$/.test(v) ? v : '', conf: null }), pop: isPop, where: i >= 4 ? 'above' : 'below', show: show(st.typed), keys: isPop ? keys(i, a) : [],
+              foul: () => put(i, a, 'x'), pass: () => put(i, a, '-'), cancel: () => set({ pop: null, typed: '' }), save: () => put(i, a, st.typed) }; }) }; }) };
 '''
-    return body, logic, "{ m: " + J(init) + ", ns: {5: true}, sent: false }"
+    return body, logic, "{ m: " + J(init) + ", ns: {}, fin: {4: true}, finPrev: null, keepN: '4', keepMsg: '', pop: null, typed: '', conf: null, sent: false }"
+
+# ---------- A1.18 Field Station: throws ----------
+def field_throws(dark):
+    roster = names("M","17",7,12)
+    init = [["Fair","Fair","Foul"],["Fair","Foul","Fair"],["Foul"],["Fair","Fair","Fair"],["Fair"],[],["Fair","Fair","Pass"]]
+    body = header("FIELD STATION","Field Station",dark,sub="Shot Put") + f'''
+<div class="scroll"><main class="wrap">
+{field_top("SP","Shot put, Boys 17","Shot Put · 12:10 pm block · 2 teachers",dark)}
+<div class="row" style="margin-bottom:12px;gap:12px;align-items:center"><span class="chip info">Shot: 5 kg</span><span class="chip">{{{{again}}}} throwing again, about 10</span><span class="chip">{{{{measured}}}} measured, about 5</span>
+<label class="label" for="setd" style="display:flex;align-items:center;gap:8px;margin-left:auto">Set distance for everyone not measured (m)<input id="setd" class="markin hjin" inputmode="decimal" value="{{{{setTxt}}}}" onChange="{{{{setType}}}}"></label></div>
+<sc-if value="{{{{setBad}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg warn" style="margin-bottom:12px">{{{{setBad}}}}</div></sc-if>
+<div class="panel" style="padding:0"><div class="tablewrap" style="overflow:visible"><table>
+<thead><tr><th>No.</th><th>Athlete</th><th style="text-align:center">Throw 1</th><th style="text-align:center">Throw 2</th><th style="text-align:center">Throw 3</th><th>Measured mark</th><th>Place</th><th class="num">Points</th><th>END</th></tr></thead>
+<tbody><sc-for list="{{{{rows}}}}" as="r" hint-placeholder-count="7"><tr>
+<td style="text-align:center;font-weight:800">{{{{r.no}}}}</td><td class="nmcell"><span class="htag"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span><b>{{{{r.n}}}}</b></span><sc-if value="{{{{r.tag}}}}" hint-placeholder-val="{{{{false}}}}"> <span class="chip {{{{r.tagc}}}}">{{{{r.tag}}}}</span></sc-if></td>
+<sc-for list="{{{{r.cells}}}}" as="c" hint-placeholder-count="3"><td style="text-align:center;padding:6px"><button type="button" class="hjc {{{{c.c}}}}" disabled="{{{{c.dis}}}}" aria-label="{{{{c.aria}}}}" onClick="{{{{c.tap}}}}">{{{{c.v}}}}</button></td></sc-for>
+<td><input class="markin" aria-label="{{{{r.markAria}}}}" value="{{{{r.mv}}}}" disabled="{{{{r.noMark}}}}" onChange="{{{{r.chg}}}}" placeholder="{{{{r.ph}}}}"></td>
+{ROW_PLACE.format()}
+<td><button type="button" class="stbtn endbtn" style="min-width:84px" aria-pressed="{{{{r.fin}}}}" onPointerDown="{{{{r.endDown}}}}" onPointerUp="{{{{r.endUp}}}}" onPointerLeave="{{{{r.endUp}}}}" onClick="{{{{r.tapFin}}}}">{{{{r.finL}}}}</button></td>
+</tr></sc-for></tbody></table></div></div>
+<p class="muted" style="font-size:.9rem;margin:10px 0 0">Everyone throws once. The official picks who throws again on the Throw again screen. Tap a box to step through Fair, Foul and Pass. Type a measured mark only for the athletes you measured (534 is 5.34 m). Everyone else with a fair throw is participation: they get the set distance, share a place and get 4 points. No fair throw or no show is 0. Discus and javelin work the same way, each with its own weights.</p>
+<sc-if value="{{{{sent}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg ok" style="margin-top:10px">Final. Results are in. Only the event coordinator can change them now.</div></sc-if>
+</main></div>'''
+    logic = "const roster = " + J(roster) + "; " + PTSJS + r'''
+    const fmt = (v) => { const d = String(v).replace(/[^0-9]/g, ''); return d.length >= 3 ? d.slice(0, -2) + '.' + d.slice(-2) : d; };
+    const seq = ['', 'Fair', 'Foul', 'Pass'];
+    const again = st.again, fin = st.fin || {};
+    const fair = (i) => st.m[i].includes('Fair');
+    const isNum = (v) => /^[0-9]+$/.test(v) && Number(v) > 0;
+    const measured = (i) => !st.ns[i] && fair(i) && isNum(st.mk[i]);
+    const mv = (i) => (measured(i) ? Number(st.mk[i]) : 0);
+    const idx = roster.map((r, i) => i);
+    const lowest = Math.min(...idx.filter(measured).map(mv), Infinity);
+    const setN = isNum(st.set) ? Number(st.set) : 0, setOk = setN > 0 && setN < lowest;
+    const part = (i) => !st.ns[i] && fair(i) && !measured(i);
+    const mark = (i) => (measured(i) ? mv(i) : (part(i) && setOk ? setN : 0));
+    const marks = idx.map(mark), sorted = marks.filter((b) => b > 0).sort((a, b) => b - a);
+    const nPart = idx.filter(part).length;
+    const setBad = nPart > 0 && !setOk ? (setN ? 'The set distance must be lower than the lowest measured mark (' + fmt(lowest) + ' m).' : 'Type one set distance for everyone who was not measured.') : '';
+    out = { sent: st.sent, finLabel: st.sent ? 'Final' : 'Group finished', finish: () => set({ sent: true }), again: idx.filter((i) => again[i]).length, measured: idx.filter(measured).length,
+      setTxt: st.set ? fmt(st.set) : '', setBad, setType: (e) => set({ set: String(e.target.value).replace(/[^0-9]/g, '') }),
+      rows: roster.map((r, i) => { const b = marks[i], pl = b ? sorted.indexOf(b) + 1 : 0, ties = sorted.filter((x) => x === b).length, nt = st.m[i].length;
+        return { no: i + 1, n: r.n, h: r.h, tag: st.ns[i] ? '' : (again[i] ? 'Throws again' : (fair(i) ? 'Participation' : (nt ? 'No fair throw' : ''))), tagc: again[i] ? 'info' : '', ns: !!st.ns[i], tapNs: () => { const ns = Object.assign({}, st.ns); ns[i] = !ns[i]; set({ ns }); },
+          fin: !!fin[i], finL: fin[i] ? 'ENDED' : 'END', throws: nt + (nt === 1 ? ' throw' : ' throws'), conf: st.conf === i, where: i >= 4 ? 'above' : 'below',
+          tapFin: () => { if (window.__held) { window.__held = false; return; } if (!fin[i]) set({ fin: Object.assign({}, fin, { [i]: true }) }); },
+          endDown: () => { window.__held = false; if (fin[i]) { clearTimeout(window.__et); window.__et = setTimeout(() => { window.__held = true; const nf = Object.assign({}, fin); delete nf[i]; set({ fin: nf }); }, 900); } }, endUp: () => clearTimeout(window.__et),
+          mv: st.mk[i] ? fmt(st.mk[i]) : '', noMark: !fair(i) || !!st.ns[i], ph: fair(i) ? 'measure' : '–', markAria: r.n + ' measured mark',
+          chg: (e) => { const m2 = st.mk.slice(); m2[i] = String(e.target.value).replace(/[^0-9]/g, ''); set({ mk: m2 }); },
+          pl: pl ? (ties > 1 ? '=' : '') + pl : '–', medal: pl > 0 && pl <= 3, plain: !(pl > 0 && pl <= 3), mc: 'm' + pl, pts: b ? ptsFor(pl, ties) : 0,
+          cells: [0, 1, 2].map((a) => { const v = st.m[i][a] || '', dis = (v === '' && (st.ns[i] || fin[i] || (a >= 1 && !again[i]) || a > nt)); return { dis, v: dis ? '–' : (v || ' '), c: v === 'Fair' ? 'clear' : (v === 'Foul' ? 'out' : (v === 'Pass' ? 'pass' : '')), aria: r.n + ' throw ' + (a + 1) + ': ' + (v || 'not thrown'),
+            tap: () => { const m = st.m.map((x) => x.slice()); m[i][a] = seq[(seq.indexOf(v) + 1) % seq.length]; while (m[i].length && m[i][m[i].length - 1] === '') m[i].pop(); set({ m }); } }; }) }; }) };
+'''
+    return body, logic, "{ m: " + J(init) + ", again: {0: true, 1: true, 3: true, 6: true}, mk: ['1124','1006','','1287','','','985'], set: '800', ns: {}, fin: {}, conf: null, sent: false }"
 
 # ---------- A1.9 Field Station: high jump ----------
 def field_high(dark):
     roster = names("F","18",6,9)
-    heights = ["1.20","1.25","1.30","1.35","1.40","1.45"]
-    init = [["O","O","XO","XXO","XXX",""],["O","XO","XXX","","",""],["-","O","O","XO","XXO","XXX"],["O","XXX","","","",""],["XXX","","","","",""],["O","O","XO","XXX","",""]]
+    init = [["O","O","XO","XXO","XO","",""],["O","XO","XXX","","","",""],["-","O","O","XO","XXO","",""],["O","O","XO","XXO","XXO","",""],["XXX","","","","","",""],["O","O","XO","XXX","","",""]]
     body = header("FIELD STATION","Field Station",dark,sub="High Jump 1") + f'''
 <div class="scroll"><main class="wrap">
-<div class="racebar"><span class="racebadge"><small>FIELD</small><b>HJ1</b></span><div class="info"><b>High jump, Girls 18+</b><span>High Jump 1 · 9:15 am block · 2 teachers</span></div>
-<button type="button" class="btn">Add an athlete</button><a class="btn" href="{lnk("FieldStart",dark)}">All groups</a><button type="button" class="btn navy big">Group finished</button></div>
-<div class="todo" style="margin-bottom:12px">Placeholder until Jordan sets the rules: <b>[START HEIGHT]</b> <b>[STEPS]</b> <b>[3 TRIES AT A HEIGHT?]</b> <b>[COUNTBACK ON TIES?]</b> <span class="qchip">QUESTION 8</span></div>
-<div class="panel" style="padding:0;overflow:hidden"><div class="tablewrap"><table>
-<thead><tr><th>Athlete</th><sc-for list="{{{{hts}}}}" as="h" hint-placeholder-count="6"><th class="todoh" style="text-align:center">{{{{h}}}} m</th></sc-for><th class="num">Best</th><th>Place</th><th class="num">Points</th></tr></thead>
+{field_top("HJ1","High jump, Girls 18+","High Jump 1 · 9:15 am block · 2 teachers",dark)}
+<div class="panel hjctl">
+<div class="stepbox"><label class="label" for="hjstart">Start height (m)</label><input id="hjstart" class="markin hjin" inputmode="decimal" value="{{{{startTxt}}}}" disabled="{{{{startLocked}}}}" onChange="{{{{startType}}}}"><span class="muted sm">Sheet: {{{{startSheet}}}} <sc-if value="{{{{startCanReset}}}}" hint-placeholder-val="{{{{false}}}}"><button type="button" class="linkbtn" onClick="{{{{startReset}}}}">Use sheet</button></sc-if><sc-if value="{{{{startLocked}}}}" hint-placeholder-val="{{{{true}}}}"> Locked after the first jump.</sc-if></span></div>
+<div class="stepbox"><label class="label" for="hjnext">Next height (m)</label><input id="hjnext" class="markin hjin" inputmode="decimal" value="{{{{nextTxt}}}}" onChange="{{{{nextType}}}}"><span class="muted sm">Up {{{{upBy}}}} from {{{{nowH}}}} m. Sheet: {{{{nextSheet}}}} <sc-if value="{{{{nextEdited}}}}" hint-placeholder-val="{{{{false}}}}"><button type="button" class="linkbtn" onClick="{{{{nextReset}}}}">Use sheet</button></sc-if></span></div>
+<div class="stepbox"><span class="label">Bar now</span><b class="stepval" style="text-align:left">{{{{nowH}}}} m</b><span class="muted sm">Round {{{{round}}}}</span></div>
+<span class="chip">{{{{left}}}} left in</span>
+<button type="button" class="btn" style="margin-left:auto" onClick="{{{{undo}}}}">Undo last</button></div>
+<sc-if value="{{{{three}}}}" hint-placeholder-val="{{{{true}}}}"><div class="msg warn" style="margin-bottom:12px">3 left. The sheet raise is now 3 cm. The official decides the next height.</div></sc-if>
+<div class="panel" style="padding:0"><div class="tablewrap hjgrid"><table>
+<thead><tr><th class="hjs1">No.</th><th class="hjs2">Athlete</th><sc-for list="{{{{hts}}}}" as="h" hint-placeholder-count="7"><th style="text-align:center">{{{{h}}}}</th></sc-for><th class="num">Best</th><th>Place</th><th class="num">Points</th><th>END</th></tr></thead>
 <tbody><sc-for list="{{{{rows}}}}" as="r" hint-placeholder-count="6"><tr>
-<td class="nmcell"><span class="htag"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span><b>{{{{r.n}}}}</b></span></td>
-<sc-for list="{{{{r.cells}}}}" as="c" hint-placeholder-count="6"><td style="text-align:center;padding:6px"><button type="button" class="hjc {{{{c.c}}}}" aria-label="{{{{c.aria}}}}" onClick="{{{{c.tap}}}}">{{{{c.v}}}}</button></td></sc-for>
+<td class="hjs1" style="text-align:center;font-weight:800">{{{{r.no}}}}</td><td class="nmcell hjs2"><span class="htag"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span><b>{{{{r.n}}}}</b></span> <sc-if value="{{{{r.tag}}}}" hint-placeholder-val="{{{{false}}}}"><span class="chip">{{{{r.tag}}}}</span></sc-if></td>
+<sc-for list="{{{{r.cells}}}}" as="c" hint-placeholder-count="7"><td style="text-align:center;padding:5px;position:relative"><button type="button" class="hjc {{{{c.c}}}}" aria-label="{{{{c.aria}}}}" onClick="{{{{c.tap}}}}">{{{{c.v}}}}</button>
+<sc-if value="{{{{c.pop}}}}" hint-placeholder-val="{{{{false}}}}"><div class="hjpop {{{{c.where}}}}" role="group" aria-label="Record a try"><button type="button" class="btn go big" onClick="{{{{c.clear}}}}">Clear</button><button type="button" class="btn redfill big" onClick="{{{{c.miss}}}}">Miss</button><button type="button" class="btn big" onClick="{{{{c.pass}}}}">Pass</button><button type="button" class="btn" onClick="{{{{c.back}}}}">Remove last</button></div></sc-if></td></sc-for>
 <td class="num"><span class="bestm">{{{{r.best}}}}</span></td>
-<td><sc-if value="{{{{r.medal}}}}" hint-placeholder-val="{{{{true}}}}"><span class="medal {{{{r.mc}}}}">{{{{r.pl}}}}</span></sc-if><sc-if value="{{{{r.plain}}}}" hint-placeholder-val="{{{{false}}}}"><span>{{{{r.pl}}}}</span></sc-if></td>
-<td class="num"><b>{{{{r.pts}}}}</b></td>
+{ROW_PLACE.format()}
+<td><button type="button" class="stbtn endbtn" style="min-width:84px" aria-pressed="{{{{r.fin}}}}" onPointerDown="{{{{r.endDown}}}}" onPointerUp="{{{{r.endUp}}}}" onPointerLeave="{{{{r.endUp}}}}" onClick="{{{{r.tapFin}}}}">{{{{r.finL}}}}</button></td>
 </tr></sc-for></tbody></table></div></div>
-<p class="muted" style="font-size:.9rem;margin:10px 0 0">Tap a box to step through: O cleared first try, XO second, XXO third, XXX out, - passed. Tied places are shown as equal until the tie rule is set.</p>
+<p class="muted" style="font-size:.9rem;margin:10px 0 0">END stops an athlete at once, for one who is far too low to carry on. Press and hold ENDED to bring them back. Tap the highlighted box for the athlete who is up, then Clear, Miss or Pass. A new height is added after each round, and the list goes on until every athlete is out. It scrolls sideways, with the names kept in view, and opens at the height now. O is a clear, X a miss. A pass after a miss shows as X Pass. 3 misses in a row is out, and misses carry on to the next height after a pass. Tap any other box to fix it. Equal heights: fewer misses at that height wins, then fewer misses overall, then they share the place.</p>
+<sc-if value="{{{{sent}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg ok" style="margin-top:10px">Final. Results are in. Only the event coordinator can change them now.</div></sc-if>
 </main></div>'''
-    logic = "const roster = " + J(roster) + "; const H = " + J(heights) + r''';
-    const seq = ['', 'O', 'XO', 'XXO', 'XXX', '-'];
-    const best = st.m.map((r) => { let b = -1; r.forEach((v, i) => { if (/O$/.test(v)) b = i; }); return b; });
-    const sorted = best.filter((b) => b >= 0).sort((a, b) => b - a);
-    const PTS = { 1: 10, 2: 8, 3: 6 };
-    out = { hts: H, rows: roster.map((r, i) => { const b = best[i], pl = b >= 0 ? sorted.indexOf(b) + 1 : 0;
-      return { n: r.n, h: r.h, best: b >= 0 ? H[b] : '–', pl: pl || '–', medal: pl > 0 && pl <= 3, plain: !(pl > 0 && pl <= 3), mc: 'm' + pl, pts: b >= 0 ? (PTS[pl] || 4) : 0,
-        cells: st.m[i].map((v, a) => ({ v: v || ' ', c: /O$/.test(v) ? 'clear' : (v === 'XXX' ? 'out' : (v === '-' ? 'pass' : '')), aria: r.n + ' at ' + H[a] + ' metres: ' + (v || 'not tried'),
-          tap: () => { const m = st.m.map((x) => x.slice()); m[i][a] = seq[(seq.indexOf(v) + 1) % seq.length]; set({ m }); } })) }; }) };
+    logic = "const roster = " + J(roster) + "; " + PTSJS + r'''
+    // the grid grows: always 2 empty heights after the last one used, so it goes on until everyone is out
+    const used = Math.max(0, ...st.m.map((r) => r.reduce((t, v, i) => (v ? i : t), -1)));
+    const N = Math.max(7, used + 3);
+    const M = st.m.map((r) => r.concat(Array(Math.max(0, N - r.length)).fill('')));
+    // 3 misses in a row is out, and a pass does not reset the count
+    const out3 = (r, n) => { let run = 0; for (const c of r.slice(0, n).join('')) { if (c === 'X') { run++; if (run >= 3) return true; } if (c === 'O') run = 0; } return false; };
+    const closed = (v) => /O$/.test(v) || v.includes('-') || v === 'XXX';
+    const sheetStart = 110;
+    const start = st.start == null ? sheetStart : st.start;
+    const ov = st.ov || {};
+    const fin = st.fin || {};
+    const done = M[0].map((_, a) => M.every((r, ri) => fin[ri] || closed(r[a]) || out3(r, a + 1)));
+    const cur = done.indexOf(false) < 0 ? N - 1 : done.indexOf(false);
+    // the sheet's raise into column a: 5 cm, then 3 cm once 3 athletes remain
+    const sheetRaise = (a) => (M.filter((r) => !out3(r, a)).length <= 3 ? 3 : 5);
+    // heights are the start, then each next height: typed by the person running the event, else the sheet's
+    const sheetCm = [start]; for (let a = 1; a < N; a++) sheetCm.push(sheetCm[a - 1] + sheetRaise(a));
+    const cm = [start]; for (let a = 1; a < N; a++) cm.push(ov[a] != null ? ov[a] : cm[a - 1] + sheetRaise(a));
+    const H = cm.map((c) => (c / 100).toFixed(2));
+    const locked = M.some((r) => r.some((v) => v));
+    const left3 = M.filter((r, ri) => !fin[ri] && !out3(r, N)).length;
+    const toCm = (t) => { const n = parseFloat(String(t).replace(',', '.')); if (!(n > 0)) return null; return Math.round(n < 10 ? n * 100 : n); };
+    const nx = Math.min(cur + 1, N - 1);
+    const queue = M.map((r, i) => ({ i, tries: r[cur].length })).filter((q) => !fin[q.i] && !closed(M[q.i][cur]) && !out3(M[q.i], cur + 1)).sort((x, y) => x.tries - y.tries || x.i - y.i);
+    const upI = queue.length ? queue[0].i : -1, nxI = queue.length > 1 ? queue[1].i : -1;
+    const append = (i, a, c) => () => { const m = M.map((x) => x.slice()); m[i][a] += c; set({ m, pop: null, last: st.last.concat([[i, a]]) }); };
+    const stat = M.map((r) => { let b = -1; r.forEach((v, i) => { if (/O$/.test(v)) b = i; });
+      const miss = (v) => (v.match(/X/g) || []).length;
+      return { b, atH: b >= 0 ? miss(r[b]) : 0, all: r.reduce((t, v) => t + miss(v), 0) }; });
+    const key = (s) => s.b * 10000 - s.atH * 100 - s.all;
+    const sorted = stat.filter((s) => s.b >= 0).map(key).sort((a, b) => b - a);
+    const show = (v) => v.split('').map((c) => (c === '-' ? 'Pass' : c)).join(' ') || ' ';
+    const pop = st.pop;
+    out = { hts: H, nowH: H[cur], left: M.filter((r, ri) => !fin[ri] && !out3(r, N)).length,
+      round: cur + 1, startLocked: locked, startCanReset: !locked && start !== sheetStart, three: left3 === 3, startTxt: H[0], startSheet: (sheetStart / 100).toFixed(2) + ' m', startEdited: start !== sheetStart,
+      startType: (e) => { if (locked) return; const c = toCm(e.target.value); set({ start: c && c >= 50 && c <= 250 ? c : start }); }, startReset: () => set({ start: null }),
+      nextTxt: H[nx], nextSheet: ((cm[nx - 1] + sheetRaise(nx)) / 100).toFixed(2) + ' m', nextEdited: ov[nx] != null,
+      upBy: (cm[nx] - cm[cur] >= 0 ? '+' : '') + (cm[nx] - cm[cur]) + ' cm',
+      nextType: (e) => { const c = toCm(e.target.value); set({ ov: Object.assign({}, ov, c && c > cm[cur] && c <= 250 ? { [nx]: c } : {}) }); }, nextReset: () => { const o = Object.assign({}, ov); delete o[nx]; set({ ov: o }); },
+      undo: () => { const l = st.last[st.last.length - 1]; if (!l) return; const m = M.map((x) => x.slice()); m[l[0]][l[1]] = m[l[0]][l[1]].slice(0, -1); set({ m, pop: null, last: st.last.slice(0, -1) }); }, sent: st.sent,
+      rows: roster.map((r, i) => { const s = stat[i], k = key(s), pl = s.b >= 0 ? sorted.indexOf(k) + 1 : 0, ties = sorted.filter((x) => x === k).length;
+      return { fin: !!fin[i], finL: fin[i] ? 'ENDED' : 'END', tapFin: () => { if (window.__held) { window.__held = false; return; } if (!fin[i]) set({ fin: Object.assign({}, fin, { [i]: true }) }); }, endDown: () => { window.__held = false; if (fin[i]) { clearTimeout(window.__et); window.__et = setTimeout(() => { window.__held = true; const nf = Object.assign({}, fin); delete nf[i]; set({ fin: nf }); }, 900); } }, endUp: () => clearTimeout(window.__et), no: i + 1, n: r.n, h: r.h, tag: fin[i] ? 'Ended' : (i === upI ? 'Up' : (i === nxI ? 'Next' : '')), best: s.b >= 0 ? H[s.b] : '–', pl: pl ? (ties > 1 ? '=' : '') + pl : '–', medal: pl > 0 && pl <= 3, plain: !(pl > 0 && pl <= 3), mc: 'm' + pl, pts: s.b >= 0 ? ptsFor(pl, ties) : 0,
+        cells: M[i].map((v, a) => { const isUp = i === upI && a === cur; return { v: show(v), c: (/O$/.test(v) ? 'clear' : (v === 'XXX' ? 'out' : (v.includes('-') ? 'pass' : ''))) + (isUp ? ' upc' : ''), aria: r.n + ' at ' + H[a] + ' metres: ' + (v ? show(v) : 'not tried') + (isUp ? ', up now' : ''),
+          tap: () => set({ pop: pop && pop.i === i && pop.a === a ? null : { i, a } }),
+          pop: !!pop && pop.i === i && pop.a === a, where: i >= 4 ? 'above' : 'below',
+          clear: append(i, a, 'O'), miss: append(i, a, 'X'), pass: append(i, a, '-'),
+          back: () => { const m = M.map((x) => x.slice()); m[i][a] = m[i][a].slice(0, -1); set({ m, pop: null }); } }; }) }; }) };
 '''
-    return body, logic, "{ m: " + J(init) + " }"
+    return body, logic, "{ m: " + J(init) + ", sent: false, last: [], start: null, ov: {}, pop: null }"
+
+# ---------- A1.21 Field Station phone: high jump ----------
+def field_high_phone(dark):
+    roster = names("F","18",6,9)
+    init = [["O","O","XO","XXO","XO","",""],["O","XO","XXX","","","",""],["-","O","O","XO","XXO","",""],["O","O","XO","XXO","XXO","",""],["XXX","","","","","",""],["O","O","XO","XXX","","",""]]
+    body = header("FIELD STATION","Field Station",dark,slim=True) + f'''
+<div class="scroll"><main class="wrap" style="padding-top:8px;padding-bottom:84px"><div class="stack" style="gap:8px">
+<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>FIELD</small><b>HJ1</b></span><div class="info"><b>High jump, Girls 18+</b><span>Round {{{{round}}}} · {{{{left}}}} left in</span></div></div>
+<div class="row" style="flex-wrap:nowrap;justify-content:space-between;align-items:center"><div><span class="label">Bar now</span><br><b class="stepval" style="text-align:left">{{{{nowH}}}} m</b></div><button type="button" class="btn" onClick="{{{{toggleEdit}}}}">Set heights</button></div>
+<sc-if value="{{{{edit}}}}" hint-placeholder-val="{{{{false}}}}"><div class="panel hjedit"><div class="stepbox"><label class="label" for="hjstartp">Start height (m)</label><input id="hjstartp" class="markin hjin" inputmode="decimal" value="{{{{startTxt}}}}" disabled="{{{{startLocked}}}}" onChange="{{{{startType}}}}"><span class="muted sm">Sheet: {{{{startSheet}}}}<sc-if value="{{{{startLocked}}}}" hint-placeholder-val="{{{{true}}}}"> Locked after the first jump.</sc-if></span></div>
+<div class="stepbox"><label class="label" for="hjnextp">Next height (m)</label><input id="hjnextp" class="markin hjin" inputmode="decimal" value="{{{{nextTxt}}}}" onChange="{{{{nextType}}}}"><span class="muted sm">Up {{{{upBy}}}}. Sheet: {{{{nextSheet}}}}<sc-if value="{{{{nextEdited}}}}" hint-placeholder-val="{{{{false}}}}"> <button type="button" class="linkbtn" onClick="{{{{nextReset}}}}">Use sheet</button></sc-if></span></div>
+<button type="button" class="btn navy" onClick="{{{{toggleEdit}}}}">Done</button></div></sc-if>
+<sc-if value="{{{{three}}}}" hint-placeholder-val="{{{{true}}}}"><div class="msg warn">3 left. The sheet raise is now 3 cm. The official decides the next height.</div></sc-if>
+<sc-if value="{{{{hasUp}}}}" hint-placeholder-val="{{{{true}}}}"><span class="htag bigath"><span class="hdot h{{{{h}}}}" style="width:30px;height:30px;font-size:.9rem">{{{{h}}}}</span>{{{{name}}}}</span>
+<span class="muted" style="font-size:.9rem">Now up, try {{{{tryNo}}}} at {{{{nowH}}}} m. Next: {{{{nextN}}}}</span>
+<div class="attrow"><sc-for list="{{{{att}}}}" as="a" hint-placeholder-count="3"><div class="attcell {{{{a.c}}}}"><span>Try {{{{a.n}}}}</span><b>{{{{a.v}}}}</b></div></sc-for></div>
+<button type="button" class="btn go big" style="min-height:96px" onClick="{{{{clear}}}}">Clear</button><div class="row" style="flex-wrap:nowrap"><button type="button" class="btn redfill big" style="flex:1;min-height:96px" onClick="{{{{miss}}}}">Miss</button><button type="button" class="btn big" style="flex:1;min-height:96px" onClick="{{{{pass}}}}">Pass</button></div></sc-if>
+<sc-if value="{{{{noUp}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg ok">Everyone is done. Tap Group finished on the iPad or here when the places look right.</div></sc-if>
+</div></main></div>''' + pbar('<button type="button" class="btn" onClick="{{undo}}">Undo last</button><button type="button" class="btn" onClick="{{askFinish}}">END</button><button type="button" class="btn">Add an athlete</button>')
+    logic = "const roster = " + J(roster) + r''';
+    // the grid grows: always 2 empty heights after the last one used, so it goes on until everyone is out
+    const used = Math.max(0, ...st.m.map((r) => r.reduce((t, v, i) => (v ? i : t), -1)));
+    const N = Math.max(7, used + 3);
+    const M = st.m.map((r) => r.concat(Array(Math.max(0, N - r.length)).fill('')));
+    const out3 = (r, n) => { let run = 0; for (const c of r.slice(0, n).join('')) { if (c === 'X') { run++; if (run >= 3) return true; } if (c === 'O') run = 0; } return false; };
+    const closed = (v) => /O$/.test(v) || v.includes('-') || v === 'XXX';
+    const sheetStart = 110, start = st.start == null ? sheetStart : st.start, ov = st.ov || {};
+    const locked = M.some((r) => r.some((v) => v));
+    const fin = st.fin || {};
+    const done = M[0].map((_, a) => M.every((r, ri) => fin[ri] || closed(r[a]) || out3(r, a + 1)));
+    const cur = done.indexOf(false) < 0 ? N - 1 : done.indexOf(false);
+    const sheetRaise = (a) => (M.filter((r) => !out3(r, a)).length <= 3 ? 3 : 5);
+    const cm = [start]; for (let a = 1; a < N; a++) cm.push(ov[a] != null ? ov[a] : cm[a - 1] + sheetRaise(a));
+    const H = cm.map((c) => (c / 100).toFixed(2));
+    const toCm = (t) => { const n = parseFloat(String(t).replace(',', '.')); if (!(n > 0)) return null; return Math.round(n < 10 ? n * 100 : n); };
+    const nx = Math.min(cur + 1, N - 1);
+    const queue = M.map((r, i) => ({ i, tries: r[cur].length })).filter((q) => !fin[q.i] && !closed(M[q.i][cur]) && !out3(M[q.i], cur + 1)).sort((x, y) => x.tries - y.tries || x.i - y.i);
+    const upI = queue.length ? queue[0].i : -1, nxI = queue.length > 1 ? queue[1].i : -1;
+    const add = (c) => () => { if (upI < 0) return; const m = M.map((x) => x.slice()); m[upI][cur] += c; set({ m, last: st.last.concat([[upI, cur]]) }); };
+    const left = M.filter((r, ri) => !fin[ri] && !out3(r, N)).length;
+    const v = upI >= 0 ? M[upI][cur] : '';
+    const show = (c) => (c === '-' ? 'Pass' : c);
+    out = { askFinish: () => { if (upI >= 0) set({ fin: Object.assign({}, fin, { [upI]: true }) }); }, round: cur + 1, left, three: left === 3, nowH: H[cur], hasUp: upI >= 0, noUp: upI < 0, edit: st.edit, toggleEdit: () => set({ edit: !st.edit }),
+      name: upI >= 0 ? roster[upI].n : '', h: upI >= 0 ? roster[upI].h : 'B', nextN: nxI >= 0 ? roster[nxI].n : 'no one', tryNo: v.length + 1,
+      att: [0,1,2].map((a) => ({ n: a + 1, v: a < v.length ? show(v[a]) : ' ', c: a === v.length ? 'cur' : (v[a] === 'X' ? 'foul' : '') })),
+      clear: add('O'), miss: add('X'), pass: add('-'),
+      undo: () => { const l = st.last[st.last.length - 1]; if (!l) return; const m = M.map((x) => x.slice()); m[l[0]][l[1]] = m[l[0]][l[1]].slice(0, -1); set({ m, last: st.last.slice(0, -1) }); },
+      startLocked: locked, startTxt: H[0], startSheet: (sheetStart / 100).toFixed(2) + ' m',
+      startType: (e) => { if (locked) return; const c = toCm(e.target.value); set({ start: c && c >= 50 && c <= 250 ? c : start }); },
+      nextTxt: H[nx], nextSheet: ((cm[nx - 1] + sheetRaise(nx)) / 100).toFixed(2) + ' m', nextEdited: ov[nx] != null, upBy: (cm[nx] - cm[cur] >= 0 ? '+' : '') + (cm[nx] - cm[cur]) + ' cm',
+      nextType: (e) => { const c = toCm(e.target.value); set({ ov: Object.assign({}, ov, c && c > cm[cur] && c <= 250 ? { [nx]: c } : {}) }); }, nextReset: () => { const o = Object.assign({}, ov); delete o[nx]; set({ ov: o }); } };
+'''
+    return body, logic, "{ m: " + J(init) + ", last: [], start: null, ov: {}, edit: false }"
+
+
+# ---------- A1.22 Field Station phone: high jump group results ----------
+def field_high_summary(dark):
+    roster = names("F","18",6,9)
+    init = [["O","O","XO","XXO","XO","XXO","XXX"],["O","XO","XXX"],["-","O","O","XO","XXO","XXX"],["O","O","XO","XXO","XXO","XXX"],["O","O","XO","XXO","XXO","XXX"],["XXX"]]
+    body = header("FIELD STATION","Field Station",dark,slim=True) + f"""
+<div class="scroll"><main class="wrap" style="padding-top:8px;padding-bottom:84px"><div class="stack" style="gap:8px">
+<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>FIELD</small><b>HJ1</b></span><div class="info"><b>High jump, Girls 18+</b><span>Group results · everyone is out</span></div></div>
+<sc-if value="{{{{sent}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg ok">Sent at 10:52.</div></sc-if>
+<sc-if value="{{{{notSent}}}}" hint-placeholder-val="{{{{true}}}}"><div class="msg warn">Check the places, then Send results.</div></sc-if>
+<sc-for list="{{{{rows}}}}" as="r" hint-placeholder-count="6"><div class="panel" style="padding:12px 14px;display:flex;align-items:center;gap:12px">
+<sc-if value="{{{{r.medal}}}}" hint-placeholder-val="{{{{true}}}}"><span class="medal {{{{r.mc}}}}">{{{{r.pl}}}}</span></sc-if><sc-if value="{{{{r.plain}}}}" hint-placeholder-val="{{{{false}}}}"><span style="width:32px;text-align:center;font-weight:800">{{{{r.pl}}}}</span></sc-if>
+<div style="flex:1;min-width:0"><span class="htag"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span><b>{{{{r.n}}}}</b></span><br><span class="muted" style="font-size:.85rem"><b class="bestm" style="color:var(--ink)">{{{{r.best}}}}</b> · {{{{r.miss}}}}</span></div>
+<b style="text-align:right;font-size:1.05rem">{{{{r.pts}}}} pts</b></div></sc-for>
+</div></main></div>""" + pbar('<sc-if value="{{notSent}}" hint-placeholder-val="{{true}}"><button type="button" class="btn" onClick="{{back}}">Back to jumping</button><button type="button" class="btn navy big" onClick="{{send}}">Send results</button></sc-if><sc-if value="{{sent}}" hint-placeholder-val="{{false}}"><button type="button" class="btn navy big" onClick="{{reset}}">Next group</button></sc-if>')
+    logic = "const roster = " + J(roster) + "; " + PTSJS + r"""
+    const out3 = (r, n) => { let run = 0; for (const c of r.slice(0, n).join('')) { if (c === 'X') { run++; if (run >= 3) return true; } if (c === 'O') run = 0; } return false; };
+    const M = st.m, N = Math.max(...M.map((r) => r.length));
+    const sheetRaise = (a) => (M.filter((r) => !out3(r, a)).length <= 3 ? 3 : 5);
+    const cm = [110]; for (let a = 1; a < N; a++) cm.push(cm[a - 1] + sheetRaise(a));
+    const H = cm.map((c) => (c / 100).toFixed(2));
+    const miss = (v) => (v.match(/X/g) || []).length;
+    const stat = M.map((r) => { let b = -1; r.forEach((v, i) => { if (/O$/.test(v)) b = i; }); return { b, atH: b >= 0 ? miss(r[b]) : 0, all: r.reduce((t, v) => t + miss(v), 0) }; });
+    const key = (s) => s.b * 10000 - s.atH * 100 - s.all;
+    const sorted = stat.filter((s) => s.b >= 0).map(key).sort((a, b) => b - a);
+    const rows = roster.map((r, i) => { const s = stat[i], k = key(s), pl = s.b >= 0 ? sorted.indexOf(k) + 1 : 0, ties = sorted.filter((x) => x === k).length;
+      return { pl: pl || 99, label: pl ? (ties > 1 ? '=' : '') + pl : '–', n: r.n, h: r.h, best: s.b >= 0 ? H[s.b] + ' m' : 'No height', miss: s.b >= 0 ? s.atH + ' miss' + (s.atH === 1 ? '' : 'es') + ' at best, ' + s.all + ' in all' : s.all + ' misses', pts: s.b >= 0 ? ptsFor(pl, ties) : 0 }; })
+      .sort((a, b) => a.pl - b.pl).map((r) => ({ n: r.n, h: r.h, best: r.best, miss: r.miss, pts: r.pts, pl: r.label, medal: r.pl <= 3, plain: r.pl > 3, mc: 'm' + r.pl }));
+    out = { rows, sent: st.sent, notSent: !st.sent, send: () => set({ sent: true }), back: () => {}, reset: () => set({ sent: false }) };
+"""
+    return body, logic, "{ m: " + J(init) + ", sent: false }"
+
+# ---------- A1.23 Field Station phone: long jump group results ----------
+def field_lj_summary(dark):
+    roster = names("M","17",7,8)
+    init = [["534","x","541"],["498","502","x"],["x","x","x"],["561","558","x"],["487"],[],["515","x","519"]]
+    body = header("FIELD STATION","Field Station",dark,slim=True) + f"""
+<div class="scroll"><main class="wrap" style="padding-top:8px;padding-bottom:84px"><div class="stack" style="gap:8px">
+<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>FIELD</small><b>LJ1</b></span><div class="info"><b>Long jump, Boys 17</b><span>Group results · jumping is over</span></div></div>
+<sc-if value="{{{{sent}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg ok">Sent at 10:52.</div></sc-if>
+<sc-if value="{{{{notSent}}}}" hint-placeholder-val="{{{{true}}}}"><div class="msg warn">Check the places, then Send results.</div></sc-if>
+<sc-for list="{{{{rows}}}}" as="r" hint-placeholder-count="7"><div class="panel" style="padding:12px 14px;display:flex;align-items:center;gap:12px">
+<sc-if value="{{{{r.medal}}}}" hint-placeholder-val="{{{{true}}}}"><span class="medal {{{{r.mc}}}}">{{{{r.pl}}}}</span></sc-if><sc-if value="{{{{r.plain}}}}" hint-placeholder-val="{{{{false}}}}"><span style="width:32px;text-align:center;font-weight:800">{{{{r.pl}}}}</span></sc-if>
+<div style="flex:1;min-width:0"><span class="htag"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span><b>{{{{r.n}}}}</b></span><br><span class="muted" style="font-size:.85rem"><b class="bestm" style="color:var(--ink)">{{{{r.best}}}}</b> · {{{{r.jumps}}}}</span></div>
+<b style="text-align:right;font-size:1.05rem">{{{{r.pts}}}} pts</b></div></sc-for>
+</div></main></div>""" + pbar('<sc-if value="{{notSent}}" hint-placeholder-val="{{true}}"><button type="button" class="btn" onClick="{{back}}">Back to jumping</button><button type="button" class="btn navy big" onClick="{{send}}">Send results</button></sc-if><sc-if value="{{sent}}" hint-placeholder-val="{{false}}"><button type="button" class="btn navy big" onClick="{{reset}}">Next group</button></sc-if>')
+    logic = "const roster = " + J(roster) + "; " + PTSJS + r"""
+    const fmt = (v) => v.slice(0, -2) + '.' + v.slice(-2);
+    const val = (v) => /^[0-9]+$/.test(v) ? Number(v) : 0;
+    const bests = st.m.map((x) => Math.max(0, ...x.map(val)));
+    const sorted = bests.filter((b) => b > 0).sort((a, b) => b - a);
+    const show = (v) => v === 'x' ? 'Foul' : (v === '-' ? 'Pass' : fmt(v));
+    const rows = roster.map((r, i) => { const b = bests[i], pl = b ? sorted.indexOf(b) + 1 : 0, ties = sorted.filter((x) => x === b).length, n = st.m[i].length;
+      return { pl: pl || 99, label: pl ? (ties > 1 ? '=' : '') + pl : '–', n: r.n, h: r.h, best: b ? fmt(String(b)) + ' m' : 'No mark', jumps: n ? st.m[i].map(show).join(', ') + (n < 3 ? ' (finished early)' : '') : 'No jumps', pts: b ? ptsFor(pl, ties) : 0 }; })
+      .sort((a, b) => a.pl - b.pl).map((r) => ({ n: r.n, h: r.h, best: r.best, jumps: r.jumps, pts: r.pts, pl: r.label, medal: r.pl <= 3, plain: r.pl > 3, mc: 'm' + r.pl }));
+    out = { rows, sent: st.sent, notSent: !st.sent, send: () => set({ sent: true }), back: () => {}, reset: () => set({ sent: false }) };
+"""
+    return body, logic, "{ m: " + J(init) + ", sent: false }"
+
+# ---------- A1.24 Field Station iPad: throw again ----------
+def field_throw_again(dark):
+    roster = names("M","17",12,12)
+    t1 = ["Fair","Fair","Foul","Fair","Fair","Fair","Pass","Fair","Foul","Fair","Fair","Fair"]
+    body = header("FIELD STATION","Field Station",dark,sub="Shot Put") + f'''
+<div class="scroll"><main class="wrap">
+<div class="racebar"><span class="racebadge"><small>FIELD</small><b>SP</b></span><div class="info"><b>Shot put, Boys 17: who throws again</b><span>{{{{count}}}} thrown once · Shot Put · 12:10 pm block</span></div>
+<a class="btn" href="{lnk("FieldThrows",dark)}">Back to throwing</a><button type="button" class="btn navy big" onClick="{{{{start}}}}">Start throws 2 and 3</button></div>
+<div class="msg ok" style="margin-bottom:12px">Everyone has thrown once. Look at the markers, then tick who throws again. Everyone else is participation. You can change this before throw 2 starts.</div>
+<div class="row" style="margin-bottom:12px;gap:12px;align-items:center"><span class="chip info">{{{{ticked}}}} ticked</span><label class="label" for="agn" style="display:flex;align-items:center;gap:8px">About<input id="agn" class="markin hjin" style="width:72px" inputmode="numeric" value="{{{{guide}}}}" onChange="{{{{guideType}}}}"></label><span class="muted sm">A guide only. Tick as many or as few as you like.</span></div>
+<sc-if value="{{{{started}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg ok" style="margin-bottom:12px">Throws 2 and 3 are on for the {{{{ticked}}}} ticked athletes. The rest are participation.</div></sc-if>
+<div class="namegrid" style="grid-template-columns:repeat(3,minmax(0,1fr))"><sc-for list="{{{{ppl}}}}" as="p" hint-placeholder-count="12"><button type="button" class="namebtn {{{{p.c}}}}" aria-pressed="{{{{p.on}}}}" onClick="{{{{p.tap}}}}"><span class="medal m4" style="width:30px;height:30px;background:#ffffff;color:#1d3160">{{{{p.no}}}}</span><span class="hdot h{{{{p.h}}}}">{{{{p.h}}}}</span><span class="t">{{{{p.n}}}}</span><span class="chip {{{{p.tc}}}}">{{{{p.t1}}}}</span><b>{{{{p.tick}}}}</b></button></sc-for></div>
+</main></div>'''
+    logic = "const roster = " + J(roster) + "; const t1 = " + J(t1) + r''';
+    const on = st.again;
+    const nOn = roster.filter((r, i) => on[i]).length;
+    out = { count: roster.length, ticked: nOn, guide: String(st.guide), guideType: (e) => set({ guide: Math.max(1, parseInt(e.target.value, 10) || 10) }), started: st.started, start: () => set({ started: true }),
+      ppl: roster.map((r, i) => ({ n: r.n, h: r.h, no: i + 1, t1: t1[i], tc: t1[i] === 'Foul' ? 'bad' : '', on: !!on[i], c: on[i] ? 'sel' : '', tick: on[i] ? 'Throws again' : 'Participation', tap: () => set({ again: Object.assign({}, on, { [i]: !on[i] }), started: false }) })) };
+'''
+    return body, logic, "{ again: {0: true, 1: true, 3: true, 4: true, 7: true}, guide: 10, started: false }"
+
+# ---------- A1.25 Field Station phone: throw again ----------
+def field_throw_again_phone(dark):
+    roster = names("M","17",12,12)
+    t1 = ["Fair","Fair","Foul","Fair","Fair","Fair","Pass","Fair","Foul","Fair","Fair","Fair"]
+    body = header("FIELD STATION","Field Station",dark,slim=True) + f'''
+<div class="scroll"><main class="wrap" style="padding-top:8px;padding-bottom:84px"><div class="stack" style="gap:8px">
+<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>FIELD</small><b>SP</b></span><div class="info"><b>Who throws again</b><span>{{{{ticked}}}} ticked, about {{{{guide}}}}</span></div></div>
+<div class="msg ok">Tick who throws again. Everyone else is participation.</div>
+<sc-for list="{{{{ppl}}}}" as="p" hint-placeholder-count="12"><button type="button" class="namebtn {{{{p.c}}}}" style="width:100%" aria-pressed="{{{{p.on}}}}" onClick="{{{{p.tap}}}}"><span class="medal m4" style="width:30px;height:30px;background:#ffffff;color:#1d3160">{{{{p.no}}}}</span><span class="hdot h{{{{p.h}}}}">{{{{p.h}}}}</span><span class="t">{{{{p.n}}}}</span><span class="chip {{{{p.tc}}}}">{{{{p.t1}}}}</span></button></sc-for>
+</div></main></div>''' + pbar('<a class="btn" href="' + lnk("FieldThrowsPhone", dark) + '">Back</a><button type="button" class="btn navy big" onClick="{{start}}">{{startL}}</button>')
+    logic = "const roster = " + J(roster) + "; const t1 = " + J(t1) + r''';
+    const on = st.again, nOn = roster.filter((r, i) => on[i]).length;
+    out = { ticked: nOn, guide: st.guide, startL: st.started ? 'Started' : 'Start throws 2 and 3', start: () => set({ started: true }),
+      ppl: roster.map((r, i) => ({ n: r.n, h: r.h, no: i + 1, t1: t1[i], tc: t1[i] === 'Foul' ? 'bad' : '', on: !!on[i], c: on[i] ? 'sel' : '', tap: () => set({ again: Object.assign({}, on, { [i]: !on[i] }), started: false }) })) };
+'''
+    return body, logic, "{ again: {0: true, 1: true, 3: true, 4: true, 7: true}, guide: 10, started: false }"
+
+# ---------- A1.26 Field Station phone: measure ----------
+def field_measure_phone(dark):
+    roster = names("M","17",7,12)
+    init = [["Fair","Fair","Foul"],["Fair","Foul","Fair"],["Foul"],["Fair","Fair","Fair"],["Fair"],[],["Fair","Fair","Pass"]]
+    body = header("FIELD STATION","Field Station",dark,slim=True) + f"""
+<div class="scroll"><main class="wrap" style="padding-top:8px;padding-bottom:84px"><div class="stack" style="gap:8px">
+<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>FIELD</small><b>SP</b></span><div class="info"><b>Shot put, Boys 17: measure</b><span>{{{{measured}}}} measured, about 5</span></div></div>
+<div class="msg ok">Tap an athlete you measured and type the distance. Everyone else gets the set distance.</div>
+<sc-for list="{{{{rows}}}}" as="r" hint-placeholder-count="7"><div class="panel" style="padding:10px 12px"><button type="button" class="namebtn {{{{r.c}}}}" style="width:100%" aria-pressed="{{{{r.open}}}}" disabled="{{{{r.off}}}}" onClick="{{{{r.tap}}}}"><span class="medal m4" style="width:30px;height:30px;background:#ffffff;color:#1d3160">{{{{r.no}}}}</span><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span><span class="t">{{{{r.n}}}}</span><b>{{{{r.mark}}}}</b></button>
+<span class="muted" style="font-size:.85rem">{{{{r.throws}}}}</span>
+<sc-if value="{{{{r.open}}}}" hint-placeholder-val="{{{{false}}}}"><div class="markshow" aria-live="polite">{{{{r.show}}}}</div><div class="keypad fp"><sc-for list="{{{{r.keys}}}}" as="k" hint-placeholder-count="12"><button type="button" class="{{{{k.c}}}}" onClick="{{{{k.press}}}}" aria-label="{{{{k.aria}}}}">{{{{k.label}}}}</button></sc-for></div><div class="row" style="flex-wrap:nowrap;margin-top:8px"><button type="button" class="btn" style="flex:1" onClick="{{{{r.cancel}}}}">Cancel</button><button type="button" class="btn navy" style="flex:1" onClick="{{{{r.save}}}}">Save mark</button></div></sc-if></div></sc-for>
+<div class="panel" style="padding:10px 12px"><label class="label" for="setdp">Set distance for everyone not measured (m)</label><input id="setdp" class="markin hjin" inputmode="decimal" value="{{{{setTxt}}}}" onChange="{{{{setType}}}}"><span class="muted sm">Lower than the lowest measured mark. They share a place and get 4 points.</span>
+<sc-if value="{{{{setBad}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg warn" style="margin-top:8px">{{{{setBad}}}}</div></sc-if></div>
+</div></main></div>""" + pbar('<a class="btn" href="' + lnk("FieldThrowsPhone",dark) + '">Back to throwing</a><a class="btn navy big" href="' + lnk("FieldThrowsSummary",dark) + '">Group finished</a>')
+    logic = "const roster = " + J(roster) + r"""; 
+    const fmt = (v) => { const d = String(v).replace(/[^0-9]/g, ''); return d.length >= 3 ? d.slice(0, -2) + '.' + d.slice(-2) : d; };
+    const isNum = (v) => /^[0-9]+$/.test(v) && Number(v) > 0;
+    const fair = (i) => st.m[i].includes('Fair');
+    const idx = roster.map((r, i) => i), meas = idx.filter((i) => fair(i) && isNum(st.mk[i]));
+    const lowest = Math.min(...meas.map((i) => Number(st.mk[i])), Infinity);
+    const setN = isNum(st.set) ? Number(st.set) : 0, nPart = idx.filter((i) => fair(i) && !isNum(st.mk[i])).length;
+    const show = (t) => t.length ? (t.length > 2 ? t.slice(0, -2) + '.' + t.slice(-2) : '0.' + t.padStart(2, '0')) + ' m' : '0.00 m';
+    const keys = () => ['1','2','3','4','5','6','7','8','9','Clear','0','Back'].map((l) => ({ label: l, aria: l, c: /^[0-9]$/.test(l) ? '' : 'w', press: () => { if (/^[0-9]$/.test(l)) { if (st.typed.length < 4) set({ typed: st.typed + l }); } else if (l === 'Back') set({ typed: st.typed.slice(0, -1) }); else set({ typed: '' }); } }));
+    const put = (i, v) => { const mk = st.mk.slice(); mk[i] = v; set({ mk, open: null, typed: '' }); };
+    out = { measured: meas.length, setTxt: st.set ? fmt(st.set) : '', setType: (e) => set({ set: String(e.target.value).replace(/[^0-9]/g, '') }),
+      setBad: nPart > 0 && !(setN > 0 && setN < lowest) ? (setN ? 'The set distance must be lower than the lowest measured mark (' + fmt(lowest) + ' m).' : 'Type one set distance for everyone who was not measured.') : '',
+      rows: roster.map((r, i) => { const op = st.open === i; return { no: i + 1, n: r.n, h: r.h, off: !fair(i) || !!st.ns[i], c: op ? 'sel' : '', open: op, mark: st.ns[i] ? 'No show' : (!fair(i) ? 'No fair throw' : (isNum(st.mk[i]) ? fmt(st.mk[i]) + ' m' : 'Participation')),
+        throws: st.m[i].length ? st.m[i].join(', ') : 'No throws', tap: () => set({ open: op ? null : i, typed: isNum(st.mk[i]) ? st.mk[i] : '' }), show: show(st.typed), keys: op ? keys() : [], cancel: () => set({ open: null, typed: '' }), save: () => put(i, st.typed) }; }) };
+"""
+    return body, logic, "{ m: " + J(init) + ", mk: ['1124','1006','','1287','','','985'], set: '800', ns: {}, open: null, typed: '' }"
+
+# ---------- A1.27 Field Station phone: throws group results ----------
+def field_throws_summary(dark):
+    roster = names("M","17",7,12)
+    init = [["Fair","Fair","Foul"],["Fair","Foul","Fair"],["Foul"],["Fair","Fair","Fair"],["Fair"],[],["Fair","Fair","Pass"]]
+    body = header("FIELD STATION","Field Station",dark,slim=True) + f"""
+<div class="scroll"><main class="wrap" style="padding-top:8px;padding-bottom:84px"><div class="stack" style="gap:8px">
+<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>FIELD</small><b>SP</b></span><div class="info"><b>Shot put, Boys 17</b><span>Group results · throwing is over</span></div></div>
+<sc-if value="{{{{sent}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg ok">Sent at 12:41.</div></sc-if>
+<sc-if value="{{{{notSent}}}}" hint-placeholder-val="{{{{true}}}}"><div class="msg warn">Check the places, then Send results.</div></sc-if>
+<sc-for list="{{{{rows}}}}" as="r" hint-placeholder-count="7"><div class="panel" style="padding:12px 14px;display:flex;align-items:center;gap:12px">
+<sc-if value="{{{{r.medal}}}}" hint-placeholder-val="{{{{true}}}}"><span class="medal {{{{r.mc}}}}">{{{{r.pl}}}}</span></sc-if><sc-if value="{{{{r.plain}}}}" hint-placeholder-val="{{{{false}}}}"><span style="width:32px;text-align:center;font-weight:800">{{{{r.pl}}}}</span></sc-if>
+<div style="flex:1;min-width:0"><span class="htag"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span><b>{{{{r.n}}}}</b></span><br><span class="muted" style="font-size:.85rem"><b class="bestm" style="color:var(--ink)">{{{{r.best}}}}</b> · {{{{r.throws}}}}</span></div>
+<b style="text-align:right;font-size:1.05rem">{{{{r.pts}}}} pts</b></div></sc-for>
+</div></main></div>""" + pbar('<sc-if value="{{notSent}}" hint-placeholder-val="{{true}}"><a class="btn" href="' + lnk("FieldMeasurePhone",dark) + '">Back to measuring</a><button type="button" class="btn navy big" onClick="{{send}}">Send results</button></sc-if><sc-if value="{{sent}}" hint-placeholder-val="{{false}}"><button type="button" class="btn navy big" onClick="{{reset}}">Next group</button></sc-if>')
+    logic = "const roster = " + J(roster) + "; " + PTSJS + r"""
+    const fmt = (v) => { const d = String(v); return d.slice(0, -2) + '.' + d.slice(-2); };
+    const mk = ['1124','1006','','1287','','','985'], setN = 800, again = {0: true, 1: true, 3: true, 6: true};
+    const fair = (i) => st.m[i].includes('Fair'), meas = (i) => fair(i) && !!mk[i];
+    const marks = roster.map((r, i) => (meas(i) ? Number(mk[i]) : (fair(i) ? setN : 0))), sorted = marks.filter((b) => b > 0).sort((a, b) => b - a);
+    const rows = roster.map((r, i) => { const b = marks[i], pl = b ? sorted.indexOf(b) + 1 : 0, ties = sorted.filter((x) => x === b).length;
+      return { pl: pl || 99, label: pl ? (ties > 1 ? '=' : '') + pl : '–', n: r.n, h: r.h, best: b ? fmt(b) + ' m' + (meas(i) ? '' : ' set') : 'No mark', throws: st.m[i].length ? st.m[i].join(', ') + (meas(i) ? '' : (fair(i) ? ' (participation)' : '')) : 'No throws', pts: b ? ptsFor(pl, ties) : 0 }; })
+      .sort((a, b) => a.pl - b.pl).map((r) => ({ n: r.n, h: r.h, best: r.best, throws: r.throws, pts: r.pts, pl: r.label, medal: r.pl <= 3, plain: r.pl > 3, mc: 'm' + r.pl }));
+    out = { rows, sent: st.sent, notSent: !st.sent, send: () => set({ sent: true }), reset: () => set({ sent: false }) };
+"""
+    return body, logic, "{ m: " + J(init) + ", sent: false }"
+
+# ---------- A1.28 Field Station: Take Names, discus 12 & 13 with weights ----------
+def field_names_discus(dark):
+    roster = names("M","13",10,5)
+    body = header("FIELD STATION","Field Station",dark,sub="Discus 1") + f'''
+<div class="scroll"><main class="wrap">
+<div class="racebar"><span class="racebadge"><small>FIELD</small><b>D1</b></span><div class="info"><b>Discus, Boys 12 &amp; 13: Take Names</b><span>{{{{{{{{count}}}}}}}} athletes · Discus 1 · 9:15 am block</span></div>
+<a class="btn" href="{lnk("FieldStart",dark)}">All groups</a><button type="button" class="btn">Not on the list</button><a class="btn navy big" href="{lnk("FieldThrows",dark)}">Start throwing</a></div>
+<div class="prompt">Tap each athlete as they arrive. This is their number and their marker. Then pick the discus weight for each athlete: 12 years is 0.75 kg, 13 years is 1 kg.</div>
+<div class="msg warn" style="margin-bottom:12px"><b>Safety.</b> Athletes stay behind the safety area. The person returning the implement watches every throw.</div>
+<sc-if value="{{{{{{{{needW}}}}}}}}" hint-placeholder-val="{{{{{{{{true}}}}}}}}"><div class="msg warn" style="margin-bottom:12px">{{{{{{{{needW}}}}}}}} athletes still need a weight.</div></sc-if>
+<div class="namegrid" style="grid-template-columns:repeat(2,minmax(0,1fr))"><sc-for list="{{{{{{{{ppl}}}}}}}}" as="p" hint-placeholder-count="10"><div class="panel" style="padding:8px 10px;display:flex;align-items:center;gap:8px"><button type="button" class="namebtn {{{{{{{{p.c}}}}}}}}" style="flex:1;min-width:0" aria-pressed="{{{{{{{{p.on}}}}}}}}" onClick="{{{{{{{{p.tap}}}}}}}}"><sc-if value="{{{{{{{{p.on}}}}}}}}" hint-placeholder-val="{{{{{{{{false}}}}}}}}"><span class="medal m4" style="width:30px;height:30px;background:#ffffff;color:#1d3160">{{{{{{{{p.no}}}}}}}}</span></sc-if><sc-if value="{{{{{{{{p.off}}}}}}}}" hint-placeholder-val="{{{{{{{{true}}}}}}}}"><span class="hdot h{{{{{{{{p.h}}}}}}}}">{{{{{{{{p.h}}}}}}}}</span></sc-if><span class="t">{{{{{{{{p.n}}}}}}}}</span></button>
+<button type="button" class="stbtn" style="min-width:76px" aria-pressed="{{{{{{{{p.w1}}}}}}}}" onClick="{{{{{{{{p.set1}}}}}}}}">0.75 kg</button><button type="button" class="stbtn" style="min-width:60px" aria-pressed="{{{{{{{{p.w2}}}}}}}}" onClick="{{{{{{{{p.set2}}}}}}}}">1 kg</button></div></sc-for></div>
+</main></div>'''.replace("{{{{", "{{").replace("}}}}", "}}")
+    logic = "const roster = " + J(roster) + r''';
+    const o = st.order, w = st.w;
+    out = { count: o.length, needW: o.filter((i) => !w[i]).length, ppl: roster.map((r, i) => { const p = o.indexOf(i) + 1; return { n: r.n, h: r.h, no: p, on: p > 0, off: !p, c: p ? 'sel' : '', w1: w[i] === 1, w2: w[i] === 2,
+      tap: () => set({ order: p ? o.filter((x) => x !== i) : o.concat([i]) }), set1: () => set({ w: Object.assign({}, w, { [i]: 1 }) }), set2: () => set({ w: Object.assign({}, w, { [i]: 2 }) }) }; }) };
+'''
+    return body, logic, "{ order: [3, 0, 7, 5, 1], w: {3: 1, 0: 2, 7: 2} }"
+
+# ---------- A1.20 Field Station: Take Names ----------
+def field_names(dark):
+    roster = names("M","17",16,8)
+    body = header("FIELD STATION","Field Station",dark,sub="Long Jump 1") + f'''
+<div class="scroll"><main class="wrap">
+<div class="racebar"><span class="racebadge"><small>FIELD</small><b>LJ1</b></span><div class="info"><b>Long jump, Boys 17: Take Names</b><span>{{{{{{{{count}}}}}}}} athletes · Long Jump 1 · 9:55 am block</span></div>
+<a class="btn" href="{lnk("FieldStart",dark)}">All groups</a><button type="button" class="btn">Not on the list</button><a class="btn navy big" href="{lnk("FieldMarks",dark)}">Start jumping</a></div>
+<div class="prompt">Tap each athlete as they arrive. This is their number and their jumping order.</div>
+<label class="label" style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">Find an athlete<input type="search" placeholder="Type part of a name"></label>
+<div class="namegrid" style="grid-template-columns:repeat(4,minmax(0,1fr))"><sc-for list="{{{{{{{{ppl}}}}}}}}" as="p" hint-placeholder-count="16"><button type="button" class="namebtn {{{{{{{{p.c}}}}}}}}" aria-pressed="{{{{{{{{p.on}}}}}}}}" onClick="{{{{{{{{p.tap}}}}}}}}"><sc-if value="{{{{{{{{p.on}}}}}}}}" hint-placeholder-val="{{{{{{{{false}}}}}}}}"><span class="medal m4" style="width:30px;height:30px;background:#ffffff;color:#1d3160">{{{{{{{{p.no}}}}}}}}</span></sc-if><sc-if value="{{{{{{{{p.off}}}}}}}}" hint-placeholder-val="{{{{{{{{true}}}}}}}}"><span class="hdot h{{{{{{{{p.h}}}}}}}}">{{{{{{{{p.h}}}}}}}}</span></sc-if><span class="t">{{{{{{{{p.n}}}}}}}}</span></button></sc-for></div>
+</main></div>'''.replace("{{{{", "{{").replace("}}}}", "}}")
+    logic = "const roster = " + J(roster) + r'''
+    const o = st.order;
+    out = { count: o.length, ppl: roster.map((r, i) => { const p = o.indexOf(i) + 1; return { n: r.n, h: r.h, no: p, on: p > 0, off: !p, c: p ? 'sel' : '', tap: () => set({ order: p ? o.filter((x) => x !== i) : o.concat([i]) }) }; }) };
+'''
+    return body, logic, "{ order: [3, 0, 7, 11] }"
+
+# ---------- A1.19 Field Station phone: throws ----------
+def field_phone_throws(dark):
+    roster = names("M","17",7,12)
+    body = header("FIELD STATION","Field Station",dark,slim=True) + f'''
+<div class="scroll"><main class="wrap" style="padding-top:8px;padding-bottom:84px"><div class="stack" style="gap:8px">
+<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>FIELD</small><b>SP</b></span><div class="info"><b>Shot put, Boys 17</b><span>Throw {{{{round}}}} · {{{{done}}}} of {{{{total}}}} done · Shot 5 kg</span></div></div>
+<sc-if value="{{{{hasUp}}}}" hint-placeholder-val="{{{{true}}}}"><span class="htag bigath"><span class="hdot h{{{{h}}}}" style="width:30px;height:30px;font-size:.9rem">{{{{h}}}}</span>{{{{name}}}}</span>
+<span class="muted" style="font-size:.9rem">Marker {{{{no}}}} · Next: {{{{nextN}}}}</span>
+<div class="attrow"><sc-for list="{{{{att}}}}" as="a" hint-placeholder-count="3"><div class="attcell {{{{a.c}}}}"><span>Throw {{{{a.n}}}}</span><b style="font-size:1.05rem">{{{{a.v}}}}</b></div></sc-for></div>
+<button type="button" class="btn go big" style="min-height:96px" onClick="{{{{fair}}}}">Fair</button><div class="row" style="flex-wrap:nowrap"><button type="button" class="btn redfill big" style="flex:1;min-height:96px" onClick="{{{{foul}}}}">Foul</button><button type="button" class="btn big" style="flex:1;min-height:96px" onClick="{{{{pass}}}}">Pass</button></div></sc-if>
+<sc-if value="{{{{pick}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg ok">Everyone has thrown once. Look at the markers, then pick who throws again.</div><a class="btn navy big" style="min-height:72px" href="{lnk("FieldThrowAgainPhone",dark)}">Pick who throws again</a></sc-if>
+<sc-if value="{{{{over}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg ok">Throwing is over. Go to Measure.</div><a class="btn navy big" style="min-height:72px" href="{lnk("FieldMeasurePhone",dark)}">Measure</a></sc-if>
+</div></main></div>''' + pbar('<button type="button" class="btn" onClick="{{undo}}">Undo last</button><button type="button" class="btn" onClick="{{askFinish}}">END</button><button type="button" class="btn">Add an athlete</button>')
+    logic = "const roster = " + J(roster) + r''';
+    const fin = st.fin || {}, again = st.again;
+    const f = (v) => v || ' ';
+    // the round is the lowest throw number still to come; from throw 2, only athletes picked to throw again
+    const elig = (i, rd) => !fin[i] && (rd === 0 || again[i]);
+    const cnt = (i) => st.m[i].length;
+    const idx = roster.map((r, i) => i);
+    const behind = (r) => idx.filter((i) => elig(i, r) && cnt(i) <= r);
+    let rd = 0;
+    if (behind(0).length === 0) rd = !st.confirmed ? 0 : (behind(1).length ? 1 : (behind(2).length ? 2 : 3));
+    const queue = rd < 3 ? behind(rd) : [];
+    const upI = queue.length ? queue[0] : -1, nxI = queue.length > 1 ? queue[1] : -1;
+    const pick = behind(0).length === 0 && !st.confirmed, over = rd >= 3 || (st.confirmed && queue.length === 0);
+    const elN = roster.filter((r, i) => elig(i, Math.min(rd, 2))).length;
+    const doneN = roster.filter((r, i) => elig(i, Math.min(rd, 2)) && cnt(i) > Math.min(rd, 2)).length;
+    const add = (v) => () => { if (upI < 0) return; const m = st.m.map((x) => x.slice()); m[upI].push(v); set({ m, last: st.last.concat([upI]) }); };
+    out = { round: Math.min(rd, 2) + 1, done: doneN, total: elN, hasUp: upI >= 0, pick, over: over && upI < 0 && !pick,
+      name: upI >= 0 ? roster[upI].n : '', h: upI >= 0 ? roster[upI].h : 'B', no: upI + 1, nextN: nxI >= 0 ? roster[nxI].n : 'no one',
+      att: [0,1,2].map((a) => ({ n: a + 1, v: upI >= 0 ? f(st.m[upI][a]) : ' ', c: upI >= 0 && a === cnt(upI) ? 'cur' : (upI >= 0 && st.m[upI][a] === 'Foul' ? 'foul' : '') })),
+      fair: add('Fair'), foul: add('Foul'), pass: add('Pass'),
+      undo: () => { const l = st.last[st.last.length - 1]; if (l == null) return; const m = st.m.map((x) => x.slice()); m[l].pop(); set({ m, last: st.last.slice(0, -1) }); },
+      conf: st.conf && upI >= 0, nThrows: upI >= 0 ? cnt(upI) + (cnt(upI) === 1 ? ' throw' : ' throws') : '', askFinish: () => { if (upI >= 0) set({ fin: Object.assign({}, fin, { [upI]: true }) }); } };
+'''
+    return body, logic, "{ m: " + J([["Fair"],["Fair"],["Foul"],["Fair"],[],[],[]]) + ", again: {}, confirmed: false, last: [], fin: {}, conf: false }"
 
 # ---------- A1.10 Field Station phone ----------
 def field_phone(dark):
     roster = names("M","17",7,8)
     body = header("FIELD STATION","Field Station",dark,slim=True) + f'''
 <div class="scroll"><main class="wrap" style="padding-top:8px;padding-bottom:84px"><div class="stack" style="gap:8px">
-<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>FIELD</small><b>LJ1</b></span><div class="info"><b>Long jump, Boys 17</b><span>Athlete {{{{pos}}}} of 7</span></div></div>
-<div class="row" style="flex-wrap:nowrap;justify-content:space-between"><span class="htag bigath"><span class="hdot h{{{{h}}}}" style="width:30px;height:30px;font-size:.9rem">{{{{h}}}}</span>{{{{name}}}}</span><span class="qchip">Q8</span></div>
-<div class="attrow"><sc-for list="{{{{att}}}}" as="a" hint-placeholder-count="3"><div class="attcell {{{{a.c}}}}"><span>Attempt {{{{a.n}}}}</span><b>{{{{a.v}}}}</b></div></sc-for></div>
+<div class="racebar ph" style="margin:0"><span class="racebadge sm"><small>FIELD</small><b>LJ1</b></span><div class="info"><b>Long jump, Boys 17</b><span>Athlete {{{{pos}}}} of 7 · {{{{left}}}} still jumping</span></div></div>
+<div class="row" style="flex-wrap:nowrap;justify-content:space-between;align-items:center"><span class="htag bigath"><span class="hdot h{{{{h}}}}" style="width:30px;height:30px;font-size:.9rem">{{{{h}}}}</span>{{{{name}}}}</span><button type="button" class="btn" onClick="{{{{toggleCut}}}}">Cut the field</button></div>
+<sc-if value="{{{{cut}}}}" hint-placeholder-val="{{{{false}}}}"><div class="panel hjedit"><div class="stepbox"><label class="label" for="keepnp">Keep top</label><input id="keepnp" class="markin hjin" inputmode="numeric" value="{{{{keepN}}}}" onChange="{{{{keepType}}}}"><span class="muted sm">Finishes everyone below the Nth best mark. Equal marks stay in.</span></div>
+<div class="row" style="flex-wrap:nowrap"><button type="button" class="btn navy" style="flex:1" onClick="{{{{keepApply}}}}">Keep top {{{{keepN}}}}</button><sc-if value="{{{{canUndoKeep}}}}" hint-placeholder-val="{{{{false}}}}"><button type="button" class="btn" style="flex:1" onClick="{{{{keepUndo}}}}">Undo</button></sc-if><button type="button" class="btn" style="flex:1" onClick="{{{{toggleCut}}}}">Done</button></div>
+<sc-if value="{{{{keepMsg}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg ok">{{{{keepMsg}}}}</div></sc-if></div></sc-if>
+<span class="muted" style="font-size:.9rem">Next: {{{{nextN}}}}</span>
+<div class="attrow"><sc-for list="{{{{att}}}}" as="a" hint-placeholder-count="3"><div class="attcell {{{{a.c}}}}"><span>Jump {{{{a.n}}}}</span><b>{{{{a.v}}}}</b></div></sc-for></div>
 <div class="markshow" aria-live="polite">{{{{show}}}}</div>
 <div class="keypad fp"><sc-for list="{{{{keys}}}}" as="k" hint-placeholder-count="12"><button type="button" class="{{{{k.c}}}}" onClick="{{{{k.press}}}}" aria-label="{{{{k.aria}}}}">{{{{k.label}}}}</button></sc-for></div>
-</div></main></div>''' + pbar('<button type="button" class="btn" onClick="{{undo}}">Undo last</button><button type="button" class="btn" onClick="{{pass}}">Pass</button><button type="button" class="btn navy" onClick="{{save}}">{{saveL}}</button>')
-    logic = "const roster = " + J(roster) + r''';
+<div class="row" style="flex-wrap:nowrap"><button type="button" class="btn redfill big" style="flex:1;min-height:64px" onClick="{{{{foul}}}}">Foul</button><button type="button" class="btn big" style="flex:1;min-height:64px" onClick="{{{{pass}}}}">Pass</button></div>
+</div></main></div>''' + pbar('<button type="button" class="btn" onClick="{{undo}}">Undo last</button><button type="button" class="btn" onClick="{{askFinish}}">END</button><button type="button" class="btn navy" onClick="{{save}}">{{saveL}}</button>')
+    logic = "const roster = " + J(roster) + "; " + PTSJS + r'''
+    const fin = st.fin || {};
     const r = st.m[st.i] || [];
     const f = (v) => v === 'x' ? 'Foul' : (v === '-' ? 'Pass' : (v ? v.slice(0, -2) + '.' + v.slice(-2) : ''));
     const cur = r.length;
-    const fill = (v) => { const m = st.m.map((x) => x.slice()); m[st.i] = r.concat([v]); set({ m, typed: '', i: st.i }); };
-    const labels = ['1','2','3','4','5','6','7','8','9','Foul','0','Back'];
-    out = { pos: st.i + 1, name: roster[st.i].n, h: roster[st.i].h,
+    const val = (v) => /^[0-9]+$/.test(v) ? Number(v) : 0;
+    const bests = st.m.map((x) => Math.max(0, ...x.map(val)));
+    const sorted = bests.filter((b) => b > 0).sort((a, b) => b - a);
+    const live = (j) => !fin[j] && st.m[j].length < 3;
+    const nextI = (i) => { for (let k = 1; k <= 7; k++) { const j = (i + k) % 7; if (live(j)) return j; } return i; };
+    const left = st.m.filter((x, j) => live(j)).length;
+    const nKeep = Math.max(1, parseInt(st.keepN, 10) || 4);
+    const advance = (m) => set({ m, typed: '', i: nextI(st.i) });
+    const fill = (v) => { const m = st.m.map((x) => x.slice()); m[st.i] = r.concat([v]); advance(m); };
+    const labels = ['1','2','3','4','5','6','7','8','9','Clear','0','Back'];
+    out = { pos: st.i + 1, left, name: roster[st.i].n, h: roster[st.i].h, nextN: nextI(st.i) === st.i ? 'no one' : roster[nextI(st.i)].n,
       show: st.typed.length ? (st.typed.length > 2 ? st.typed.slice(0, -2) + '.' + st.typed.slice(-2) : '0.' + st.typed.padStart(2, '0')) + ' m' : '0.00 m',
       att: [0,1,2].map((a) => ({ n: a + 1, v: a < cur ? f(r[a]) : ' ', c: a === cur ? 'cur' : (r[a] === 'x' ? 'foul' : '') })),
       keys: labels.map((l) => ({ label: l, aria: l, c: /^[0-9]$/.test(l) ? '' : 'w', press: () => {
         if (/^[0-9]$/.test(l)) { if (st.typed.length < 4) set({ typed: st.typed + l }); }
         else if (l === 'Back') set({ typed: st.typed.slice(0, -1) });
-        else if (cur < 3) fill('x'); } })),
-      pass: () => { if (cur < 3) fill('-'); },
+        else set({ typed: '' }); } })),
+      foul: () => { if (cur < 3) fill('x'); }, pass: () => { if (cur < 3) fill('-'); },
       saveL: st.typed ? 'Save mark' : 'Next athlete',
-      save: () => { if (st.typed && cur < 3) fill(st.typed); else set({ i: (st.i + 1) % 7, typed: '' }); },
-      undo: () => { if (st.typed) set({ typed: '' }); else { const m = st.m.map((x) => x.slice()); m[st.i] = r.slice(0, -1); set({ m }); } } };
+      save: () => { if (st.typed && cur < 3) fill(st.typed); else set({ i: nextI(st.i), typed: '' }); },
+      undo: () => { if (st.typed) set({ typed: '' }); else { const m = st.m.map((x) => x.slice()); m[st.i] = r.slice(0, -1); set({ m }); } },
+      conf: st.conf, jumps: cur + (cur === 1 ? ' jump' : ' jumps'), askFinish: () => set({ fin: Object.assign({}, fin, { [st.i]: true }), typed: '', i: nextI(st.i) }),
+      cut: st.cut, toggleCut: () => set({ cut: !st.cut }), keepN: String(nKeep), keepMsg: st.keepMsg, canUndoKeep: !!st.finPrev, keepType: (e) => set({ keepN: String(Math.max(1, parseInt(e.target.value, 10) || 4)) }),
+      keepApply: () => { if (sorted.length < nKeep) { set({ keepMsg: 'Only ' + sorted.length + ' marks so far. No one is finished.' }); return; }
+        const thr = sorted[nKeep - 1], nf = Object.assign({}, fin); let c = 0; st.m.forEach((x, j) => { if (live(j) && bests[j] < thr) { nf[j] = true; c++; } });
+        set({ finPrev: fin, fin: nf, keepMsg: 'Kept the top ' + nKeep + '. ' + c + ' athletes finished.' }); },
+      keepUndo: () => set({ fin: st.finPrev || {}, finPrev: null, keepMsg: '' }) };
 '''
-    return body, logic, "{ i: 1, typed: '', m: [['534','x','541'],['498'],[],[],[],[],[]] }"
+    return body, logic, "{ i: 1, typed: '', m: [['534','x','541'],['498'],[],[],[],[],[]], fin: {}, finPrev: null, keepN: '4', keepMsg: '', cut: false, conf: false }"
 
 # ---------- A1.11 Recorder, track ----------
 def recorder(dark):
@@ -515,7 +974,7 @@ def recorder(dark):
 # ---------- A1.12 Recorder, field ----------
 def recorder_field(dark):
     grp = names("M","17",7,8)
-    marks = [["5.34","X","5.41"],["4.98","5.02","X"],["X","X","X"],["5.61","5.58","5.49"],["4.87","Pass","4.92"],["NS","",""],["5.15","X","5.20"]]
+    marks = [["5.34","X","5.41"],["4.98","5.02","X"],["X","X","X"],["5.61","5.58","5.49"],["4.87","Pass","4.92"],["4.40","X","X"],["5.15","X","5.20"]]
     stn = [("Long Jump 1","Boys 17","Final"),("Long Jump 2","Boys 16","Running"),("High Jump 2","Boys 18+","Running"),("Discus 2","Boys 15","Running"),("Discus 1","Boys 12 & 13","Running"),("Shot Put","Boys 14","Running"),("High Jump 1","Girls 18+","Final"),("Long Jump 1","Girls 17","Final")]
     body = header("RECORDER","Recorder",dark) + f'''
 <div class="scroll"><main class="wrap">
@@ -527,11 +986,11 @@ def recorder_field(dark):
 </tbody></table></div>
 <div class="stack">
 <div class="racebar" style="margin:0"><span class="racebadge"><small>FIELD</small><b>LJ1</b></span><div class="info"><b>Long jump, Boys 17</b><span>Long Jump 1 · finished by the station at 10:32 am · <span class="chip final">Final</span></span></div></div>
-<div class="panel" style="padding:0;overflow:hidden"><table><thead><tr><th>Place</th><th>Athlete</th><th class="todoh">1</th><th class="todoh">2</th><th class="todoh">3</th><th class="num">Best</th><th class="num">Points</th><th></th></tr></thead><tbody>
+<div class="panel" style="padding:0;overflow:hidden"><table><thead><tr><th>Place</th><th>Athlete</th><th>1</th><th>2</th><th>3</th><th class="num">Best</th><th class="num">Points</th><th>Finish</th><th></th></tr></thead><tbody>
 <sc-for list="{{{{ov}}}}" as="r" hint-placeholder-count="7"><tr><td><sc-if value="{{{{r.medal}}}}" hint-placeholder-val="{{{{true}}}}"><span class="medal {{{{r.mc}}}}">{{{{r.p}}}}</span></sc-if><sc-if value="{{{{r.plain}}}}" hint-placeholder-val="{{{{false}}}}"><span>{{{{r.p}}}}</span></sc-if></td>
-<td class="nmcell"><span class="htag"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span>{{{{r.n}}}}</span></td><sc-for list="{{{{r.cells}}}}" as="c" hint-placeholder-count="3"><td><sc-if value="{{{{ovr}}}}" hint-placeholder-val="{{{{false}}}}"><input class="markin" aria-label="{{{{c.aria}}}}" value="{{{{c.v}}}}" onChange="{{{{c.chg}}}}"></sc-if><sc-if value="{{{{plain}}}}" hint-placeholder-val="{{{{true}}}}"><span>{{{{c.v}}}}</span></sc-if></td></sc-for><td class="num"><span class="bestm">{{{{r.best}}}}</span></td><td class="num">{{{{r.pts}}}}</td><td><sc-if value="{{{{r.hris}}}}" hint-placeholder-val="{{{{false}}}}"><span class="tag hris">HRIS</span></sc-if></td></tr></sc-for></tbody></table></div>
-<sc-if value="{{{{ovr}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg warn">Override is on. Changes show on every device at once.</div></sc-if>
-<p class="muted" style="font-size:.86rem;margin:0">Results are final at the station. The event coordinator can overrule any result at any time. Attempts and ties wait for the rules <span class="qchip">QUESTION 8</span></p>
+<td class="nmcell"><span class="htag"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span>{{{{r.n}}}}</span></td><sc-for list="{{{{r.cells}}}}" as="c" hint-placeholder-count="3"><td><sc-if value="{{{{ovr}}}}" hint-placeholder-val="{{{{false}}}}"><input class="markin" aria-label="{{{{c.aria}}}}" value="{{{{c.v}}}}" disabled="{{{{r.fin}}}}" onChange="{{{{c.chg}}}}"></sc-if><sc-if value="{{{{plain}}}}" hint-placeholder-val="{{{{true}}}}"><span>{{{{c.v}}}}</span></sc-if></td></sc-for><td class="num"><span class="bestm">{{{{r.best}}}}</span></td><td class="num">{{{{r.pts}}}}</td><td><sc-if value="{{{{ovr}}}}" hint-placeholder-val="{{{{false}}}}"><button type="button" class="stbtn" aria-pressed="{{{{r.fin}}}}" onClick="{{{{r.tapFin}}}}">{{{{r.finL}}}}</button></sc-if><sc-if value="{{{{plain}}}}" hint-placeholder-val="{{{{true}}}}"><sc-if value="{{{{r.fin}}}}" hint-placeholder-val="{{{{false}}}}"><span class="chip">Ended</span></sc-if></sc-if></td><td><sc-if value="{{{{r.hris}}}}" hint-placeholder-val="{{{{false}}}}"><span class="tag hris">HRIS</span></sc-if></td></tr></sc-for></tbody></table></div>
+<sc-if value="{{{{ovr}}}}" hint-placeholder-val="{{{{false}}}}"><div class="msg warn">Override is on. Changes show on every device at once. An ended athlete's boxes are locked: press Bring back to change them.</div></sc-if>
+<p class="muted" style="font-size:.86rem;margin:0">Results are final at the station. The event coordinator can overrule any result at any time.</p>
 <button type="button" class="btn big" onClick="{{{{chk}}}}">{{{{chkL}}}}</button>
 </div></div></main></div>'''
     logic = "const grp = " + J(grp) + "; const marks = " + J(marks) + "; const stn = " + J(stn) + r''';
@@ -541,9 +1000,59 @@ def recorder_field(dark):
     const PTS = [10, 8, 6];
     out = { ovr: st.ovr, plain: !st.ovr, chkL: st.ovr ? 'Finish override' : 'Override (event coordinator)', chk: () => set({ ovr: !st.ovr }),
       st: stn.map((s, i) => ({ a: s[0], b: s[1], s: s[2], chip: cls[s[2]], c: i === 0 ? 'selrow' : '', tap: () => {} })),
-      ov: list.map((r, i) => { const has = r.b > 0; return { p: has ? i + 1 : '–', n: r.g.n, h: r.g.h, cells: r.m.map((v, k) => ({ v, aria: r.g.n + ' attempt ' + (k + 1), chg: (e) => { const m = st.m.map((x) => x.slice()); m[r.i][k] = e.target.value; set({ m }); } })), best: has ? r.b.toFixed(2) : '–', pts: has ? (PTS[i] || 4) : 0, medal: has && i < 3, plain: !(has && i < 3), mc: 'm' + (i + 1), hris: has && i < 2 }; }) };
+      ov: list.map((r, i) => { const has = r.b > 0; return { p: has ? i + 1 : '–', n: r.g.n, h: r.g.h, cells: r.m.map((v, k) => ({ v, aria: r.g.n + ' attempt ' + (k + 1), chg: (e) => { const m = st.m.map((x) => x.slice()); m[r.i][k] = e.target.value; set({ m }); } })), best: has ? r.b.toFixed(2) : '–', pts: has ? (PTS[i] || 4) : 0, medal: has && i < 3, plain: !(has && i < 3), mc: 'm' + (i + 1), hris: has && i < 2, fin: !!st.fin[r.i], finL: st.fin[r.i] ? 'Bring back' : 'End', tapFin: () => set({ fin: Object.assign({}, st.fin, { [r.i]: !st.fin[r.i] }) }) }; }) };
 '''
-    return body, logic, "{ ovr: false, m: " + J(marks) + " }"
+    return body, logic, "{ ovr: false, fin: {5: true}, m: " + J(marks) + " }"
+
+
+# ---------- A1.31 Recorder, field override: shot put and discus ----------
+def recorder_throws(dark):
+    g = names("M","13",8,14)
+    stn = [("Long Jump 1","Boys 17","Final"),("Discus 1","Boys 12 & 13","Running"),("Shot Put","Boys 14","Running"),("High Jump 2","Boys 18+","Running")]
+    rows = [{"n":g[i]["n"],"h":g[i]["h"],"t":t,"again":a,"meas":m,"w":w,"fin":f} for i,(t,a,m,w,f) in enumerate([
+        (["Fair","Fair","Foul"],True,"21.34",2,False),(["Fair","Foul","Fair"],True,"19.80",2,False),(["Fair","",""],False,"",1,False),(["Fair","Fair","Fair"],True,"18.15",2,False),
+        (["Foul","",""],False,"",1,False),(["Fair","",""],False,"",1,True),(["Pass","",""],False,"",2,False),(["Fair","",""],False,"",1,False)])]
+    body = header("RECORDER","Recorder",dark) + '<div class="scroll"><main class="wrap"><div class="tabs"><a class="btn" style="border-radius:999px" href="' + lnk("Recorder",dark) + '">Track</a><button type="button" aria-pressed="true">Field events</button></div>' + r"""
+<div class="recgrid" style="grid-template-columns:minmax(0,.8fr) minmax(0,2fr)">
+<div class="gcard"><div class="ghead"><h3>Stations</h3><span class="meta">9:15 am block</span></div>
+<table><thead><tr><th>Station</th><th>Group</th><th>Status</th></tr></thead><tbody>
+<sc-for list="{{st}}" as="s" hint-placeholder-count="4"><tr class="{{s.c}}"><td>{{s.a}}</td><td>{{s.b}}</td><td><span class="chip {{s.chip}}">{{s.s}}</span></td></tr></sc-for>
+</tbody></table></div>
+<div class="stack">
+<div class="racebar" style="margin:0"><span class="racebadge"><small>FIELD</small><b>D1</b></span><div class="info"><b>Discus, Boys 12 &amp; 13</b><span>Discus 1 · finished by the station at 9:48 am · <span class="chip final">Final</span></span></div></div>
+<div class="msg warn">Override is on. Changes show on every device at once. An ended athlete's boxes are locked: press Bring back to change them.</div>
+<div class="panel stack" style="padding:12px 14px"><div class="row"><label class="label" style="display:flex;flex-direction:column;gap:4px">Set distance for everyone not measured (m)<input class="markin" style="max-width:140px" aria-label="Set distance in metres" value="{{setd}}" onChange="{{typeSetd}}"></label><span class="muted" style="flex:1 1 320px;font-size:.88rem">Athletes with a fair throw who were not measured all get this distance, one shared place and 4 points. It must be lower than the lowest measured mark.</span></div></div>
+<div class="panel" style="padding:0;overflow:hidden"><table><thead><tr><th>Place</th><th>Athlete</th><th>Weight</th><th>1</th><th>2</th><th>3</th><th>Throws again</th><th class="num">Measured</th><th class="num">Best</th><th class="num">Points</th><th>Finish</th></tr></thead><tbody>
+<sc-for list="{{ov}}" as="r" hint-placeholder-count="8"><tr><td><sc-if value="{{r.medal}}" hint-placeholder-val="{{true}}"><span class="medal {{r.mc}}">{{r.p}}</span></sc-if><sc-if value="{{r.plain}}" hint-placeholder-val="{{false}}"><span>{{r.p}}</span></sc-if></td>
+<td class="nmcell"><span class="htag"><span class="hdot h{{r.h}}">{{r.h}}</span>{{r.n}}</span></td>
+<td><div style="display:flex;gap:4px"><button type="button" class="stbtn" aria-pressed="{{r.w1}}" disabled="{{r.fin}}" onClick="{{r.setW1}}">0.75 kg</button><button type="button" class="stbtn" aria-pressed="{{r.w2}}" disabled="{{r.fin}}" onClick="{{r.setW2}}">1 kg</button></div></td>
+<sc-for list="{{r.cells}}" as="c" hint-placeholder-count="3"><td><button type="button" class="stbtn" style="min-width:64px" aria-label="{{c.aria}}" disabled="{{c.off}}" onClick="{{c.tap}}">{{c.v}}</button></td></sc-for>
+<td><label style="display:flex;align-items:center;gap:8px;min-height:48px;cursor:pointer"><input type="checkbox" style="width:24px;height:24px" aria-label="{{r.n}} throws again" checked="{{r.again}}" disabled="{{r.fin}}" onChange="{{r.tapAgain}}">{{r.againL}}</label></td>
+<td class="num"><input class="markin" style="width:84px" aria-label="{{r.n}} measured mark" value="{{r.meas}}" disabled="{{r.fin}}" onChange="{{r.typeMeas}}"></td>
+<td class="num"><span class="bestm">{{r.best}}</span><sc-if value="{{r.part}}" hint-placeholder-val="{{false}}"> <span class="chip prov">Participation</span></sc-if></td><td class="num">{{r.pts}}</td>
+<td><button type="button" class="stbtn" aria-pressed="{{r.fin}}" onClick="{{r.tapFin}}">{{r.finL}}</button></td></tr></sc-for></tbody></table></div>
+<p class="muted" style="font-size:.86rem;margin:0">Results are final at the station. The event coordinator can overrule any result at any time, here or in the Results screen.</p>
+<button type="button" class="btn big">Finish override</button>
+</div></div></main></div>"""
+    logic = "const rows = " + J(rows) + "; const stn = " + J(stn) + r""";
+    const cls = { 'Running': '', 'Final': 'final' };
+    const NEXT = { '': 'Fair', 'Fair': 'Foul', 'Foul': 'Pass', 'Pass': '' };
+    const R = st.r;
+    const meas = R.map((x, i) => ({ i, v: parseFloat(x.meas) || 0 })).filter((x) => x.v > 0).sort((a, b) => b.v - a.v);
+    const nM = meas.length;
+    const place = {}; meas.forEach((x, k) => { place[x.i] = k + 1; });
+    const fair = (x) => x.t.includes('Fair');
+    out = { setd: st.setd, typeSetd: (e) => set({ setd: e.target.value }),
+      st: stn.map((s) => ({ a: s[0], b: s[1], s: s[2], chip: cls[s[2]], c: s[0] === 'Discus 1' ? 'selrow' : '' })),
+      ov: R.map((x, i) => { const has = place[i]; const part = !has && fair(x);
+        const upd = (f) => () => set({ r: R.map((y, j) => j === i ? Object.assign({}, y, f(y)) : y) });
+        return { p: has ? has : part ? '=' + (nM + 1) : '–', n: x.n, h: x.h, medal: !!has && has <= 3, plain: !(has && has <= 3), mc: 'm' + (has || 4),
+          w1: x.w === 1, w2: x.w === 2, setW1: upd(() => ({ w: 1 })), setW2: upd(() => ({ w: 2 })), fin: x.fin, part,
+          cells: x.t.map((v, k) => ({ v: v || '–', aria: x.n + ' throw ' + (k + 1), off: x.fin || (k > 0 && !x.again), tap: upd((y) => ({ t: y.t.map((q, z) => z === k ? NEXT[q] : q) })) })),
+          again: x.again, againL: x.again ? 'Yes' : 'No', tapAgain: upd((y) => ({ again: !y.again })), meas: x.meas, typeMeas: (e) => upd(() => ({ meas: e.target.value }))(),
+          best: has ? x.meas : part ? st.setd : '–', pts: has ? [10, 8, 6][has - 1] || 4 : part ? 4 : 0, finL: x.fin ? 'Bring back' : 'End', tapFin: upd((y) => ({ fin: !y.fin })) }; }) };
+"""
+    return body, logic, "{ setd: '14.00', r: " + J(rows) + " }"
 
 # ---------- A1.13 Announcer ----------
 def announcer(dark):
@@ -577,6 +1086,11 @@ def results(dark):
     fr = list(zip(f,["5.61 m","5.41 m","5.20 m","5.02 m","4.92 m"],["1","3","3","2","3"],[10,8,6,4,4]))
     tr = [{"n":a["n"],"h":a["h"],"v":b,"x":c,"p":d} for a,b,c,d in tr]
     fr = [{"n":a["n"],"h":a["h"],"v":b,"x":"Attempt "+c,"p":d} for a,b,c,d in fr]
+    _sp = names("M","15",7,13)
+    _mk = ["12.40 m","11.82 m","11.05 m"]
+    sp = [{"n":p["n"],"h":p["h"],"v":v,"how":"Measured","chip":"final","pl":str(i+1),"p":[10,8,6][i],"medal":True,"plain":False,"mc":"m"+str(i+1)} for i,(p,v) in enumerate(zip(_sp[:3],_mk))]
+    sp += [{"n":p["n"],"h":p["h"],"v":"8.50 m (set)","how":"Participation","chip":"prov","pl":"=4","p":4,"medal":False,"plain":True,"mc":"m4"} for p in _sp[3:6]]
+    sp += [{"n":_sp[6]["n"],"h":_sp[6]["h"],"v":"No mark","how":"No fair throw","chip":"","pl":"–","p":0,"medal":False,"plain":True,"mc":"m4"}]
     hris = [["100 m, Boys 18+","12.61",t[0]],["100 m, Boys 18+","12.91",t[1]],["Long jump, Boys 17","5.61 m",f[0]],["Long jump, Boys 17","5.41 m",f[1]]]
     body = header("RESULTS","Announcer",dark,extra=f'<a class="hlink" href="{lnk("Houses",dark)}">Houses</a><a class="hlink" href="{lnk("Announcer",dark)}">Back to Announcer</a>') + f'''
 <div class="scroll"><main class="wrap">
@@ -590,6 +1104,10 @@ def results(dark):
 <div class="gcard"><div class="ghead"><h3>Long jump, Boys 17</h3><span class="meta">Long Jump 1 · best of the attempts · Record [no list yet]</span><span class="chip final">Final</span></div>
 <table><thead><tr><th>Place</th><th>Athlete</th><th>House</th><th class="num">Best mark</th><th class="num">Set on</th><th class="num">Points</th><th></th></tr></thead><tbody>
 <sc-for list="{{{{fr}}}}" as="r" hint-placeholder-count="6"><tr><td><sc-if value="{{{{r.medal}}}}" hint-placeholder-val="{{{{true}}}}"><span class="medal {{{{r.mc}}}}">{{{{r.pl}}}}</span></sc-if><sc-if value="{{{{r.plain}}}}" hint-placeholder-val="{{{{false}}}}"><span>{{{{r.pl}}}}</span></sc-if></td><td>{{{{r.n}}}}</td><td><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span></td><td class="num">{{{{r.v}}}}</td><td class="num">{{{{r.x}}}}</td><td class="num">{{{{r.p}}}}</td><td><sc-if value="{{{{r.hris}}}}" hint-placeholder-val="{{{{false}}}}"><span class="tag hris">HRIS</span></sc-if></td></tr></sc-for></tbody></table></div>
+<div class="gcard"><div class="ghead"><h3>Shot put, Boys 15</h3><span class="meta">Shot Put · best throw · Record [no list yet]</span><span class="chip final">Final</span></div>
+<table><thead><tr><th>Place</th><th>Athlete</th><th>House</th><th class="num">Best mark</th><th>Based on</th><th class="num">Points</th></tr></thead><tbody>
+<sc-for list="{{{{sp}}}}" as="r" hint-placeholder-count="7"><tr><td><sc-if value="{{{{r.medal}}}}" hint-placeholder-val="{{{{true}}}}"><span class="medal {{{{r.mc}}}}">{{{{r.pl}}}}</span></sc-if><sc-if value="{{{{r.plain}}}}" hint-placeholder-val="{{{{false}}}}"><span>{{{{r.pl}}}}</span></sc-if></td><td>{{{{r.n}}}}</td><td><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span></td><td class="num">{{{{r.v}}}}</td><td><span class="chip {{{{r.chip}}}}">{{{{r.how}}}}</span></td><td class="num">{{{{r.p}}}}</td></tr></sc-for></tbody></table>
+<p class="muted" style="margin:8px 14px 12px;font-size:.86rem">Participation: an athlete with a fair throw who was not measured. They all get the one set distance, a shared place and 4 points.</p></div>
 </div></sc-if>
 <sc-if value="{{{{isHris}}}}" hint-placeholder-val="{{{{false}}}}"><div class="stack">
 <div class="row" style="justify-content:space-between"><span class="muted" style="flex:1 1 400px">The top 2 in every individual event, field events included. Relays are not on the list. Sent as a file, like swimming.</span><button type="button" class="btn primary">Export HRIS file</button></div>
@@ -603,11 +1121,11 @@ def results(dark):
 Age champions and school records appear here once results are final. Check newsletter and media consent before naming students publicly.</p>
 <div class="row"><button type="button" class="btn">Copy text</button></div></div></sc-if>
 </main></div>'''
-    logic = "const tr = " + J(tr) + "; const fr = " + J(fr) + "; const hr = " + J([[a,b,c["n"],c["h"]] for a,b,c in hris]) + r''';
+    logic = "const sp = " + J(sp) + "; const tr = " + J(tr) + "; const fr = " + J(fr) + "; const hr = " + J([[a,b,c["n"],c["h"]] for a,b,c in hris]) + r''';
     const dress = (l) => l.map((r, i) => Object.assign({}, r, { pl: i + 1, medal: i < 3, plain: i >= 3, mc: 'm' + (i + 1), hris: i < 2 }));
     const T = [['res','Event results'],['hris','HRIS Team List'],['news','Newsletter draft']];
     out = { tabs: T.map((t) => ({ l: t[1], on: st.t === t[0], tap: () => set({ t: t[0] }) })), isRes: st.t === 'res', isHris: st.t === 'hris', isNews: st.t === 'news',
-      tr: dress(tr), fr: dress(fr), hr: hr.map((r, i) => ({ e: r[0], v: r[1], n: r[2], h: r[3], p: i % 2 + 1, mc: 'm' + (i % 2 + 1) })) };
+      sp, tr: dress(tr), fr: dress(fr), hr: hr.map((r, i) => ({ e: r[0], v: r[1], n: r[2], h: r[3], p: i % 2 + 1, mc: 'm' + (i % 2 + 1) })) };
 '''
     return body, logic, "{ t: 'res' }"
 
@@ -644,10 +1162,10 @@ def houses(dark):
     return body, logic, "{}"
 
 # ---------- A1.16 Carnival Organiser ----------
-def organiser(dark):
+def organiser(dark, start="program"):
     secs = [("details","1. Carnival details","Friday 18 June 2027"),("students","2. Students","620 test students"),("program","3. Program","104 events"),
-            ("field","4. Field event rules","Not set yet"),("points","5. Points","10, 8, 6, 4"),("limits","6. Odd-time limits","By distance"),
-            ("records","7. Records","No list yet"),("export","8. Export","CSV, HRIS file, backup"),("lock","9. Lock and new carnival","Results open")]
+            ("field","4. Field event rules","From the 2027 sheets"),("points","5. Points","10, 8, 6, 4"),("limits","6. Odd-time limits","By distance"),
+            ("records","7. Records","No list yet"),("export","8. Export","CSV, HRIS file, backup"),("lock","9. Lock and new carnival","Results open"),("parents","10. Parents page","Off")]
     prog = []
     prog.append(["8:30 am","1500 m, boys and girls","Open","–"])
     for b in BLOCKS:
@@ -669,13 +1187,15 @@ def organiser(dark):
 <h3>Timetable</h3><p class="muted" style="margin:0">The 2026 timetable. In each block one sex runs, oldest first, while the other does field events. Race numbers on the day follow whatever the marshal sends.</p>
 <table><thead><tr><th>Start</th><th>Track</th><th>Groups</th><th>Field events</th></tr></thead><tbody><sc-for list="{{prog}}" as="p" hint-placeholder-count="10"><tr><td class="nmcell"><b>{{p.a}}</b></td><td><b>{{p.b}}</b></td><td>{{p.c}}</td><td style="font-size:.9rem">{{p.d}}</td></tr></sc-for></tbody></table>
 </div></sc-if>
-<sc-if value="{{is.field}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Field event rules</h2><div class="todo">All of this waits for Jordan's rules. <span class="qchip">QUESTION 8</span></div>
-<table><thead><tr><th>Event</th><th>Attempts</th><th>Best mark</th><th>Start and steps</th><th>Ties</th></tr></thead><tbody>
-<tr><td><b>Long jump</b></td><td class="todoh">[ATTEMPTS]</td><td>Longest</td><td class="muted">Not needed</td><td class="todoh">[TIES]</td></tr>
-<tr><td><b>Shot put</b></td><td class="todoh">[ATTEMPTS]</td><td>Longest</td><td class="muted">Not needed</td><td class="todoh">[TIES]</td></tr>
-<tr><td><b>Discus</b></td><td class="todoh">[ATTEMPTS]</td><td>Longest</td><td class="muted">Not needed</td><td class="todoh">[TIES]</td></tr>
-<sc-if value="{{jav}}" hint-placeholder-val="{{false}}"><tr><td><b>Javelin</b></td><td class="todoh">[ATTEMPTS]</td><td>Longest</td><td class="muted">Not needed</td><td class="todoh">[TIES]</td></tr></sc-if>
-<tr><td><b>High jump</b></td><td class="todoh">[TRIES AT A HEIGHT]</td><td>Highest cleared</td><td class="todoh">[START, STEPS]</td><td class="todoh">[TIES]</td></tr></tbody></table>
+<sc-if value="{{is.field}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Field event rules</h2><p class="muted" style="margin:0">From the 2027 CCAS instruction sheets. Change them here to suit your school.</p>
+<table><thead><tr><th>Event</th><th>Attempts</th><th>What is measured</th><th>Ties</th></tr></thead><tbody>
+<tr><td><b>Long jump</b></td><td>3 jumps. If too many athletes, 2 jumps, then the top 4 get a 3rd</td><td>Every jump</td><td>Share the place and points</td></tr>
+<tr><td><b>Shot put</b></td><td>3 throws</td><td>The best throw only</td><td>Share the place and points</td></tr>
+<tr><td><b>Discus</b></td><td>3 throws</td><td>The best throw only</td><td>Share the place and points</td></tr>
+<sc-if value="{{jav}}" hint-placeholder-val="{{false}}"><tr><td><b>Javelin</b></td><td>3 throws</td><td>The best throw only</td><td>Share the place and points</td></tr></sc-if>
+<tr><td><b>High jump</b></td><td>3 tries at each height, out after 3 misses in a row</td><td>Highest height cleared</td><td>Fewer misses at that height, then overall, then share</td></tr></tbody></table>
+<div class="row"><span class="chip">High jump raises</span><span class="muted">Girls: 5 cm until 3 remain, then 3 cm. Boys: 10 cm first, then 5 cm until 3 remain, then 3 cm.</span></div>
+<h3>Heights and weights</h3><table><thead><tr><th>Age</th><th>High jump start, G / B</th><th>Shot, G / B</th><th>Discus, G / B</th><sc-if value="{{jav}}" hint-placeholder-val="{{false}}"><th>Javelin, G / B</th></sc-if></tr></thead><tbody><sc-for list="{{wts}}" as="w" hint-placeholder-count="7"><tr><td><b>{{w.a}}</b></td><td>{{w.hj}}</td><td>{{w.s}}</td><td>{{w.d}}</td><sc-if value="{{jav}}" hint-placeholder-val="{{false}}"><td>{{w.j}}</td></sc-if></tr></sc-for></tbody></table>
 <h3>Locations for each sport</h3><p class="muted" style="margin:0">Tick 1 or 2 locations for each field event that is on your program. With 1 location, groups on at the same time share it.</p>
 <table style="max-width:640px"><thead><tr><th>Sport</th><th>1 location</th><th>2 locations</th></tr></thead><tbody><sc-for list="{{locs}}" as="l" hint-placeholder-count="5"><tr><td><b>{{l.l}}</b></td>
 <td><label style="display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer"><input type="checkbox" style="width:24px;height:24px" aria-label="{{l.l}}, 1 location" checked="{{l.one}}" onChange="{{l.tap1}}">1</label></td>
@@ -687,6 +1207,19 @@ def organiser(dark):
 <sc-if value="{{is.records}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Records</h2><div class="todo">No CCAS athletics records list yet. <span class="qchip">QUESTION 10</span></div><button type="button" class="btn" style="align-self:flex-start">Load a records list</button></div></sc-if>
 <sc-if value="{{is.export}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Export</h2><div class="row"><button type="button" class="btn">Download results CSV</button><button type="button" class="btn">Download HRIS file</button><button type="button" class="btn">Download full backup</button><button type="button" class="btn">Restore a backup</button></div><p class="muted" style="margin:0">No automatic backups. Export after the carnival. The HRIS file layout: <span class="qchip">QUESTION 20</span></p></div></sc-if>
 <sc-if value="{{is.lock}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Lock and new carnival</h2><div class="row"><button type="button" class="btn">Lock results</button><button type="button" class="btn danger">Clear practice data</button><button type="button" class="btn">Start a new carnival</button></div><p class="muted" style="margin:0">Clear practice data is for the staff run-through and asks first. Past years stay look only. The event coordinator (organiser PIN) can overrule any result at any time.</p></div></sc-if>
+<sc-if value="{{is.parents}}" hint-placeholder-val="{{false}}"><div class="stack"><h2>Parents page</h2>
+<p class="muted" style="margin:0">A page for parents. They need no PIN and no sign-in. It shows nothing until you turn it on, and then only what is ticked below. Parents see final results only, unless you tick provisional.</p>
+<div class="row"><button type="button" class="switch" role="switch" aria-checked="{{pOn}}" aria-label="Parents page on" onClick="{{pTog}}"></button><b>Parents page is {{pState}}</b><span class="chip">https://hammerpest.github.io/ccas-athletics/parents/</span><button type="button" class="btn">Copy link</button></div>
+<h3>What parents can see</h3>
+<table><thead><tr><th>Show</th><th>What it is</th></tr></thead><tbody><sc-for list="{{shows}}" as="s" hint-placeholder-count="7"><tr>
+<td><label style="display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer;font-weight:700"><input type="checkbox" style="width:24px;height:24px" aria-label="{{s.l}}" checked="{{s.on}}" onChange="{{s.tap}}">{{s.l}}</label></td><td>{{s.d}}</td></tr></sc-for></tbody></table>
+<h3>Names</h3>
+<div class="choices"><button type="button" class="choice" aria-pressed="{{nameShort}}" onClick="{{tapShort}}">Show first name and surname initial, for example Xavier F.</button><button type="button" class="choice" aria-pressed="{{nameNone}}" onClick="{{tapNone}}">No names: house and place only</button></div>
+<div class="todo">Check newsletter and media consent before names go on a public page. Real student names also wait for the principal and ICT.</div>
+<h3>When results show</h3>
+<label style="display:flex;align-items:center;gap:10px;min-height:48px;cursor:pointer"><input type="checkbox" style="width:24px;height:24px" aria-label="Show results before a group is final" checked="{{provOn}}" onChange="{{tapProv}}">Show results before a group is final, marked Provisional</label>
+<p class="muted" style="margin:0">Never shown to parents: PINs, devices, photos of slips, dates of birth, full surnames.</p>
+</div></sc-if>
 '''
     body = header("CARNIVAL ORGANISER","Carnival Organiser",dark,sub="CCAS Athletics Carnival 2027 · Organiser PIN only",extra=f'<a class="hlink" href="{lnk("Main",dark)}">Change year</a>') + '''
 <div class="scroll"><main class="wrap"><div class="org">
@@ -704,7 +1237,14 @@ def organiser(dark):
     const total = sum(on), nField = sum(fieldOn), nTrack = total - nField;
     const change = (k, f) => st.ev.map((e) => e.k === k ? Object.assign({}, e, f) : e);
     const is = {}; S.forEach((s) => { is[s[0]] = st.s === s[0]; });
-    out = { is, agegrid, stations, total, nTrack, nField, jav: !!fieldOn.find((e) => e.k === 'J'),
+    const wt = [["12", "1.05 / 1.15 m", "3 / 3 kg", "0.75 / 0.75 kg", "400 / 600 g"], ["13", "1.05 / 1.15 m", "3 / 3 kg", "1 / 1 kg", "400 / 600 g"], ["14", "1.10 / 1.15 m", "3 / 4 kg", "1 / 1 kg", "500 / 700 g"], ["15", "1.10 / 1.20 m", "3 / 4 kg", "1 / 1 kg", "500 / 700 g"], ["16", "1.10 / 1.20 m", "3 / 5 kg", "1 / 1.5 kg", "500 / 700 g"], ["17", "1.10 / 1.20 m", "3 / 5 kg", "1 / 1.5 kg", "500 / 700 g"], ["18+", "1.10 / 1.20 m", "4 / 6 kg", "1 / 1.75 kg", "600 / 800 g"]];
+    const SHOWS = [['house','House points','The three houses and their points.'],['age','Points by age group','House points for each age group, girls and boys together.'],['events','Event results','Places and times or marks for every event, once final.'],['find','Find a student','Type a name to see that student\'s house and their results.'],['champs','Age champions','The age champion for each age group.'],['records','Records broken','Any new school records from the day.'],['program','What is on now','The program and the field events on now.']];
+    const showT = (k) => () => set({ ps: Object.assign({}, st.ps, { [k]: !st.ps[k] }) });
+    const parentsOut = { pOn: st.pp, pState: st.pp ? 'on' : 'off', pTog: () => set({ pp: !st.pp }),
+      shows: SHOWS.map((r) => ({ l: r[1], d: r[2], on: !!st.ps[r[0]], tap: showT(r[0]) })),
+      nameShort: st.pn === 'short', nameNone: st.pn === 'none', tapShort: () => set({ pn: 'short' }), tapNone: () => set({ pn: 'none' }),
+      provOn: st.pv, tapProv: () => set({ pv: !st.pv }) };
+    out = Object.assign({}, parentsOut); out = Object.assign(out, { is, agegrid, stations, total, nTrack, nField, wts: wt.map((w) => ({ a: w[0], hj: w[1], s: w[2], d: w[3], j: w[4] })), jav: !!fieldOn.find((e) => e.k === 'J'),
       locs: fieldOn.map((e) => ({ l: e.l, one: st.loc[e.k] === 1, two: st.loc[e.k] === 2, tap1: pick(e.k, 1), tap2: pick(e.k, 2) })),
       evs: st.ev.map((e) => ({ l: e.l, t: e.t, g: e.g, n: e.n, on: e.on, own: !!e.own, tog: () => set({ ev: change(e.k, { on: !e.on }) }), del: () => set({ ev: st.ev.filter((x) => x.k !== e.k) }) })),
       adding: st.adding, notAdding: !st.adding, newName: st.nm, newField: st.nt === 'Field', newTrack: st.nt === 'Track',
@@ -713,30 +1253,101 @@ def organiser(dark):
       addEv: () => { const l = st.nm.trim(); if (!l) return; const k = 'x' + (st.ev.length + 1); set({ ev: st.ev.concat([{ k, l, t: st.nt, g: 'Each age, boys and girls', n: 12, on: true, own: true }]), loc: Object.assign({}, st.loc, { [k]: 1 }), adding: false }); },
       limits: ['100 m','200 m','400 m','800 m','1500 m','4 x 100 m relay'],
       prog: prog.map((p) => ({ a: p[0], b: p[1], c: p[2], d: p[3] })).concat(st.ev.filter((e) => e.on && (e.own || e.k === 'J')).map((e) => ({ a: 'Set a time', b: e.l, c: e.g, d: '–' }))),
-      secs: S.map((s) => ({ l: s[1], sub: s[0] === 'program' ? total + ' events' : s[2], c: s[0] === 'field' ? 'amber' : '', on: st.s === s[0], tap: () => set({ s: s[0] }) })) };
+      secs: S.map((s) => ({ l: s[1], sub: s[0] === 'program' ? total + ' events' : s[0] === 'parents' ? (st.pp ? 'On' : 'Off') : s[2], c: '', on: st.s === s[0], tap: () => set({ s: s[0] }) })) });
 '''
-    return body, logic, r'''{ s: 'program', adding: false, nm: '', nt: 'Field', loc: { D: 2, LJ: 2, J: 1, SP: 1, HJ: 2 }, ev: [{"k": "100", "l": "100 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "200", "l": "200 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "400", "l": "400 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "800", "l": "800 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "1500", "l": "1500 m", "t": "Track", "g": "Open, boys and girls", "n": 2, "on": true}, {"k": "R", "l": "4 x 100 m relay", "t": "Track", "g": "Junior, Intermediate, Senior", "n": 6, "on": true}, {"k": "HJ", "l": "High Jump", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "LJ", "l": "Long Jump", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "SP", "l": "Shot Put", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "D", "l": "Discus", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "J", "l": "Javelin", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": false}] }'''
+    init = r'''{ s: 'program', adding: false, nm: '', nt: 'Field', loc: { D: 2, LJ: 2, J: 1, SP: 1, HJ: 2 }, ev: [{"k": "100", "l": "100 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "200", "l": "200 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "400", "l": "400 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "800", "l": "800 m", "t": "Track", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "1500", "l": "1500 m", "t": "Track", "g": "Open, boys and girls", "n": 2, "on": true}, {"k": "R", "l": "4 x 100 m relay", "t": "Track", "g": "Junior, Intermediate, Senior", "n": 6, "on": true}, {"k": "HJ", "l": "High Jump", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "LJ", "l": "Long Jump", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "SP", "l": "Shot Put", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "D", "l": "Discus", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": true}, {"k": "J", "l": "Javelin", "t": "Field", "g": "Each age, boys and girls", "n": 12, "on": false}] }'''
+    init = init.replace("{ s: 'program',", "{ s: '" + start + "', pp: " + ('true' if start == 'parents' else 'false') + ", ps: {house: true, age: true, events: true, find: true, champs: true, records: false, program: true}, pn: 'short', pv: false,")
+    return body, logic, init
+
+
+# ---------- A1.29 Parents page (no PIN) ----------
+def short(n):
+    p = n.split(" ")
+    return p[0] + " " + p[-1][0] + "." if len(p) > 1 else n
+
+def parents_page(dark):
+    t = names("M","18",6,3); f = names("M","17",5,8); g = names("F","15",4,11)
+    t = [t[3],t[0],t[4],t[1],t[5]]
+    ev = [{"e":"100 m, Boys 18+","rows":[{"n":short(a["n"]),"h":a["h"],"v":v} for a,v in zip(t,["12.61","12.91","12.92","13.02","13.22"])]},
+          {"e":"Long jump, Boys 17","rows":[{"n":short(a["n"]),"h":a["h"],"v":v} for a,v in zip(f,["5.61 m","5.41 m","5.20 m","5.02 m","4.92 m"])]}]
+    find = {"n":short(t[0]["n"]),"h":t[0]["h"],"res":[["100 m, Boys 18+","1st","12.61"],["Long jump, Boys 18+","2nd","5.48 m"]]}
+    champs = [{"l":"12 & 13","a":short(names("F","13",1,20)[0]["n"]),"b":short(names("M","13",1,21)[0]["n"])},
+              {"l":"14","a":short(names("F","14",1,22)[0]["n"]),"b":short(names("M","14",1,23)[0]["n"])},
+              {"l":"15","a":short(g[0]["n"]),"b":short(names("M","15",1,24)[0]["n"])}]
+    ages = [["12 & 13",34,32,28],["14",38,30,32],["15",20,38,26],["16",30,30,22],["17",26,34,30],["18+",24,22,20],["Relays",0,0,0]]
+    body = f"""<header class="top"><div class="wrap"><div class="topin"><div class="ttl"><b>Athletics Carnival 2027</b><small>Results for parents</small></div><span class="chip prov">Updated 1:42 pm</span></div></div></header>
+<div class="scroll"><main class="wrap" style="padding-top:10px;padding-bottom:24px"><div class="stack">
+<div class="tabs" style="margin:0;flex-wrap:nowrap;overflow-x:auto"><sc-for list="{{{{tabs}}}}" as="t" hint-placeholder-count="6"><button type="button" style="flex:0 0 auto" aria-pressed="{{{{t.on}}}}" onClick="{{{{t.tap}}}}">{{{{t.l}}}}</button></sc-for></div>
+<div class="row"><span class="chip prov">Provisional, 14 of 104 events in</span></div>
+<sc-if value="{{{{is.house}}}}" hint-placeholder-val="{{{{true}}}}"><div class="stack">
+<div class="hcard hJ"><div class="row" style="justify-content:space-between"><span class="medal m1">1</span><span class="htag"><span class="hdot hJ">J</span><b>Jackson</b></span></div><span class="pts">186</span><div class="barw"><div class="bar" style="width:100%"></div></div></div>
+<div class="hcard hB"><div class="row" style="justify-content:space-between"><span class="medal m2">2</span><span class="htag"><span class="hdot hB">B</span><b>Bradman</b></span></div><span class="pts">172</span><div class="barw"><div class="bar" style="width:92%"></div></div></div>
+<div class="hcard hN"><div class="row" style="justify-content:space-between"><span class="medal m3">3</span><span class="htag"><span class="hdot hN">N</span><b>Newcombe</b></span></div><span class="pts">158</span><div class="barw"><div class="bar" style="width:85%"></div></div></div>
+</div></sc-if>
+<sc-if value="{{{{is.age}}}}" hint-placeholder-val="{{{{false}}}}"><div class="panel stack"><h3>Points by age group</h3><table><thead><tr><th>Age group</th><th class="num"><span class="hdot hB">B</span></th><th class="num"><span class="hdot hJ">J</span></th><th class="num"><span class="hdot hN">N</span></th></tr></thead><tbody>
+<sc-for list="{{{{ages}}}}" as="a" hint-placeholder-count="7"><tr><td>{{{{a.l}}}}</td><td class="num">{{{{a.b}}}}</td><td class="num">{{{{a.j}}}}</td><td class="num">{{{{a.n}}}}</td></tr></sc-for>
+<tr><td><b>Total</b></td><td class="num"><b>172</b></td><td class="num"><b>186</b></td><td class="num"><b>158</b></td></tr></tbody></table><span class="muted" style="font-size:.85rem">Girls and boys together. Relays count for houses only.</span></div></sc-if>
+<sc-if value="{{{{is.events}}}}" hint-placeholder-val="{{{{false}}}}"><div class="stack">
+<div class="tabs" style="margin:0"><sc-for list="{{{{evs}}}}" as="e" hint-placeholder-count="2"><button type="button" aria-pressed="{{{{e.on}}}}" onClick="{{{{e.tap}}}}">{{{{e.l}}}}</button></sc-for></div>
+<div class="panel stack"><div class="row" style="justify-content:space-between"><h3>{{{{ev.e}}}}</h3><span class="chip final">Final</span></div>
+<div class="podium"><sc-for list="{{{{ev.rows}}}}" as="r" hint-placeholder-count="5"><div class="pr"><span class="medal {{{{r.mc}}}}">{{{{r.p}}}}</span><div><b>{{{{r.n}}}}</b><span class="htag" style="font-size:.86rem"><span class="hdot h{{{{r.h}}}}">{{{{r.h}}}}</span></span></div><span class="t">{{{{r.v}}}}</span></div></sc-for></div></div></div></sc-if>
+<sc-if value="{{{{is.find}}}}" hint-placeholder-val="{{{{false}}}}"><div class="stack"><label class="label" style="display:flex;flex-direction:column;gap:4px">Find a student<input type="search" placeholder="Type a first name" value="Xav" aria-label="Find a student"></label>
+<div class="panel stack"><div class="row" style="justify-content:space-between"><span class="htag"><span class="hdot h{find['h']}">{find['h']}</span><b>{find['n']}</b></span><span class="chip">House {find['h']}</span></div>
+<sc-for list="{{{{fres}}}}" as="r" hint-placeholder-count="2"><div class="row" style="justify-content:space-between"><span>{{{{r.e}}}}</span><b>{{{{r.p}}}} · {{{{r.v}}}}</b></div></sc-for></div></div></sc-if>
+<sc-if value="{{{{is.champs}}}}" hint-placeholder-val="{{{{false}}}}"><div class="stack"><sc-for list="{{{{champs}}}}" as="c" hint-placeholder-count="3"><div class="panel" style="padding:10px 12px"><b style="font-family:var(--font-display)">{{{{c.l}}}}</b>
+<div class="champ"><span class="medal m1" style="width:26px;height:26px">1</span><span>{{{{c.a}}}} <span class="muted">(Girls)</span></span></div><div class="champ"><span class="medal m1" style="width:26px;height:26px">1</span><span>{{{{c.b}}}} <span class="muted">(Boys)</span></span></div></div></sc-for></div></sc-if>
+<span class="muted" style="font-size:.82rem">Only what the school has turned on is shown. Times can change until a group is final.</span>
+</div></main></div>"""
+    logic = "const ev = " + J(ev) + "; const find = " + J(find) + "; const champs = " + J(champs) + "; const ages = " + J(ages) + r""";
+    const T = [['house','House points'],['age','By age'],['events','Event results'],['find','Find a student'],['champs','Age champions']];
+    const is = {}; T.forEach((x) => { is[x[0]] = st.t === x[0]; });
+    const cur = ev[st.e];
+    out = { is, tabs: T.map((x) => ({ l: x[1], on: st.t === x[0], tap: () => set({ t: x[0] }) })),
+      ages: ages.map((a) => ({ l: a[0], b: a[1], j: a[2], n: a[3] })),
+      evs: ev.map((e, i) => ({ l: e.e, on: st.e === i, tap: () => set({ e: i }) })),
+      ev: { e: cur.e, rows: cur.rows.map((r, i) => ({ p: i + 1, mc: i < 3 ? 'm' + (i + 1) : 'm4', n: r.n, h: r.h, v: r.v })) },
+      fres: find.res.map((r) => ({ e: r[0], p: r[1], v: r[2] })), champs };
+"""
+    return body, logic, "{ t: 'house', e: 0 }"
+
+def organiser_parents(dark):
+    return organiser(dark, "parents")
 
 # ---------- layout on the canvas ----------
 gap = 80; rowgap = 120
 R1 = 0; R2 = 820 + rowgap + 103; R3 = R2 + 982 + rowgap + 103
-board("Main","A1.1 Home: PIN, then 6 jobs; organiser PIN adds Carnival Organiser, iPad landscape",*IPAD,home,0,R1)
-board("MarshalPick","A1.2 Track Marshal (a): pick race, boys or girls, age, iPad landscape",*IPAD,marshal_pick,1260,R1)
+board("Main","A1.1 Home: a job PIN opens its job straight away; only the organiser PIN shows all jobs, iPad landscape",*IPAD,home,0,R1)
+board("MarshalPick","A1.2 Track Marshal (a): pick race, boys or girls, age; for the 800 m and 1500 m tick as many ages as run together, iPad landscape",*IPAD,marshal_pick,1260,R1)
 board("MarshalLanes","A1.3 Track Marshal (b): names into lanes, iPad landscape",*IPAD,marshal_lanes,2520,R1)
 board("PlaceJudge","A1.4 Track Place Judge: tap the top 4 at the finish line, phone",*PHONE,judge,3780,R1,radius=40)
-board("Multitimer","A1.5 Multitimer (800 m, 1500 m): one person enters names, times and places, as swimming's 100 m, phone",*PHONE,multitimer,4250,R1,radius=40)
-board("TimeSlips","A1.6 Time Slips: photo each heat's slip, phone",*PHONE,slips,4720,R1,radius=40)
+board("Multitimer","A1.5 Multitimer (Multi): names, START, splits, STOP, a button next to each name, then next heat or a new age on the phone; Take photo or Multi always shown",*PHONE,multitimer,4250,R1,radius=40)
+board("TimeSlips","A1.6 Time Slips: Take photo or Multi, always shown; photo each heat's slip, phone",*PHONE,slips,4720,R1,radius=40)
 board("FieldStart","A1.7 Field Station (a): pick the station, its day from the timetable, iPad landscape",*IPAD,field_start,0,R2)
-board("FieldMarks","A1.8 Field Station (b): attempts and best mark (long jump, shot put, discus), placeholders for question 8, iPad landscape",*IPAD,field_marks,1260,R2)
-board("FieldHigh","A1.9 Field Station (c): high jump heights, placeholders for question 8, iPad landscape",*IPAD,field_high,2520,R2)
-board("FieldPhone","A1.10 Field Station (d): one athlete at a time on a phone, placeholders for question 8",*PHONE,field_phone,3780,R2,radius=40)
+board("FieldMarks","A1.8 Field Station (b): long jump, up to 3 jumps, Foul and Pass, END and Keep top N, iPad landscape",*IPAD,field_marks,1260,R2)
+board("FieldHigh","A1.9 Field Station (c): high jump, tap the box that is up, Clear, Miss or Pass, start height and raise can be set, END, iPad landscape",*IPAD,field_high,2520,R2)
+board("FieldPhone","A1.10 Field Station (d): long jump, one athlete at a time, Foul and Pass, END, Cut the field, phone",*PHONE,field_phone,3780,R2,radius=40)
 board("Announcer","A1.13 Announcer: on the track now, read out next, field now, house standings, phone",*PHONE,announcer,4250,R2,radius=40)
 board("MarshalRelay","A1.17 Track Marshal (c): relay, a house in each lane, no names, iPad landscape",*IPAD,marshal_relay,5190,R1)
+board("FieldNames","A1.20 Field Station: Take Names, tap each athlete as they arrive, then start, iPad landscape",*IPAD,field_names,6450,R2)
+board("FieldHighPhone","A1.21 Field Station (g): high jump, one athlete at a time, phone, with typed heights and END",*PHONE,field_high_phone,7710,R2,radius=40)
+board("FieldLJSummary","A1.23 Field Station (i): long jump, group results to check and send, phone",*PHONE,field_lj_summary,8650,R2,radius=40)
+board("FieldThrowAgain","A1.24 Field Station (j): shot put and discus, tick who throws again after throw 1, iPad landscape",*IPAD,field_throw_again,9120,R2)
+board("FieldNamesDiscus","A1.28 Field Station: Take Names, discus 12 & 13, pick each athlete's weight, safety line, iPad landscape",*IPAD,field_names_discus,10380,R2)
+board("FieldThrowAgainPhone","A1.25 Field Station (k): who throws again, phone",*PHONE,field_throw_again_phone,11640,R2,radius=40)
+board("FieldMeasurePhone","A1.26 Field Station (l): measure the best throws and set the participation distance, phone",*PHONE,field_measure_phone,12110,R2,radius=40)
+board("FieldThrowsSummary","A1.27 Field Station (m): shot put and discus, group results to check and send, phone",*PHONE,field_throws_summary,12580,R2,radius=40)
+board("FieldHighSummary","A1.22 Field Station (h): high jump, group results to check and send, phone",*PHONE,field_high_summary,8180,R2,radius=40)
+board("FieldThrows","A1.18 Field Station (e): shot put and discus, Fair, Foul or Pass, measured marks, set distance, END, iPad landscape",*IPAD,field_throws,4720,R2)
+board("FieldThrowsPhone","A1.19 Field Station (f): shot put and discus, one athlete at a time, Throw again, END, phone",*PHONE,field_phone_throws,5980,R2,radius=40)
 board("Recorder","A1.11 Recorder, track: slip times, pink swaps, race overall, MacBook",*MAC,recorder,0,R3,radius=0)
-board("RecorderField","A1.12 Recorder, field: stations, final results, override, MacBook",*MAC,recorder_field,1592,R3,radius=0)
-board("Results","A1.14 Results: event results, HRIS Team List, newsletter draft, MacBook",*MAC,results,3184,R3,radius=0)
+board("RecorderField","A1.12 Recorder, field: stations, final results, override, END or Bring back, MacBook",*MAC,recorder_field,1592,R3,radius=0)
+board("Results","A1.14 Results: event results with Participation marked, HRIS Team List, newsletter draft, MacBook",*MAC,results,3184,R3,radius=0)
 board("Houses","A1.15 Houses: standings, points by age group, age champions, iPad landscape",*IPAD,houses,4776,R3)
-board("Organiser","A1.16 Carnival Organiser: 9 sections, add or remove events, field rules placeholder, 1 or 2 locations, MacBook",*MAC,organiser,6036,R3,radius=0)
+board("Organiser","A1.16 Carnival Organiser: 10 sections, add or remove events, field rules from the sheets, 1 or 2 locations, MacBook",*MAC,organiser,6036,R3,radius=0)
+R4 = R3 + 982 + rowgap + 103
+board("RecorderFieldThrows","A1.31 Recorder, field override for shot put and discus: set the distance, throws again, measured marks, weight, END or Bring back, MacBook",*MAC,recorder_throws,2062,R4,radius=0)
+board("Parents","A1.29 Parents page: no PIN, only what the organiser ticked, phone",*PHONE,parents_page,0,R4,radius=40)
+board("OrganiserParents","A1.30 Carnival Organiser: section 10, the parents page on or off and what parents can see, MacBook",*MAC,organiser_parents,470,R4,radius=0)
 
 index_boards, order = {}, []
 DARK_DY = 0
