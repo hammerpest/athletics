@@ -1,6 +1,8 @@
 # PROJECT-STATE: CCAS Athletics Carnival App
 
-Date: 13 November 2026, version bu. Replaces 11 November version bt.
+Date: 13 November 2026, version bv. Replaces 13 November version bu.
+
+Changes on 13 November 2026 (version bv): Darker dashed lines and outlines, built as Aths Opt 2.3 (decision 111). In the cross country project a fresh-eyes review found the landing look's outline colour (--lt-line) gave only 1.9 to 1 on the light background, under the 3 to 1 needed for control edges. Jordan approved a darker line there (cross country decision 5) and said all three apps should be similar. --lt-line is now rgba(20,32,63,.5) in light (was .3) and rgba(255,255,255,.4) in dark (was .28), in css/styles.css only (parents/parents.css uses the same token). Checks 1 to 3 passed (2.5). Jordan then said to get athletics "nearly ready like swimming" (decision 112): app on main, landing page Athletics buttons back to /athletics/ and /athletics/parents/.
 
 Changes on 13 November 2026 (version bu): written from the swimming session (SWIM 09). Things that changed outside this project since version bt: Jordan bought onlinecarnivals.au and it is live over HTTPS (landing page at the root, from the hammerpest.github.io repo); this repo was renamed from ccas-athletics to athletics on GitHub (the local git remote still uses the old address, which GitHub forwards); athletics staging is at https://onlinecarnivals.au/athletics/staging/ and its parents page at /athletics/staging/parents/. Athletics main has no app yet, so the landing page's Athletics Results and Staff sign in buttons (/athletics/parents/ and /athletics/) do not open the app until main gets a build (Jordan's OK first). The landing page itself was built and is looked after in the swimming project (Swim Opt 2.21, 2.27).
 Jordan said "update athletics to match the swims look" (decision 110). Built as Aths Opt 2.2 and pushed to staging (Jordan said "Yes, push staging"): the swimming app's S1.46 version 4 look, as built there in Swim Opt 2.24, 2.25 and 2.28 (2.4 below). Checks 1 to 3 passed after fixes (2.4). Pushed by uploading the 15 changed files through github.com in Jordan's Chrome (this repo has no push token on the Mac): five commits on staging, c7dc634 to 5d577cb; the local branch was then set to match GitHub. Not yet seen live: at the time, the Mac's network showed a self-signed certificate for onlinecarnivals.au (a network filter), so the deploy was not checked. Next: Jordan looks at https://onlinecarnivals.au/athletics/staging/ (close and reopen the tab first); once Jordan approves the look, replace baseline/ with the 2.2 shots; then Jordan says whether athletics main should go live so the landing page links work.
@@ -333,6 +335,13 @@ Decision 110. Same CSS layers as swimming (css/styles.css, at the end), so the t
 - Check 2: Claude in Chrome on the local test page: every job screen has the navy header and the new look, no sideways scroll, no button under 44 px, no console errors; parents page heading and ticker right.
 - Check 3: run 1 FAIL (state button colours lost, PIN Start blue, and two shot-timing faults: job names caught mid-scramble, ticker caught before its words). All fixed; run 2 found the parents page ticker still empty in shots, a shot-timing fault only (the page shows the words; checked with a new shot). Known and already in the baseline: on iPad landscape the high jump Points column sits under the sticky END column (now half digits show); parents tab rows are cut at both ends on a phone.
 
+### 2.5 Aths Opt 2.3: darker dashed lines and outlines (13 November 2026)
+
+Decision 111. Only the --lt-line token in css/styles.css changes (light, prefers-color-scheme dark and data-theme dark rules): light rgba(20,32,63,.3) to .5 (contrast 1.9 to 3.2 to 1 on #f3f5fb), dark rgba(255,255,255,.28) to .4 (2.5 to 3.8 to 1 on #0b1226). index.html comment Aths Opt 2.3.
+- Check 1: the Google Fonts web font renders slightly differently between runs (text weight and line wraps, so page heights move by a few px), even with no code change: a control run of the same code gave 498 differences from the run before it. So check 1 was run with the web font blocked in both runs (same fallback font): tests/shots.py on 2.3 against 2.3 with the old line colour forced, same session. Result: all 1,054 screens compared, no screen changed size; every changed pixel got darker in light and lighter in dark; screens with no lines were identical. Later runs of tests/shots.py should keep this in mind (block the font, or compare like with like).
+- Check 2: built-in browser on the local test page: app and parents page read the new token, no sideways scroll, no console errors. Tests: engine 85 of 85, parents_test pass.
+- Check 3: PASS. Every difference is a line or outline getting darker (light) or lighter (dark); both themes right; nothing too heavy; state colours (selected tabs, Open, GO, STOP, SPLIT, Final, Provisional, record and HRIS badges, house colours) unchanged; no sideways scroll on phone. ENDED, DNS, DQ and foul mark states were covered by the machine check only.
+
 ## 3. Decisions
 
 1. (4 November 2026) Date: about 19 June 2027 (exact day to confirm, question 12). Venue: Mingara Athletics Track, 8 lanes.
@@ -440,6 +449,8 @@ Decision 110. Same CSS layers as swimming (css/styles.css, at the end), so the t
 
 (Decisions 95 to 109 are recorded in the dated Changes notes at the top.)
 110. (13 November 2026) Jordan said "update athletics to match the swims look": the swimming app's S1.46 version 4 look (approved in swimming, decisions 178 to 183 and 187 there) applies to athletics too. Built as Aths Opt 2.2.
+111. (13 November 2026, cross country decision 5) Jordan approved darker dashed lines and outlines (--lt-line rgba(20,32,63,.5) light, rgba(255,255,255,.4) dark) and said all three carnival apps should be similar. Built as Aths Opt 2.3.
+112. (13 November 2026) Jordan said "lest get athlewtics to nearly ready like swimming,. then get cross country to the same level as the others. Go": the app goes on main as well as staging, and the landing page Athletics buttons open /athletics/ and /athletics/parents/ again (undoes the stop-gap in swimming decision 188).
 
 ## 4. Rules and constraints
 
